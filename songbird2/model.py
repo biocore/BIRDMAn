@@ -16,6 +16,7 @@ def fit_model(
     num_jobs: int = -1,
     beta_prior: float = 5.0,
     cauchy_scale: float = 5.0,
+    seed: float = None,
 ):
     """Fit Bayesian differential abundance model.
 
@@ -38,10 +39,13 @@ def fit_model(
         standard deviation for beta normal prior
     cauchy_scale: float (default = 5.0)
         scale for dispersion Cauchy prior
+    seed: float (default = None)
+        random seed to use for sampling
     """
     table_df = table.to_dataframe().to_dense().T
     metadata_filt = metadata.loc[table_df.index, :]
     dmat = dmatrix(formula, metadata_filt, return_type="dataframe")
+    dmat_columns = dmat.columns.tolist()
 
     dat = {
         "N": table_df.shape[0],
@@ -57,10 +61,14 @@ def fit_model(
 
     # Load Stan model and run Hamiltonian MCMC sampling
     stanfile = get_data(__name__, "model.stan").decode("utf-8")
-    #with open(stanfile, "r") as f:
-    #    code = f.read()
     sm = pystan.StanModel(model_code=str(stanfile))
-    fit = sm.sampling(data=dat, iter=num_iter, chains=chains, n_jobs=num_jobs)
+    fit = sm.sampling(
+        data=dat,
+        iter=num_iter,
+        chains=chains,
+        n_jobs=num_jobs,
+        seed=seed,
+    )
     res = fit.extract(permuted=True)
 
-    return res
+    return res, dmat_columns
