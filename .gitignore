@@ -1,6 +1,7 @@
 *.egg-info
 *.swp
 *.swo
+*.pickle
 
 *__pycache__/
 /data

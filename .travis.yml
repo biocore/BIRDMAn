@@ -23,4 +23,5 @@ before_install:
 install:
   - pip install -e .[dev]
 script:
+  - python tests/data/moving_pictures_example.py
   - pytest

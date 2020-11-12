@@ -27,12 +27,12 @@ def collapse_results(beta, colnames):
     dfs = []
 
     # TODO: figure out how to vectorize this
-    for i, colnames in enumerate(colnames):
+    for i, colname in enumerate(colnames):
         x_clr = alr_to_clr(beta[:, i, :])
         mean = pd.DataFrame(x_clr.mean(axis=0))
         std = pd.DataFrame(x_clr.std(axis=0))
         df = pd.concat([mean, std], axis=1)
-        df.columns = [f"C{i+1}_{x}" for x in ["mean", "std"]]
+        df.columns = [f"{colname}_{x}" for x in ["mean", "std"]]
         dfs.append(df)
     beta_df = pd.concat(dfs, axis=1)
     return beta_df
