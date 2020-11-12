@@ -6,6 +6,44 @@ import pandas as pd
 from patsy import dmatrix
 import pystan
 
+from .util import collapse_results
+
+
+def _fit(
+    table: np.array,
+    dmat: pd.DataFrame,
+    num_iter: int = 2000,
+    chains: int = 4,
+    num_jobs: int = -1,
+    beta_prior: float = 5.0,
+    cauchy_scale: float = 5.0,
+    seed: float = None,
+):
+    dat = {
+        "N": table.shape[0],
+        "D": table.shape[1],
+        "p": dmat.shape[1],
+        "depth": np.log(table.sum(axis=1)),
+        "x": dmat.values,
+        "y": table.astype(np.int64),
+        "B_p": beta_prior,
+        "phi_s": cauchy_scale,
+    }
+    # log depth because of log parameterization of negative binomial
+
+    # Load Stan model and run Hamiltonian MCMC sampling
+    stanfile = get_data(__name__, "model.stan").decode("utf-8")
+    sm = pystan.StanModel(model_code=str(stanfile))
+    fit = sm.sampling(
+        data=dat,
+        iter=num_iter,
+        chains=chains,
+        n_jobs=num_jobs,
+        seed=seed,
+    )
+
+    return sm, fit
+
 
 def fit_model(
     table: biom.table.Table,
@@ -45,30 +83,18 @@ def fit_model(
     table_df = table.to_dataframe().to_dense().T
     metadata_filt = metadata.loc[table_df.index, :]
     dmat = dmatrix(formula, metadata_filt, return_type="dataframe")
-    dmat_columns = dmat.columns.tolist()
 
-    dat = {
-        "N": table_df.shape[0],
-        "D": table_df.shape[1],
-        "p": dmat.shape[1],
-        "depth": np.log(table_df.sum(axis=1).values),
-        "x": dmat.values,
-        "y": table_df.astype(np.int64),
-        "B_p": beta_prior,
-        "phi_s": cauchy_scale,
-    }
-    # log depth because of log parameterization of negative binomial
-
-    # Load Stan model and run Hamiltonian MCMC sampling
-    stanfile = get_data(__name__, "model.stan").decode("utf-8")
-    sm = pystan.StanModel(model_code=str(stanfile))
-    fit = sm.sampling(
-        data=dat,
-        iter=num_iter,
-        chains=chains,
-        n_jobs=num_jobs,
-        seed=seed,
+    _, fit = _fit(
+        table_df.values,
+        dmat,
+        num_iter,
+        chains,
+        num_jobs,
+        beta_prior,
+        cauchy_scale,
+        seed,
     )
     res = fit.extract(permuted=True)
+    beta_df = collapse_results(res["beta"], dmat.columns)
 
-    return res, dmat_columns
+    return beta_df

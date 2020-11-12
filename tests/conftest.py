@@ -34,12 +34,6 @@ def data_table():
 
 
 @pytest.fixture
-def exp_res():
-    with open("tests/data/stan_res.npy", "rb") as f:
-        return pickle.load(f)
-
-
-@pytest.fixture
 def metadata():
     metadata = pd.read_csv(
         "tests/data/sample-metadata.tsv",
@@ -48,3 +42,10 @@ def metadata():
     )
     metadata = metadata.rename(columns={"body-site": "body_site"})
     return metadata
+
+
+@pytest.fixture
+def exp_model():
+    with open("tests/data/moving_pictures_model.pickle", "rb") as f:
+        load_fit = pickle.load(f)
+    return load_fit["model"], load_fit["fit"]

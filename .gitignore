@@ -3,5 +3,4 @@
 *.swo
 
 *__pycache__/
-data/
-
+/data
