@@ -48,4 +48,4 @@ def metadata():
 def exp_model():
     with open("tests/data/moving_pictures_model.pickle", "rb") as f:
         load_fit = pickle.load(f)
-    return load_fit["model"], load_fit["fit"]
+    return load_fit["fit"]

@@ -7,7 +7,7 @@ from songbird2.model import _fit
 
 class TestModel:
     def test_fit_model(self, mocker, data_table, metadata, exp_model):
-        mocker.patch("songbird2.model._fit", return_value=exp_model)
+        mocker.patch("songbird2.model._fit", return_value=("", exp_model))
         fit_model(
             data_table,
             metadata,
@@ -17,8 +17,7 @@ class TestModel:
         )
 
     def test_fit(self, data_table, metadata, exp_model):
-        _, exp_fit = exp_model
-        exp_res = exp_fit.extract(permuted=True)
+        exp_res = exp_model.extract(permuted=True)
 
         table_df = data_table.to_dataframe().T
         metadata_filt = metadata.loc[table_df.index, :]

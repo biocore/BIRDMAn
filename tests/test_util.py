@@ -4,7 +4,8 @@ from skbio.stats.composition import alr, clr
 from songbird2 import util
 
 
-def test_collapse_results(exp_res):
+def test_collapse_results(exp_model):
+    exp_res = exp_model.extract(permuted=True)
     num_covariates = exp_res["beta"].shape[1]
     colnames = [f"C{i+0}" for i in range(num_covariates)]
     beta_df = util.collapse_results(exp_res["beta"], colnames)
