@@ -44,6 +44,9 @@ class Model:
         }
 
     def _fit(self):
+        if self.model_type is None:  # will hopefully never occur
+            raise TypeError("Cannot fit an empty model!")
+
         self.fit = self.sm.sampling(
             data=self.dat,
             iter=self.num_iter,
