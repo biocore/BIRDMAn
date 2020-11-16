@@ -44,3 +44,13 @@ model {
     }
   }
 }
+
+generated quantities {
+  matrix[N, D] y_predict;
+
+  for (n in 1:N){
+    for (i in 1:D){
+      y_predict[n, i] = neg_binomial_2_log_rng(depth[n] + lam_clr[n, i], phi);
+    }
+  }
+}
