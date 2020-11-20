@@ -38,7 +38,8 @@ nb = NegativeBinomial(
     seed=42,
 )
 
-fit = nb._fit()
+nb.compile_model()
+fit = nb.fit_model()
 
 # need to pickle compiled model as well as fit
 with open("tests/data/moving_pictures_model.pickle", "wb+") as f:
