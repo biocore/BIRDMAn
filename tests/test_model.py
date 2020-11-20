@@ -1,35 +1,38 @@
-import numpy as np
-from patsy import dmatrix
 import pytest
 
 from songbird2.model import Model, NegativeBinomial
 
 
-class TestModel:
-    def test_fit(self, data_table, metadata, exp_model):
-        table_df = data_table.to_dataframe().T
-        metadata_filt = metadata.loc[table_df.index, :]
-        dmat = dmatrix("body_site", metadata_filt, return_type="dataframe")
-
+class TestModelInheritance:
+    def test_nb_model(self, table_df, dmat):
         nb = NegativeBinomial(
             table_df,
             dmat,
-            num_iter=500,
-            seed=42,
+            "negative_binomial",
+            beta_prior=2.0,
+            cauchy_scale=2.0
         )
 
-        nb._fit()
+        assert nb.dat["B_p"] == 2.0
+        assert nb.dat["phi_s"] == 2.0
+        assert nb.filepath == "templates/negative_binomial.stan"
 
 
 class TestErrorHandling:
-    def test_blank_model_fit(self, data_table, metadata):
-        table_df = data_table.to_dataframe().T
-        metadata_filt = metadata.loc[table_df.index, :]
-        dmat = dmatrix("body_site", metadata_filt, return_type="dataframe")
-        model = Model(table_df, dmat)
+    def test_uncompiled_model_fit(self, table_df, dmat):
+        model = Model(table_df, dmat, model_type="uncompiled")
 
-        with pytest.raises(TypeError) as e:
-            model._fit()
+        with pytest.raises(ValueError) as e:
+            model.fit_model()
 
-        exp_error = "Cannot fit an empty model!"
-        assert str(e.value) == exp_error
+        exp_msg = "Must compile model first!"
+        assert str(e.value) == exp_msg
+
+    def test_custom_model_no_filepath(self, table_df, dmat):
+        model = Model(table_df, dmat, model_type="custom")
+
+        with pytest.raises(ValueError) as e:
+            model.compile_model()
+
+        exp_msg = "Unsupported model type!"
+        assert str(e.value) == exp_msg

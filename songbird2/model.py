@@ -1,4 +1,5 @@
 from pkgutil import get_data
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -13,11 +14,11 @@ class Model:
         self,
         table: pd.DataFrame,
         dmat: pd.DataFrame,
+        model_type: str,
         num_iter: int = 2000,
         chains: int = 4,
         num_jobs: int = -1,
         seed: float = None,
-        model_type: str = None,
     ):
         self.num_iter = num_iter
         self.chains = chains
@@ -26,13 +27,7 @@ class Model:
         self.feature_names = table.columns.tolist()
         self.sample_names = table.index.tolist()
         self.model_type = model_type
-
-        if model_type is not None:
-            stanfile_path = MODEL_DICT.get(model_type)
-            stanfile = get_data(__name__, stanfile_path).decode("utf-8")
-            sm = pystan.StanModel(model_code=str(stanfile))
-            self.sm = sm
-            print("Model compiled!")
+        self.sm = None
 
         self.dat = {
             "N": table.shape[0],
@@ -43,9 +38,43 @@ class Model:
             "y": table.values.astype(np.int64),
         }
 
-    def _fit(self):
-        if self.model_type is None:  # will hopefully never occur
-            raise TypeError("Cannot fit an empty model!")
+    def compile_model(self, filepath=None):
+        """Compile Stan model.
+
+        By default if model_type is recognized the appropriate Stan file will
+        be loaded and compiled.
+
+        Parameters:
+        -----------
+        filepath : str
+            If provided, will be loaded and compiled.
+        """
+        self.filepath = filepath
+        if self.model_type in MODEL_DICT:
+            if filepath is not None:
+                warnings.warn(
+                    f"Ignoring provided filepath and using built-in "
+                    "{self.model_type} model instead."
+                )
+            stanfile_path = MODEL_DICT.get(self.model_type)
+            stanfile = get_data(__name__, stanfile_path).decode("utf-8")
+        elif filepath is not None:
+            with open(filepath, "r") as f:
+                stanfile = f.read().decode("utf-8")
+        else:
+            raise ValueError("Unsupported model type!")
+
+        sm = pystan.StanModel(model_code=str(stanfile))
+        self.sm = sm
+        print("Model compiled successfully!")
+
+    def add_parameters(self, param_dict=None):
+        """Add parameters from dict to be passed to Stan."""
+        self.dat.update(param_dict)
+
+    def fit_model(self):
+        if self.sm is None:
+            raise ValueError("Must compile model first!")
 
         self.fit = self.sm.sampling(
             data=self.dat,
@@ -69,10 +98,11 @@ class NegativeBinomial(Model):
         beta_prior: float = 5.0,
         cauchy_scale: float = 5.0,
     ):
-        super().__init__(table, dmat, num_iter, chains, num_jobs, seed,
-                         model_type="negative_binomial")
+        super().__init__(table, dmat, "negative_binomial", num_iter, chains,
+                         num_jobs, seed)
         param_dict = {
             "B_p": beta_prior,
             "phi_s": cauchy_scale
         }
-        self.dat.update(param_dict)
+        self.add_parameters(param_dict)
+        self.filepath = MODEL_DICT["negative_binomial"]

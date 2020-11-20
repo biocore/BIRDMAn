@@ -4,11 +4,11 @@ import pandas as pd
 import pickle
 import pytest
 
+from patsy import dmatrix
 from qiime2 import Artifact
 
 
-@pytest.fixture
-def data_table():
+def example_table():
     table = Artifact.load("tests/data/table-deblur.qza")
     table_df = table.view(pd.DataFrame)
 
@@ -25,16 +25,10 @@ def data_table():
     table_filt = table_filt.loc[random_samples, :]
     table_filt = table_filt.loc[:, random_features]
 
-    table_biom = biom.table.Table(
-        table_filt.T.values,
-        random_features,
-        random_samples,
-    )
-    return table_biom
+    return table_filt
 
 
-@pytest.fixture
-def metadata():
+def example_metadata():
     metadata = pd.read_csv(
         "tests/data/sample-metadata.tsv",
         sep="\t",
@@ -45,7 +39,45 @@ def metadata():
 
 
 @pytest.fixture
-def exp_model():
+def table_biom():
+    table_filt = example_table()
+
+    table_biom = biom.table.Table(
+        table_filt.T.values,
+        table_filt.columns,
+        table_filt.samples,
+    )
+    return table_biom
+
+
+@pytest.fixture
+def table_df():
+    return example_table()
+
+
+@pytest.fixture
+def metadata():
+    return example_metadata()
+
+
+@pytest.fixture
+def dmat():
+    md = example_metadata()
+    tbl = example_table()
+    md_filt = md.loc[tbl.index, :]
+    dmat = dmatrix("body_site", md_filt, return_type="dataframe")
+    return dmat
+
+
+@pytest.fixture
+def ex_model():
     with open("tests/data/moving_pictures_model.pickle", "rb") as f:
         load_fit = pickle.load(f)
     return load_fit["fit"]
+
+
+@pytest.fixture
+def ex_fit():
+    with open("tests/data/moving_pictures_model.pickle", "rb") as f:
+        load_fit = pickle.load(f)
+    return load_fit["model"]
