@@ -14,10 +14,30 @@ def plot_differentials(beta_df, covariate):
         np.arange(d),
         mean,
         yerr=std,
+        zorder=1,
+    )
+    ax.scatter(
+        np.arange(d),
+        mean,
+        c="black",
+        zorder=2,
     )
     ax.axhline(y=0, linestyle="--", color="black")
     ax.set_ylabel(f"log fold change {covariate}")
     ax.set_xticks([])
     ax.set_xlabel("Features")
+
+    return ax
+
+
+def plot_ppc(predicted, actual):
+    fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+    n, d = predicted.shape
+
+    for i in range(n):
+        ax.plot(
+            np.arange(d),
+            predicted[i],
+        )
 
     return ax
