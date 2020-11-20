@@ -23,5 +23,7 @@ before_install:
 install:
   - pip install -e .[dev]
 script:
+  # test stan code and write example data for testing
   - python tests/data/moving_pictures_example.py
+  - flake8 songbird2/ tests/
   - pytest
