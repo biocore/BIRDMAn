@@ -73,11 +73,4 @@ def dmat():
 def ex_model():
     with open("tests/data/moving_pictures_model.pickle", "rb") as f:
         load_fit = pickle.load(f)
-    return load_fit["fit"]
-
-
-@pytest.fixture
-def ex_fit():
-    with open("tests/data/moving_pictures_model.pickle", "rb") as f:
-        load_fit = pickle.load(f)
-    return load_fit["model"]
+    return load_fit
