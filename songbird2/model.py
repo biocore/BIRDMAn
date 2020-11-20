@@ -26,6 +26,7 @@ class Model:
         self.seed = seed
         self.feature_names = table.columns.tolist()
         self.sample_names = table.index.tolist()
+        self.colnames = dmat.columns.tolist()
         self.model_type = model_type
         self.sm = None
 

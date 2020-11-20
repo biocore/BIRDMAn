@@ -8,10 +8,9 @@ def collapse_param(model: Model, param: str):
     """Compute mean and stdev for parameter from posterior samples."""
     dfs = []
     res = model.fit.extract(permuted=True)
-    colnames = model.dat["dmat"].columns
 
     # TODO: figure out how to vectorize this
-    for i, colname in enumerate(colnames):
+    for i, colname in enumerate(model.colnames):
         x_clr = alr_to_clr(res[param][:, i, :])
         mean = pd.DataFrame(x_clr.mean(axis=0))
         std = pd.DataFrame(x_clr.std(axis=0))

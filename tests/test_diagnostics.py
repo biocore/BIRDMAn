@@ -21,6 +21,6 @@ def test_ppc():
 
     for i in range(predicted.shape[0]):
         pred_order = sorted_predictions[i]
-        expected_pred_order = predicted[i, :, :].reshape(0)[sort_order][0]
+        expected_pred_order = predicted[i, :, :].reshape(-1)[sort_order][0]
 
         np.testing.assert_array_equal(pred_order, expected_pred_order)
