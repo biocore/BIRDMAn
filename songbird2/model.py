@@ -73,7 +73,8 @@ class Model:
         """Add parameters from dict to be passed to Stan."""
         self.dat.update(param_dict)
 
-    def fit_model(self):
+    def fit_model(self, **kwargs):
+        """Draw posterior samples from the model."""
         if self.sm is None:
             raise ValueError("Must compile model first!")
 
@@ -83,11 +84,21 @@ class Model:
             chains=self.chains,
             n_jobs=self.num_jobs,
             seed=self.seed,
+            **kwargs,
         )
         return self.fit
 
 
 class NegativeBinomial(Model):
+    """Fit count data using negative binomial model.
+
+    Parameters:
+    -----------
+    beta_prior : float
+        Normal prior standard deviation parameter for beta (default = 5.0)
+    cauchy_scale : float
+        Cauchy prior scale parameter for phi (default = 5.0)
+    """
     def __init__(
         self,
         table: pd.DataFrame,

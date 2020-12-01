@@ -12,7 +12,7 @@ data {
 parameters {
   // parameters required for linear regression on the species means
   matrix[p, D-1] beta;
-  real reciprocal_phi;
+  vector<lower=0>[D] reciprocal_phi;
 }
 
 transformed parameters {
@@ -20,9 +20,11 @@ transformed parameters {
   matrix[N, D] lam_clr;
   matrix[N, D] prob;
   vector[N] z;
-  real phi;
+  vector<lower=0>[D] phi;
 
-  phi = 1. / reciprocal_phi;
+  for (i in 1:D){
+    phi[i] = 1. / reciprocal_phi[i];
+  }
 
   z = to_vector(rep_array(0, N));
   lam = x * beta;
@@ -31,7 +33,9 @@ transformed parameters {
 
 model {
   // setting priors ...
-  reciprocal_phi ~ cauchy(0., phi_s);
+  for (i in 1:D){
+    reciprocal_phi[i] ~ cauchy(0., phi_s);
+  }
   for (i in 1:D-1){
     for (j in 1:p){
       beta[j, i] ~ normal(0., B_p); // uninformed prior
@@ -40,7 +44,7 @@ model {
   // generating counts
   for (n in 1:N){
     for (i in 1:D){
-      target += neg_binomial_2_log_lpmf(y[n, i] | depth[n] + lam_clr[n, i], phi);
+      target += neg_binomial_2_log_lpmf(y[n, i] | depth[n] + lam_clr[n, i], phi[i]);
     }
   }
 }
@@ -50,7 +54,7 @@ generated quantities {
 
   for (n in 1:N){
     for (i in 1:D){
-      y_predict[n, i] = neg_binomial_2_log_rng(depth[n] + lam_clr[n, i], phi);
+      y_predict[n, i] = neg_binomial_2_log_rng(depth[n] + lam_clr[n, i], phi[i]);
     }
   }
 }
