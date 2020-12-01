@@ -10,12 +10,17 @@ def test_ppc():
         [0, 0, 1, 1, 3],
         [3, 2, 1, 2, 0],
     ])
+    # [1, 3, 0, 0, 5, 2, 0, 0, 4, 1, 0, 0, 1, 1, 3, 3, 2, 1, 2, 0]
     sort_order = actual.reshape([1, 20]).argsort()
-    print(sort_order)
 
-    np.random.seed(42)
-    predicted = np.random.randint(low=-2, high=2, size=(3, 4, 5)) + actual
-    predicted = predicted.clip(min=0)
+    pred1 = [2, 2, 0, 1, 4, 1, 2, 2, 4, 0, 0, 3, 1, 1, 4, 1, 2, 0, 0, 1]
+    pred1 = np.array(pred1)
+    pred2 = [1, 1, 1, 0, 6, 3, 4, 0, 0, 3, 1, 2, 0, 1, 7, 0, 1, 1, 0, 0]
+    pred2 = np.array(pred2)
+    predicted = np.stack(
+        [pred1.reshape([4, 5]), pred2.reshape([4, 5])],
+        axis=0
+    )
 
     sorted_predictions, sorted_actuals = diag.ppc_values(predicted, actual)
 
