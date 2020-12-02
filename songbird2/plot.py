@@ -54,8 +54,10 @@ def plot_ppc(predicted, actual):
     n, d = predicted.shape
 
     predicted_ci = np.quantile(predicted, [0.025, 0.975], axis=0)
-    predicted_ci = predicted_ci.reshape([2, -1])
     predicted_median = np.median(predicted, axis=0)
+
+    obs_in_ci = (actual >= predicted_ci[0, :]) & (actual <= predicted_ci[1, :])
+    pct_in_ci = sum(obs_in_ci)/d*100
 
     ax.plot(np.arange(d), actual, zorder=2, lw=2, color="black")
     y1, y2 = ax.get_ylim()
@@ -64,7 +66,6 @@ def plot_ppc(predicted, actual):
         np.arange(d),
         predicted_median,
         color="darkgray",
-        s=5,
     )
     for i in range(d):
         ax.plot(
@@ -92,10 +93,9 @@ def plot_ppc(predicted, actual):
     ax.legend(
         handles=handles,
         loc="upper left",
+        edgecolor="black",
         framealpha=1,
     )
 
-    obs_in_ci = (actual > predicted_ci[0, :]) & (actual < predicted[1, :])
-    pct_in_ci = sum(obs_in_ci)/d*100
     print(f"{round(pct_in_ci, 2)}% of Observations in 95% Credible Interval")
     return ax
