@@ -4,10 +4,10 @@ from .model import Model
 from .util import alr_to_clr
 
 
-def collapse_param(model: Model, param: str, convert_alr_to_clr=False):
+def collapse_param(model: Model, param: str, convert_alr_to_clr: bool = False):
     """Compute mean and stdev for parameter from posterior samples."""
     dfs = []
-    res = model.fit.extract(permuted=True)
+    res = _extract_params(model)
 
     param_data = res[param]
 
@@ -36,3 +36,8 @@ def collapse_param(model: Model, param: str, convert_alr_to_clr=False):
     else:
         raise ValueError("Parameter must be matrix or vector type!")
     return param_df
+
+
+def _extract_params(model: Model):
+    """Helper function so that this can be mocked for testing."""
+    return model.fit.extract(permuted=True)
