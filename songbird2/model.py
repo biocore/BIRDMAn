@@ -54,8 +54,8 @@ class Model:
         if self.model_type in MODEL_DICT:
             if filepath is not None:
                 warnings.warn(
-                    f"Ignoring provided filepath and using built-in "
-                    "{self.model_type} model instead."
+                    "Ignoring provided filepath and using built-in "
+                    f"{self.model_type} model instead."
                 )
             stanfile_path = MODEL_DICT.get(self.model_type)
             stanfile = get_data(__name__, stanfile_path).decode("utf-8")
