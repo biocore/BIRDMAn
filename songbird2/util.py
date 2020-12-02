@@ -14,7 +14,12 @@ def alr_to_clr(x):
     np.ndarray
         centered CLR coordinates
     """
-    num_rows = x.shape[0]
+    if x.ndim == 2:  # matrix of parameters
+        num_rows = x.shape[0]
+    elif x.ndim == 1:  # vector of parameters
+        num_rows = 1
+    else:
+        raise ValueError("ALR coordinates must be matrix or vector!")
     z = np.zeros((num_rows, 1))
     x_clr = np.hstack((z, x))
     x_clr = x_clr - x_clr.mean(axis=1).reshape(-1, 1)
