@@ -61,7 +61,7 @@ class Model:
             stanfile = get_data(__name__, stanfile_path).decode("utf-8")
         elif filepath is not None:
             with open(filepath, "r") as f:
-                stanfile = f.read().decode("utf-8")
+                stanfile = f.read()
         else:
             raise ValueError("Unsupported model type!")
 
