@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="songbird2",
+    name="birdman",
     author="Gibraan Rahman",
     packages=find_packages(),
     include_package_data=True,

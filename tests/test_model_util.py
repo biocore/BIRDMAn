@@ -1,9 +1,9 @@
 import numpy as np
 from skbio.stats import composition as comp
 
-from songbird2.model import Model
-import songbird2.model_util as mutil
-from songbird2.util import alr_to_clr
+from birdman.model import Model
+import birdman.model_util as mutil
+from birdman.util import alr_to_clr
 
 
 def test_collapse_matrix(ex_model, table_df, dmat, mocker):
@@ -24,7 +24,7 @@ def test_collapse_matrix(ex_model, table_df, dmat, mocker):
     alr_2 = comp.alr(probs_2)
     mock_res = {"beta": np.stack([alr_1, alr_2], axis=0)}
     mocker.patch(  # mock to use test ALR coordinates for collapsing
-        "songbird2.model_util._extract_params",
+        "birdman.model_util._extract_params",
         return_value=mock_res,
     )
 
@@ -60,7 +60,7 @@ def test_collapse_vector(ex_model, table_df, dmat, mocker):
     vals_2 = np.array([2, 4, 6, 8, 10])
     mock_res = {"phi": np.stack([vals_1, vals_2], axis=0)}
     mocker.patch(  # mock to use test phi values for collapsing
-        "songbird2.model_util._extract_params",
+        "birdman.model_util._extract_params",
         return_value=mock_res
     )
 

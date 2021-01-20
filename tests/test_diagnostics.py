@@ -1,6 +1,6 @@
 import numpy as np
 
-from songbird2 import diagnostics as diag
+from birdman import diagnostics as diag
 
 
 def test_ppc():

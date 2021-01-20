@@ -6,7 +6,7 @@ from patsy import dmatrix
 import pickle
 from qiime2 import Artifact
 
-from songbird2.model import NegativeBinomial
+from birdman.model import NegativeBinomial
 
 table = Artifact.load("tests/data/table-deblur.qza")
 table_df = table.view(pd.DataFrame)

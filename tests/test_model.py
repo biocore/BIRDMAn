@@ -1,6 +1,6 @@
 import pytest
 
-from songbird2.model import Model, NegativeBinomial
+from birdman.model import Model, NegativeBinomial
 
 
 class TestModelInheritance:

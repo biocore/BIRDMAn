@@ -1,7 +1,7 @@
 import numpy as np
 from skbio.stats.composition import alr, clr
 
-from songbird2 import util
+from birdman import util
 
 
 def test_alr_to_clr():
