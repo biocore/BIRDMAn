@@ -6,8 +6,8 @@ import birdman.model_util as mutil
 from birdman.util import alr_to_clr
 
 
-def test_collapse_matrix(ex_model, table_df, dmat, mocker):
-    model = Model(table_df, dmat, model_type="test")
+def test_collapse_matrix(ex_model, table_biom, metadata, mocker):
+    model = Model(table_biom, "body_site", metadata, model_type="test")
     model.colnames = ["x", "y", "z"]
     probs_1 = np.array([
         [0.1, 0.2, 0.7],
@@ -54,8 +54,8 @@ def test_collapse_matrix(ex_model, table_df, dmat, mocker):
         )
 
 
-def test_collapse_vector(ex_model, table_df, dmat, mocker):
-    model = Model(table_df, dmat, model_type="test")
+def test_collapse_vector(ex_model, table_biom, metadata, mocker):
+    model = Model(table_biom, "body_site", metadata, model_type="test")
     vals_1 = np.array([1, 2, 3, 4, 5])
     vals_2 = np.array([2, 4, 6, 8, 10])
     mock_res = {"phi": np.stack([vals_1, vals_2], axis=0)}

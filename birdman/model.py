@@ -1,19 +1,25 @@
 from pkgutil import get_data
 import warnings
 
+import biom
 import numpy as np
 import pandas as pd
+from patsy import dmatrix
 import pystan
 
 
-MODEL_DICT = {"negative_binomial": "templates/negative_binomial.stan"}
+MODEL_DICT = {
+    "negative_binomial": "templates/negative_binomial.stan",
+    "multinomial": "templates/multinomial.stan"
+}
 
 
 class Model:
     def __init__(
         self,
-        table: pd.DataFrame,
-        dmat: pd.DataFrame,
+        table: biom.table.Table,
+        formula: str,
+        metadata: pd.DataFrame,
         model_type: str,
         num_iter: int = 2000,
         chains: int = 4,
@@ -24,19 +30,22 @@ class Model:
         self.chains = chains
         self.num_jobs = num_jobs
         self.seed = seed
-        self.feature_names = table.columns.tolist()
-        self.sample_names = table.index.tolist()
-        self.colnames = dmat.columns.tolist()
+        self.formula = formula
+        self.feature_names = table.ids(axis="observation")
+        self.sample_names = table.ids(axis="sample")
         self.model_type = model_type
         self.sm = None
 
+        dmat = dmatrix(formula, metadata, return_type="dataframe")
+        self.colnames = dmat.columns.tolist()
+
         self.dat = {
-            "N": table.shape[0],
-            "D": table.shape[1],
+            "N": table.shape[1],
+            "D": table.shape[0],
             "p": dmat.shape[1],
-            "depth": np.log(table.sum(axis=1)),
+            "depth": np.log(table.sum(axis="sample")),
             "x": dmat.values,
-            "y": table.values.astype(np.int64),
+            "y": table.matrix_data.todense().T.astype(int),
         }
 
     def compile_model(self, filepath=None):
@@ -102,7 +111,8 @@ class NegativeBinomial(Model):
     def __init__(
         self,
         table: pd.DataFrame,
-        dmat: pd.DataFrame,
+        formula: str,
+        metadata: pd.DataFrame,
         num_iter: int = 2000,
         chains: int = 4,
         num_jobs: int = -1,
@@ -110,11 +120,39 @@ class NegativeBinomial(Model):
         beta_prior: float = 5.0,
         cauchy_scale: float = 5.0,
     ):
-        super().__init__(table, dmat, "negative_binomial", num_iter, chains,
-                         num_jobs, seed)
+        super().__init__(table, formula, metadata, "negative_binomial",
+                         num_iter, chains, num_jobs, seed)
         param_dict = {
             "B_p": beta_prior,
             "phi_s": cauchy_scale
         }
         self.add_parameters(param_dict)
         self.filepath = MODEL_DICT["negative_binomial"]
+
+
+class Multinomial(Model):
+    """Fit count data using multinomial model.
+
+    Parameters:
+    -----------
+    beta_prior : float
+        Normal prior standard deviation parameter for beta (default = 5.0)
+    """
+    def __init__(
+        self,
+        table: pd.DataFrame,
+        formula: str,
+        metadata: pd.DataFrame,
+        num_iter: int = 2000,
+        chains: int = 4,
+        num_jobs: int = -1,
+        seed: float = None,
+        beta_prior: float = 5.0,
+    ):
+        super().__init__(table, formula, metadata, "negative_binomial",
+                         num_iter, chains, num_jobs, seed)
+        param_dict = {
+            "B_p": beta_prior,
+        }
+        self.add_parameters(param_dict)
+        self.filepath = MODEL_DICT["multinomial"]
