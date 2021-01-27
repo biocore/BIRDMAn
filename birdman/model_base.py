@@ -16,6 +16,7 @@ DEFAULT_MODEL_DICT = {
 
 
 class Model:
+    """Base Stan model."""
     def __init__(
         self,
         table: biom.table.Table,
@@ -85,11 +86,13 @@ class Model:
 
 
 class SerialModel(Model):
+    """Stan model parallelizing MCMC chains."""
     def __init__(
         self,
         table: biom.table.Table,
         formula: str,
         metadata: pd.DataFrame,
+        model_type: str,
         num_iter: int = 2000,
         chains: int = 4,
         num_jobs: int = -1,
@@ -155,11 +158,13 @@ class SerialModel(Model):
 
 
 class ParallelModel(Model):
+    """Stan model parallelized across each microbe."""
     def __init__(
         self,
         table: biom.table.Table,
         formula: str,
         metadata: biom.table.Table,
+        model_type: str,
         num_iter: int = 2000,
         chains: int = 4,
         num_jobs: int = -1,

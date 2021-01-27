@@ -1,4 +1,3 @@
-from dask.distributed import Client
 import numpy as np
 
 
@@ -27,6 +26,14 @@ def alr_to_clr(x):
     return x_clr
 
 
-def setup_dask_client():
-    """Set up dask client & monitoring."""
-    client = Client(n_workers=4)
+def extract_fit_diagnostics(fit):
+    """Extract Rhat and n_eff from fitted Stan model.
+
+    https://github.com/stan-dev/pystan/issues/396#issuecomment-343018644
+    """
+    summary_colnames = fit.summary()["summary_colnames"]
+    rhat_index = summary_colnames.index("Rhat")
+    neff_index = summary_colnames.index("n_eff")
+    rhat = fit.summary()["summary"][:, rhat_index]
+    neff = fit.summary()["summary"][:, neff_index]
+    return rhat, neff
