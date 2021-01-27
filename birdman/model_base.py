@@ -8,12 +8,6 @@ import pandas as pd
 from patsy import dmatrix
 import pystan
 
-MODEL_DICT = {
-    "negative_binomial": "templates/negative_binomial.stan",
-    "multinomial": "templates/multinomial.stan",
-    "negative_binomial_dask": "templates/negative_binomial_single.stan"
-}
-
 
 class Model:
     def __init__(
@@ -43,12 +37,10 @@ class Model:
         self.colnames = self.dmat.columns.tolist()
 
         self.dat = {
-            "N": table.shape[1],
-            "D": table.shape[0],
-            "p": self.dmat.shape[1],
-            "depth": np.log(table.sum(axis="sample")),
-            "x": self.dmat.values,
-            "y": table.matrix_data.todense().T.astype(int),
+            "N": table.shape[1],  # number of samples
+            "p": self.dmat.shape[1],  # number of covariates
+            "depth": np.log(table.sum(axis="sample")),  # sampling depths
+            "x": self.dmat.values,  # design matrix
         }
 
     def compile_model(self, filepath=None):
@@ -85,6 +77,24 @@ class Model:
         """Add parameters from dict to be passed to Stan."""
         self.dat.update(param_dict)
 
+
+class SerialModel(Model):
+    def __init__(
+        self,
+        table: biom.table.Table,
+        formula: str,
+        metadata: pd.DataFrame,
+        num_iter: int = 2000,
+        chains: int = 4,
+        num_jobs: int = -1,
+        seed: float = None,
+    ):
+        super().__init__(table, formula, metadata, "serial", num_iter, chains,
+                         num_jobs, seed)
+        self.add_parameters(  # add all data
+            {"y": table.matrix_data.todense().T.astype(int)}
+        )
+
     def fit_model(self, **kwargs):
         """Draw posterior samples from the model."""
         if self.sm is None:
@@ -100,49 +110,45 @@ class Model:
         )
         return self.fit
 
+    def collapse_param(self, param: str, convert_alr_to_clr: bool = False):
+        """Compute mean and stdev for parameter from posterior samples."""
+        dfs = []
+        res = _extract_params(self.fit)
 
-class NegativeBinomial(Model):
-    """Fit count data using negative binomial model.
+        param_data = res[param]
 
-    Parameters:
-    -----------
-    beta_prior : float
-        Normal prior standard deviation parameter for beta (default = 5.0)
-    cauchy_scale : float
-        Cauchy prior scale parameter for phi (default = 5.0)
-    """
-    def __init__(
-        self,
-        table: biom.table.Table,
-        formula: str,
-        metadata: pd.DataFrame,
-        num_iter: int = 2000,
-        chains: int = 4,
-        num_jobs: int = -1,
-        seed: float = None,
-        beta_prior: float = 5.0,
-        cauchy_scale: float = 5.0,
-    ):
-        super().__init__(table, formula, metadata, "negative_binomial",
-                         num_iter, chains, num_jobs, seed)
-        param_dict = {
-            "B_p": beta_prior,
-            "phi_s": cauchy_scale
-        }
-        self.add_parameters(param_dict)
-        self.filepath = MODEL_DICT["negative_binomial"]
+        # TODO: figure out how to vectorize this
+        if param_data.ndim == 3:  # matrix parameter
+            for i, colname in enumerate(self.colnames):
+                if convert_alr_to_clr:  # for beta parameters
+                    data = alr_to_clr(param_data[:, i, :])
+                else:
+                    data = param_data
+                mean = pd.DataFrame(data.mean(axis=0))
+                std = pd.DataFrame(data.std(axis=0))
+                df = pd.concat([mean, std], axis=1)
+                df.columns = [f"{colname}_{x}" for x in ["mean", "std"]]
+                dfs.append(df)
+            param_df = pd.concat(dfs, axis=1)
+        elif param_data.ndim == 2:  # vector parameter
+            if convert_alr_to_clr:
+                data = alr_to_clr(param_data)
+            else:
+                data = param_data
+            mean = pd.DataFrame(data.mean(axis=0))
+            std = pd.DataFrame(data.std(axis=0))
+            param_df = pd.concat([mean, std], axis=1)
+            param_df.columns = [f"{param}_{x}" for x in ["mean", "std"]]
+        else:
+            raise ValueError("Parameter must be matrix or vector type!")
+        return param_df
+
+    def _extract_params(self):
+        """Helper function so that this can be mocked for testing."""
+        return self.fit.extract(permuted=True)
 
 
-class NegativeBinomialDask(Model):
-    """Fit count data using parallelized negative binomial model.
-
-    Parameters:
-    -----------
-    beta_prior : float
-        Normal prior standard deviation parameter for beta (default = 5.0)
-    cauchy_scale : float
-        Cauchy prior scale parameter for phi (default = 5.0)
-    """
+class ParallelModel(Model):
     def __init__(
         self,
         table: biom.table.Table,
@@ -155,14 +161,8 @@ class NegativeBinomialDask(Model):
         beta_prior: float = 5.0,
         cauchy_scale: float = 5.0,
     ):
-        super().__init__(table, formula, metadata, "negative_binomial_dask",
-                         num_iter, chains, seed=42, num_jobs=1)
-        param_dict = {
-            "B_p": beta_prior,
-            "phi_s": cauchy_scale
-        }
-        self.add_parameters(param_dict)
-        self.filepath = MODEL_DICT["negative_binomial_dask"]
+        super().__init__(table, formula, metadata, "parallel", num_iter,
+                         chains, seed=42, num_jobs=1)
 
     def fit_model(self, **kwargs):
         if self.sm is None:
@@ -192,31 +192,3 @@ class NegativeBinomialDask(Model):
         _fits = dask.compute(*_fits)  # D-tuple
         self.fit = _fits
         return _fits
-
-
-class Multinomial(Model):
-    """Fit count data using multinomial model.
-
-    Parameters:
-    -----------
-    beta_prior : float
-        Normal prior standard deviation parameter for beta (default = 5.0)
-    """
-    def __init__(
-        self,
-        table: biom.table.Table,
-        formula: str,
-        metadata: pd.DataFrame,
-        num_iter: int = 2000,
-        chains: int = 4,
-        num_jobs: int = -1,
-        seed: float = None,
-        beta_prior: float = 5.0,
-    ):
-        super().__init__(table, formula, metadata, "negative_binomial",
-                         num_iter, chains, num_jobs, seed)
-        param_dict = {
-            "B_p": beta_prior,
-        }
-        self.add_parameters(param_dict)
-        self.filepath = MODEL_DICT["multinomial"]
