@@ -8,6 +8,12 @@ import pandas as pd
 from patsy import dmatrix
 import pystan
 
+DEFAULT_MODEL_DICT = {
+    "negative_binomial": "templates/negative_binomial.stan",
+    "multinomial": "templates/multinomial.stan",
+    "negative_binomial_dask": "templates/negative_binomial_single.stan"
+}
+
 
 class Model:
     def __init__(
@@ -55,13 +61,13 @@ class Model:
             If provided, will be loaded and compiled.
         """
         self.filepath = filepath
-        if self.model_type in MODEL_DICT:
+        if self.model_type in DEFAULT_MODEL_DICT:
             if filepath is not None:
                 warnings.warn(
                     "Ignoring provided filepath and using built-in "
                     f"{self.model_type} model instead."
                 )
-            stanfile_path = MODEL_DICT.get(self.model_type)
+            stanfile_path = DEFAULT_MODEL_DICT.get(self.model_type)
             stanfile = get_data(__name__, stanfile_path).decode("utf-8")
         elif filepath is not None:
             with open(filepath, "r") as f:

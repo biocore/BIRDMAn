@@ -3,13 +3,8 @@ __all__ = ["NegativeBinomial", "Multinomial", "NegativeBinomialDask"]
 import biom
 import pandas as pd
 
-from .model_base import SerialModel, ParallelModel
+from .model_base import DEFAULT_MODEL_DICT, SerialModel, ParallelModel
 
-MODEL_DICT = {
-    "negative_binomial": "templates/negative_binomial.stan",
-    "multinomial": "templates/multinomial.stan",
-    "negative_binomial_dask": "templates/negative_binomial_single.stan"
-}
 
 class NegativeBinomial(SerialModel):
     """Fit count data using serial negative binomial model.
@@ -40,7 +35,7 @@ class NegativeBinomial(SerialModel):
             "phi_s": cauchy_scale
         }
         self.add_parameters(param_dict)
-        self.filepath = MODEL_DICT["negative_binomial"]
+        self.filepath = DEFAULT_MODEL_DICT["negative_binomial"]
 
 
 class Multinomial(SerialModel):
@@ -68,7 +63,7 @@ class Multinomial(SerialModel):
             "B_p": beta_prior,
         }
         self.add_parameters(param_dict)
-        self.filepath = MODEL_DICT["multinomial"]
+        self.filepath = DEFAULT_MODEL_DICT["multinomial"]
 
 
 class NegativeBinomialDask(ParallelModel):
@@ -100,4 +95,4 @@ class NegativeBinomialDask(ParallelModel):
             "phi_s": cauchy_scale
         }
         self.add_parameters(param_dict)
-        self.filepath = MODEL_DICT["negative_binomial_dask"]
+        self.filepath = DEFAULT_MODEL_DICT["negative_binomial_dask"]
