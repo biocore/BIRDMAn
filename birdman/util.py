@@ -1,3 +1,4 @@
+from dask.distributed import Client
 import numpy as np
 
 
@@ -24,3 +25,8 @@ def alr_to_clr(x):
     x_clr = np.hstack((z, x))
     x_clr = x_clr - x_clr.mean(axis=1).reshape(-1, 1)
     return x_clr
+
+
+def setup_dask_client():
+    """Set up dask client & monitoring."""
+    client = Client(n_workers=4)
