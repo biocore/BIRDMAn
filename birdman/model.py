@@ -8,9 +8,6 @@ import pandas as pd
 from patsy import dmatrix
 import pystan
 
-from .util import setup_dask_client
-
-
 MODEL_DICT = {
     "negative_binomial": "templates/negative_binomial.stan",
     "multinomial": "templates/multinomial.stan",
@@ -137,6 +134,15 @@ class NegativeBinomial(Model):
 
 
 class NegativeBinomialDask(Model):
+    """Fit count data using parallelized negative binomial model.
+
+    Parameters:
+    -----------
+    beta_prior : float
+        Normal prior standard deviation parameter for beta (default = 5.0)
+    cauchy_scale : float
+        Cauchy prior scale parameter for phi (default = 5.0)
+    """
     def __init__(
         self,
         table: biom.table.Table,
@@ -162,8 +168,6 @@ class NegativeBinomialDask(Model):
         if self.sm is None:
             raise ValueError("Must compile model first!")
 
-        setup_dask_client()
-
         @dask.delayed
         def _fit_microbe(self, values):
 
@@ -185,9 +189,9 @@ class NegativeBinomialDask(Model):
             _fits.append(_fit)
             print(_fit)
 
-        fit = dask.compute(*_fits)
-        print(fit)
-        return fit
+        _fits = dask.compute(*_fits)  # D-tuple
+        self.fit = _fits
+        return _fits
 
 
 class Multinomial(Model):
