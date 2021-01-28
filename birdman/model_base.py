@@ -98,11 +98,13 @@ class SerialModel(Model):
         num_jobs: int = -1,
         seed: float = None,
     ):
-        super().__init__(table, formula, metadata, "serial", num_iter, chains,
+        super().__init__(table, formula, metadata, model_type, num_iter, chains,
                          num_jobs, seed)
-        self.add_parameters(  # add all data
-            {"y": table.matrix_data.todense().T.astype(int)}
-        )
+        param_dict = {
+            "y": table.matrix_data.todense().T.astype(int),
+            "D": table.shape[0]
+        }
+        self.add_parameters(param_dict)
 
     def fit_model(self, **kwargs):
         """Draw posterior samples from the model."""
@@ -172,7 +174,7 @@ class ParallelModel(Model):
         beta_prior: float = 5.0,
         cauchy_scale: float = 5.0,
     ):
-        super().__init__(table, formula, metadata, "parallel", num_iter,
+        super().__init__(table, formula, metadata, model_type, num_iter,
                          chains, seed=42, num_jobs=1)
 
     def fit_model(self, **kwargs):
