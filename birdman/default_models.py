@@ -23,19 +23,19 @@ class NegativeBinomial(SerialModel):
         metadata: pd.DataFrame,
         num_iter: int = 2000,
         chains: int = 4,
-        num_jobs: int = -1,
         seed: float = None,
         beta_prior: float = 5.0,
         cauchy_scale: float = 5.0,
     ):
         super().__init__(table, formula, metadata, "negative_binomial",
-                         num_iter, chains, num_jobs, seed)
+                         num_iter, chains, seed)
         param_dict = {
             "B_p": beta_prior,
             "phi_s": cauchy_scale
         }
         self.add_parameters(param_dict)
         self.filepath = DEFAULT_MODEL_DICT["negative_binomial"]
+        self.load_stancode()
 
 
 class Multinomial(SerialModel):
@@ -53,17 +53,17 @@ class Multinomial(SerialModel):
         metadata: pd.DataFrame,
         num_iter: int = 2000,
         chains: int = 4,
-        num_jobs: int = -1,
         seed: float = None,
         beta_prior: float = 5.0,
     ):
         super().__init__(table, formula, metadata, "multinomial",
-                         num_iter, chains, num_jobs, seed)
+                         num_iter, chains, seed)
         param_dict = {
             "B_p": beta_prior,
         }
         self.add_parameters(param_dict)
         self.filepath = DEFAULT_MODEL_DICT["multinomial"]
+        self.load_stancode()
 
 
 class NegativeBinomialDask(ParallelModel):
@@ -83,16 +83,16 @@ class NegativeBinomialDask(ParallelModel):
         metadata: pd.DataFrame,
         num_iter: int = 2000,
         chains: int = 4,
-        num_jobs: int = -1,
         seed: float = None,
         beta_prior: float = 5.0,
         cauchy_scale: float = 5.0,
     ):
         super().__init__(table, formula, metadata, "negative_binomial_dask",
-                         num_iter, chains, num_jobs, seed)
+                         num_iter, chains, seed)
         param_dict = {
             "B_p": beta_prior,
             "phi_s": cauchy_scale
         }
         self.add_parameters(param_dict)
         self.filepath = DEFAULT_MODEL_DICT["negative_binomial_dask"]
+        self.load_stancode()

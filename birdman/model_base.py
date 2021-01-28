@@ -6,7 +6,7 @@ import dask
 import numpy as np
 import pandas as pd
 from patsy import dmatrix
-import pystan
+import stan
 
 DEFAULT_MODEL_DICT = {
     "negative_binomial": "templates/negative_binomial.stan",
@@ -25,13 +25,11 @@ class Model:
         model_type: str,
         num_iter: int = 2000,
         chains: int = 4,
-        num_jobs: int = -1,
-        seed: float = None,
+        seed: float = 42,
     ):
         self.table = table
         self.num_iter = num_iter
         self.chains = chains
-        self.num_jobs = num_jobs
         self.seed = seed
         self.formula = formula
         self.feature_names = table.ids(axis="observation")
@@ -44,17 +42,16 @@ class Model:
         self.colnames = self.dmat.columns.tolist()
 
         self.dat = {
-            "N": table.shape[1],  # number of samples
-            "p": self.dmat.shape[1],  # number of covariates
+            "N": table.shape[1],                        # number of samples
+            "p": self.dmat.shape[1],                    # number of covariates
             "depth": np.log(table.sum(axis="sample")),  # sampling depths
-            "x": self.dmat.values,  # design matrix
+            "x": self.dmat.values,                      # design matrix
         }
 
-    def compile_model(self, filepath=None):
-        """Compile Stan model.
-
+    def load_stancode(self, filepath=None):
+        """
         By default if model_type is recognized the appropriate Stan file will
-        be loaded and compiled.
+        be loaded.
 
         Parameters:
         -----------
@@ -76,9 +73,7 @@ class Model:
         else:
             raise ValueError("Unsupported model type!")
 
-        sm = pystan.StanModel(model_code=str(stanfile))
-        self.sm = sm
-        print("Model compiled successfully!")
+        self.stancode = stanfile
 
     def add_parameters(self, param_dict=None):
         """Add parameters from dict to be passed to Stan."""
@@ -95,11 +90,10 @@ class SerialModel(Model):
         model_type: str,
         num_iter: int = 2000,
         chains: int = 4,
-        num_jobs: int = -1,
-        seed: float = None,
+        seed: float = 42,
     ):
-        super().__init__(table, formula, metadata, model_type, num_iter, chains,
-                         num_jobs, seed)
+        super().__init__(table, formula, metadata, model_type, num_iter,
+                         chains, seed)
         param_dict = {
             "y": table.matrix_data.todense().T.astype(int),
             "D": table.shape[0]
@@ -108,55 +102,13 @@ class SerialModel(Model):
 
     def fit_model(self, **kwargs):
         """Draw posterior samples from the model."""
-        if self.sm is None:
-            raise ValueError("Must compile model first!")
+        sm = stan.build(self.stancode, data=self.dat, random_seed=self.seed)
 
-        self.fit = self.sm.sampling(
-            data=self.dat,
-            iter=self.num_iter,
-            chains=self.chains,
-            n_jobs=self.num_jobs,
-            seed=self.seed,
-            **kwargs,
+        self.fit = sm.sample(
+            num_chains=self.chains,
+            num_samples=self.num_iter,
         )
         return self.fit
-
-    def collapse_param(self, param: str, convert_alr_to_clr: bool = False):
-        """Compute mean and stdev for parameter from posterior samples."""
-        dfs = []
-        res = _extract_params(self.fit)
-
-        param_data = res[param]
-
-        # TODO: figure out how to vectorize this
-        if param_data.ndim == 3:  # matrix parameter
-            for i, colname in enumerate(self.colnames):
-                if convert_alr_to_clr:  # for beta parameters
-                    data = alr_to_clr(param_data[:, i, :])
-                else:
-                    data = param_data
-                mean = pd.DataFrame(data.mean(axis=0))
-                std = pd.DataFrame(data.std(axis=0))
-                df = pd.concat([mean, std], axis=1)
-                df.columns = [f"{colname}_{x}" for x in ["mean", "std"]]
-                dfs.append(df)
-            param_df = pd.concat(dfs, axis=1)
-        elif param_data.ndim == 2:  # vector parameter
-            if convert_alr_to_clr:
-                data = alr_to_clr(param_data)
-            else:
-                data = param_data
-            mean = pd.DataFrame(data.mean(axis=0))
-            std = pd.DataFrame(data.std(axis=0))
-            param_df = pd.concat([mean, std], axis=1)
-            param_df.columns = [f"{param}_{x}" for x in ["mean", "std"]]
-        else:
-            raise ValueError("Parameter must be matrix or vector type!")
-        return param_df
-
-    def _extract_params(self):
-        """Helper function so that this can be mocked for testing."""
-        return self.fit.extract(permuted=True)
 
 
 class ParallelModel(Model):
@@ -169,30 +121,23 @@ class ParallelModel(Model):
         model_type: str,
         num_iter: int = 2000,
         chains: int = 4,
-        num_jobs: int = -1,
         seed: float = None,
-        beta_prior: float = 5.0,
-        cauchy_scale: float = 5.0,
     ):
         super().__init__(table, formula, metadata, model_type, num_iter,
-                         chains, seed=42, num_jobs=1)
+                         chains, seed)
 
     def fit_model(self, **kwargs):
-        if self.sm is None:
-            raise ValueError("Must compile model first!")
-
         @dask.delayed
         def _fit_microbe(self, values):
 
             dat = self.dat
             dat["y"] = values.astype(int)
+            sm = stan.build(self.stancode, data=dat,
+                            random_seed=self.seed)
 
-            _fit = self.sm.sampling(
-                data=dat,
-                iter=self.num_iter,
-                chains=self.chains,
-                n_jobs=self.num_jobs,
-                seed=self.seed,
+            _fit = sm.sample(
+                num_chains=self.chains,
+                num_samples=self.num_iter,
             )
             return _fit
 
@@ -200,7 +145,6 @@ class ParallelModel(Model):
         for v, i, d in self.table.iter(axis="observation"):
             _fit = _fit_microbe(self, v)
             _fits.append(_fit)
-            print(_fit)
 
         _fits = dask.compute(*_fits)  # D-tuple
         self.fit = _fits
