@@ -1,9 +1,12 @@
 __all__ = ["NegativeBinomial", "Multinomial", "NegativeBinomialDask"]
 
 import biom
+import numpy as np
 import pandas as pd
+import xarray as xr
 
 from .model_base import DEFAULT_MODEL_DICT, SerialModel, ParallelModel
+from .util import convert_beta_coordinates
 
 
 class NegativeBinomial(SerialModel):
@@ -37,6 +40,25 @@ class NegativeBinomial(SerialModel):
         self.filepath = DEFAULT_MODEL_DICT["negative_binomial"]
         self.load_stancode()
 
+    def to_xarray(self) -> xr.Dataset:
+        """Convert fitted parameters to xarray object."""
+        if self.fit is None:
+            raise ValueError("Model has not been fit!")
+
+        beta_clr = convert_beta_coordinates(self.fit["beta"])
+        ds = xr.Dataset(
+            data_vars=dict(
+                beta=(["covariate", "feature", "draw"], beta_clr),
+                phi=(["feature", "draw"], self.fit["phi"])
+            ),
+            coords=dict(
+                covariates=self.dmat.columns,
+                features=self.table.ids(axis="observation"),
+                draws=np.arange(self.num_iter*self.chains)
+            )
+        )
+        return ds
+
 
 class Multinomial(SerialModel):
     """Fit count data using serial multinomial model.
@@ -64,6 +86,24 @@ class Multinomial(SerialModel):
         self.add_parameters(param_dict)
         self.filepath = DEFAULT_MODEL_DICT["multinomial"]
         self.load_stancode()
+
+    def to_xarray(self) -> xr.Dataset:
+        """Convert fitted parameters to xarray object."""
+        if self.fit is None:
+            raise ValueError("Model has not been fit!")
+
+        beta_clr = convert_beta_coordinates(self.fit["beta"])
+        ds = xr.Dataset(
+            data_vars=dict(
+                beta=(["covariate", "feature", "draw"], beta_clr),
+            ),
+            coords=dict(
+                covariates=self.dmat.columns,
+                features=self.table.ids(axis="observation"),
+                draws=np.arange(self.num_iter*self.chains)
+            )
+        )
+        return ds
 
 
 class NegativeBinomialDask(ParallelModel):

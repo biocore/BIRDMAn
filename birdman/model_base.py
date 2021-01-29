@@ -36,6 +36,7 @@ class Model:
         self.sample_names = table.ids(axis="sample")
         self.model_type = model_type
         self.sm = None
+        self.fit = None
 
         self.dmat = dmatrix(formula, metadata.loc[self.sample_names],
                             return_type="dataframe")
