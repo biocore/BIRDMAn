@@ -32,8 +32,8 @@ class Model:
         self.chains = chains
         self.seed = seed
         self.formula = formula
-        self.feature_names = table.ids(axis="observation")
-        self.sample_names = table.ids(axis="sample")
+        self.feature_names = table.ids(axis="observation").tolist()
+        self.sample_names = table.ids(axis="sample").tolist()
         self.model_type = model_type
         self.sm = None
         self.fit = None

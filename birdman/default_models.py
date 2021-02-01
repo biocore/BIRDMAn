@@ -52,9 +52,9 @@ class NegativeBinomial(SerialModel):
                 phi=(["feature", "draw"], self.fit["phi"])
             ),
             coords=dict(
-                covariates=self.dmat.columns,
-                features=self.table.ids(axis="observation"),
-                draws=np.arange(self.num_iter*self.chains)
+                covariate=self.dmat.columns,
+                feature=self.table.ids(axis="observation"),
+                draw=np.arange(self.num_iter*self.chains)
             )
         )
         return ds
