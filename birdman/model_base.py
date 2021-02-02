@@ -59,7 +59,6 @@ class Model:
         filepath : str
             If provided, will be loaded and compiled.
         """
-        self.filepath = filepath
         if self.model_type in DEFAULT_MODEL_DICT:
             if filepath is not None:
                 warnings.warn(
