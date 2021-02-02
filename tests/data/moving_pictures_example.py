@@ -2,9 +2,8 @@
 
 import biom
 import pandas as pd
-import pickle
 
-from birdman.model import NegativeBinomial
+from birdman import NegativeBinomial
 
 table = biom.load_table("tests/data/table-deblur.biom")
 metadata = pd.read_csv("tests/data/sample-metadata.tsv", sep="\t",
@@ -19,10 +18,7 @@ nb = NegativeBinomial(
     num_iter=500,
     seed=42,
 )
-
-nb.compile_model()
 fit = nb.fit_model()
 
-# need to pickle compiled model as well as fit
-with open("tests/data/moving_pictures_model.pickle", "wb+") as f:
-    pickle.dump({"model": nb.sm, "fit": fit}, f, pickle.HIGHEST_PROTOCOL)
+ds = nb.to_xarray()
+ds.to_netcdf("tests/data/moving_pictures_model.nc")
