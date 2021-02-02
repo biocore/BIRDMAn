@@ -14,5 +14,4 @@ class TestModelInheritance:
 
         assert nb.dat["B_p"] == 2.0
         assert nb.dat["phi_s"] == 2.0
-        print(nb.filepath)
         assert nb.filepath == "templates/negative_binomial.stan"

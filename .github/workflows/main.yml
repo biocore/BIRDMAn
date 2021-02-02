@@ -1,0 +1,46 @@
+# much of this is taken from the Empress main.yml file
+name: BIRDMAn CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: birdman
+          python-version: 3.7
+
+      - name: Test conda installation
+        shell: bash -l {0}
+        run: conda info
+
+      - name: Install PyStan
+        shell: bash -l {0}
+        run: pip install pystan==3.0.0b7
+
+      - name: Install conda packages
+        shell: bash -l {0}
+        run: |
+          conda install -c conda-forge dask biom-format patsy pytest xarray scikit-bio
+
+      - name: Install BIRDMAn
+        shell: bash -l {0}
+        run: pip install -e .
+
+      - name: Run tests
+        shell: bash -l {0}
+        run: pytest --disable-pytest-warnings
