@@ -10,9 +10,10 @@ setup(
     include_package_data=True,
     package_data={"": ["*.stan"]},
     install_requires=[
-        "pystan>=3.0.0b7",
+        "pystan==3.0.0b7",
         "dask",
         "biom-format",
         "patsy",
+        "xarray"
     ]
 )
