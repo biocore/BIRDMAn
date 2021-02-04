@@ -30,7 +30,7 @@ def metadata():
     return example_metadata()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def example_fit():
     tbl = example_biom()
     md = example_metadata()
