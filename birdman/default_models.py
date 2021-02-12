@@ -12,7 +12,6 @@ from .model_base import Model
 from .util import convert_beta_coordinates
 
 TEMPLATES = resource_filename("birdman", "templates")
-
 DEFAULT_MODEL_DICT = {
     "negative_binomial": {
         "chains": os.path.join(TEMPLATES, "negative_binomial.stan"),
@@ -51,8 +50,6 @@ class NegativeBinomial(Model):
                          seed, parallelize_across)
 
         param_dict = {
-            "y": table.matrix_data.todense().T.astype(int),
-            "D": table.shape[0],
             "B_p": beta_prior,
             "phi_s": cauchy_scale
         }

@@ -28,7 +28,6 @@ class Model:
         self.sample_names = table.ids(axis="sample").tolist()
         self.model_path = model_path
         self.sm = None
-        self.fit = None
         self.parallelize_across = parallelize_across
 
         self.dmat = dmatrix(formula, metadata.loc[self.sample_names],
@@ -36,6 +35,8 @@ class Model:
         self.colnames = self.dmat.columns.tolist()
 
         self.dat = {
+            "y": table.matrix_data.todense().T.astype(int),
+            "D": table.shape[0],
             "N": table.shape[1],                        # number of samples
             "p": self.dmat.shape[1],                    # number of covariates
             "depth": np.log(table.sum(axis="sample")),  # sampling depths
@@ -51,10 +52,9 @@ class Model:
 
     def fit_model(self):
         if self.parallelize_across == "features":
-            self.fit = self._fit_parallel()
+            self.fits = self._fit_parallel()
         elif self.parallelize_across == "chains":
             self.fit = self._fit_serial()
-        return self.fit
 
     def _fit_serial(self):
         fit = self.sm.sample(
@@ -69,7 +69,7 @@ class Model:
 
     def _fit_parallel(self):
         @dask.delayed
-        def _fit_microbe(self, values):
+        def _fit_single(self, values):
             dat = self.dat
             dat["y"] = values.astype(int)
             _fit = self.sm.sample(
@@ -84,9 +84,8 @@ class Model:
 
         _fits = []
         for v, i, d in self.table.iter(axis="observation"):
-            _fit = _fit_microbe(self, v)
+            _fit = _fit_single(self, v)
             _fits.append(_fit)
 
         _fits = dask.compute(*_fits)
-        self.fit = _fits
         return _fits

@@ -5,6 +5,8 @@
 *.pickle
 *.nc
 *.hpp
+birdman/templates/negative_binomial
+birdman/templates/negative_binomial_single
 
 *__pycache__/
 /data
