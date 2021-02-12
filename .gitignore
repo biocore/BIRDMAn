@@ -4,6 +4,7 @@
 *.swo
 *.pickle
 *.nc
+*.hpp
 
 *__pycache__/
 /data

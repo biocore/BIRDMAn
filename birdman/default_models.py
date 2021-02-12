@@ -1,12 +1,23 @@
-__all__ = ["NegativeBinomial", "Multinomial", "NegativeBinomialDask"]
+__all__ = ["NegativeBinomial", "Multinomial"]
+
+import os
+from pkg_resources import resource_filename
 
 import biom
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .model_base import DEFAULT_MODEL_DICT, SerialModel, ParallelModel
+from .model_base import SerialModel
 from .util import convert_beta_coordinates
+
+TEMPLATES = resource_filename("birdman", "templates")
+
+DEFAULT_MODEL_DICT = {
+    "negative_binomial": os.path.join(TEMPLATES, "negative_binomial.stan"),
+    "multinomial": "templates/multinomial.stan",
+    "negative_binomial_dask": "templates/negative_binomial_single.stan"
+}
 
 
 class NegativeBinomial(SerialModel):
@@ -30,15 +41,14 @@ class NegativeBinomial(SerialModel):
         beta_prior: float = 5.0,
         cauchy_scale: float = 5.0,
     ):
-        super().__init__(table, formula, metadata, "negative_binomial",
-                         num_iter, chains, seed)
+        filepath = DEFAULT_MODEL_DICT["negative_binomial"]
+        super().__init__(table, formula, metadata, filepath, num_iter, chains,
+                         seed)
         param_dict = {
             "B_p": beta_prior,
             "phi_s": cauchy_scale
         }
         self.add_parameters(param_dict)
-        self.filepath = DEFAULT_MODEL_DICT["negative_binomial"]
-        self.load_stancode()
 
     def to_xarray(self) -> xr.Dataset:
         """Convert fitted parameters to xarray object."""
@@ -104,35 +114,3 @@ class Multinomial(SerialModel):
             )
         )
         return ds
-
-
-class NegativeBinomialDask(ParallelModel):
-    """Fit count data using dask-parallelized negative binomial model.
-
-    Parameters:
-    -----------
-    beta_prior : float
-        Normal prior standard deviation parameter for beta (default = 5.0)
-    cauchy_scale: float
-        Cauchy prior scale parameter for phi (default = 5.0)
-    """
-    def __init__(
-        self,
-        table: biom.table.Table,
-        formula: str,
-        metadata: pd.DataFrame,
-        num_iter: int = 2000,
-        chains: int = 4,
-        seed: float = None,
-        beta_prior: float = 5.0,
-        cauchy_scale: float = 5.0,
-    ):
-        super().__init__(table, formula, metadata, "negative_binomial_dask",
-                         num_iter, chains, seed)
-        param_dict = {
-            "B_p": beta_prior,
-            "phi_s": cauchy_scale
-        }
-        self.add_parameters(param_dict)
-        self.filepath = DEFAULT_MODEL_DICT["negative_binomial_dask"]
-        self.load_stancode()
