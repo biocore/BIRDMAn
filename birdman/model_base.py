@@ -1,4 +1,5 @@
 import biom
+import dask
 import numpy as np
 import pandas as pd
 from patsy import dmatrix
@@ -16,6 +17,7 @@ class Model:
         num_iter: int = 2000,
         chains: int = 4,
         seed: float = 42,
+        parallelize_across: str = "chains"
     ):
         self.table = table
         self.num_iter = num_iter
@@ -27,6 +29,7 @@ class Model:
         self.model_path = model_path
         self.sm = None
         self.fit = None
+        self.parallelize_across = parallelize_across
 
         self.dmat = dmatrix(formula, metadata.loc[self.sample_names],
                             return_type="dataframe")
@@ -46,29 +49,15 @@ class Model:
         """Add parameters from dict to be passed to Stan."""
         self.dat.update(param_dict)
 
-
-class SerialModel(Model):
-    """Stan model parallelizing MCMC chains."""
-    def __init__(
-        self,
-        table: biom.table.Table,
-        formula: str,
-        metadata: pd.DataFrame,
-        model_type: str,
-        num_iter: int = 2000,
-        chains: int = 4,
-        seed: float = 42,
-    ):
-        super().__init__(table, formula, metadata, model_type, num_iter,
-                         chains, seed)
-        param_dict = {
-            "y": table.matrix_data.todense().T.astype(int),
-            "D": table.shape[0]
-        }
-        self.add_parameters(param_dict)
-
     def fit_model(self):
-        self.fit = self.sm.sample(
+        if self.parallelize_across == "features":
+            self.fit = self._fit_parallel()
+        elif self.parallelize_across == "chains":
+            self.fit = self._fit_serial()
+        return self.fit
+
+    def _fit_serial(self):
+        fit = self.sm.sample(
             chains=self.chains,
             parallel_chains=self.chains,  # run all chains in parallel
             data=self.dat,
@@ -76,4 +65,28 @@ class SerialModel(Model):
             iter_sampling=self.num_iter,
             seed=self.seed,
         )
-        return self.fit
+        return fit
+
+    def _fit_parallel(self):
+        @dask.delayed
+        def _fit_microbe(self, values):
+            dat = self.dat
+            dat["y"] = values.astype(int)
+            _fit = self.sm.sample(
+                chains=self.chains,
+                parallel_chains=1,            # run all chains in serial
+                data=dat,
+                iter_warmup=self.num_iter,    # use same num iter for warmup
+                iter_sampling=self.num_iter,
+                seed=self.seed,
+            )
+            return _fit
+
+        _fits = []
+        for v, i, d in self.table.iter(axis="observation"):
+            _fit = _fit_microbe(self, v)
+            _fits.append(_fit)
+
+        _fits = dask.compute(*_fits)
+        self.fit = _fits
+        return _fits

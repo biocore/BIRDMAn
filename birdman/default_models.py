@@ -8,19 +8,21 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .model_base import SerialModel
+from .model_base import Model
 from .util import convert_beta_coordinates
 
 TEMPLATES = resource_filename("birdman", "templates")
 
 DEFAULT_MODEL_DICT = {
-    "negative_binomial": os.path.join(TEMPLATES, "negative_binomial.stan"),
+    "negative_binomial": {
+        "chains": os.path.join(TEMPLATES, "negative_binomial.stan"),
+        "features": os.path.join(TEMPLATES, "negative_binomial_single.stan")
+    },
     "multinomial": "templates/multinomial.stan",
-    "negative_binomial_dask": "templates/negative_binomial_single.stan"
 }
 
 
-class NegativeBinomial(SerialModel):
+class NegativeBinomial(Model):
     """Fit count data using serial negative binomial model.
 
     Parameters:
@@ -29,6 +31,8 @@ class NegativeBinomial(SerialModel):
         Normal prior standard deviation parameter for beta (default = 5.0)
     cauchy_scale: float
         Cauchy prior scale parameter for phi (default = 5.0)
+    parallelize_across: str
+        Whether to parallelize across microbes or chains (default = chains)
     """
     def __init__(
         self,
@@ -40,11 +44,15 @@ class NegativeBinomial(SerialModel):
         seed: float = None,
         beta_prior: float = 5.0,
         cauchy_scale: float = 5.0,
+        parallelize_across: str = "chains",
     ):
-        filepath = DEFAULT_MODEL_DICT["negative_binomial"]
+        filepath = DEFAULT_MODEL_DICT["negative_binomial"][parallelize_across]
         super().__init__(table, formula, metadata, filepath, num_iter, chains,
-                         seed)
+                         seed, parallelize_across)
+
         param_dict = {
+            "y": table.matrix_data.todense().T.astype(int),
+            "D": table.shape[0],
             "B_p": beta_prior,
             "phi_s": cauchy_scale
         }
@@ -70,7 +78,7 @@ class NegativeBinomial(SerialModel):
         return ds
 
 
-class Multinomial(SerialModel):
+class Multinomial(Model):
     """Fit count data using serial multinomial model.
 
     Parameters:
