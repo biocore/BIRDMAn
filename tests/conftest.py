@@ -1,4 +1,5 @@
-import warnings
+import os
+from pkg_resources import resource_filename
 
 import biom
 import pandas as pd
@@ -6,15 +7,20 @@ import pytest
 
 from birdman import NegativeBinomial
 
+TEST_DATA = resource_filename("tests", "data")
+TBL_FILE = os.path.join(TEST_DATA, "macaque_tbl.biom")
+MD_FILE = os.path.join(TEST_DATA, "macaque_metadata.tsv")
+print(TBL_FILE)
+
 
 def example_biom():
-    table_biom = biom.load_table("tests/data/macaque_tbl.biom")
+    table_biom = biom.load_table(TBL_FILE)
     return table_biom
 
 
 def example_metadata():
     metadata = pd.read_csv(
-        "tests/data/macaque_metadata.tsv",
+        MD_FILE,
         sep="\t",
         index_col=0,
     )

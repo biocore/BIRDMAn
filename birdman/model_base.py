@@ -1,9 +1,9 @@
 import biom
+from cmdstanpy import CmdStanModel
 import dask
 import numpy as np
 import pandas as pd
 from patsy import dmatrix
-from cmdstanpy import CmdStanModel
 
 
 class Model:
@@ -24,15 +24,15 @@ class Model:
         self.chains = chains
         self.seed = seed
         self.formula = formula
-        self.feature_names = table.ids(axis="observation").tolist()
-        self.sample_names = table.ids(axis="sample").tolist()
+        self.feature_names = table.ids(axis="observation")
+        self.sample_names = table.ids(axis="sample")
         self.model_path = model_path
         self.sm = None
         self.parallelize_across = parallelize_across
 
         self.dmat = dmatrix(formula, metadata.loc[self.sample_names],
                             return_type="dataframe")
-        self.colnames = self.dmat.columns.tolist()
+        self.colnames = self.dmat.columns
 
         self.dat = {
             "y": table.matrix_data.todense().T.astype(int),
@@ -55,6 +55,8 @@ class Model:
             self.fits = self._fit_parallel()
         elif self.parallelize_across == "chains":
             self.fit = self._fit_serial()
+        else:
+            raise ValueError("parallelize_across must be features or chains!")
 
     def _fit_serial(self):
         fit = self.sm.sample(

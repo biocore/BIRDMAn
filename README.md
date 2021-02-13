@@ -9,8 +9,8 @@ Much of the code in this repository has been adapted from and inspired by [Jamie
 ## Installation
 
 ```bash
-pip install cmdstanpy
 conda install -c conda-forge dask biom-format patsy xarray
+pip install cmdstanpy
 git clone git@github.com:gibsramen/BIRDMAn.git
 cd BIRDMAn
 pip install .
