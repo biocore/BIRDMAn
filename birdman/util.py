@@ -1,5 +1,8 @@
+from typing import List
+
 from cmdstanpy.stanfit import CmdStanMCMC
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 
@@ -93,4 +96,64 @@ def fit_to_xarray(
             draw=np.arange(fit.num_draws_sampling*fit.chains)
         )
     )
+    return ds
+
+
+def fits_to_xarray(
+    fits: List[CmdStanMCMC],
+    params: list,
+    feature_names: list,
+    covariate_names: list
+) -> xr.Dataset:
+    """Save fitted parameters to xarray DataSet for multiple fits.
+
+    Parameters:
+    -----------
+    fits: List[CmdStanMCMC]
+        cmdstanpy fitted models
+    params: list
+        List of parameters to include
+    feature_names: list
+        Names of features in table
+    covariate names: list
+        Names of covariates in design matrix
+
+    Returns:
+    --------
+    xr.Dataset
+    """
+    assert len(feature_names) == len(fits)
+
+    _fit = fits[0]
+    draw_range = np.arange(_fit.num_draws_sampling*_fit.chains)
+    param_da_list = []
+    for param in params:
+        all_feat_param_da_list = []
+        for feat, fit in zip(feature_names, fits):
+            param_draws = fit.stan_variable(param)  # draw x cov
+
+            if param_draws.ndim == 2:  # matrix parameter
+                # not sure if we have to CLR...
+                dims = ["draw", "covariate"]
+                coords = [draw_range, covariate_names]
+            elif param_draws.ndim == 1:  # vector parameter
+                dims = ["draw"]
+                coords = [draw_range]
+            else:
+                raise ValueError("Incompatible dimensionality!")
+            feat_param_da = xr.DataArray(  # single feat-param da
+                param_draws,
+                coords=coords,
+                dims=dims,
+                name=param,
+            )
+            all_feat_param_da_list.append(feat_param_da)
+
+        all_feat_param_da = xr.concat(
+            all_feat_param_da_list,
+            pd.Index(feature_names, name="feature"),
+        )
+        param_da_list.append(all_feat_param_da)
+
+    ds = xr.merge(param_da_list)
     return ds
