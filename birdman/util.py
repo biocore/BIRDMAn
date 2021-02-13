@@ -96,6 +96,7 @@ def fit_to_xarray(
             draw=np.arange(fit.num_draws_sampling*fit.chains)
         )
     )
+    ds = ds.transpose("covariate", "feature", "draw")
     return ds
 
 
@@ -156,4 +157,5 @@ def fits_to_xarray(
         param_da_list.append(all_feat_param_da)
 
     ds = xr.merge(param_da_list)
+    ds = ds.transpose("covariate", "feature", "draw")
     return ds

@@ -46,3 +46,42 @@ def test_convert_beta_coordinates():
     clr_coords_sums = clr_coords.sum(axis=1)
     exp_clr_coords_sums = np.zeros((4, 2))
     np.testing.assert_array_almost_equal(exp_clr_coords_sums, clr_coords_sums)
+
+
+class TestToXArray:
+    def dataset_comparison(self, model, ds):
+        coord_names = ds.coords._names
+        assert coord_names == {"feature", "draw", "covariate"}
+        assert ds["beta"].shape == (2, 28, 400)
+        assert ds["phi"].shape == (28, 400)
+
+        exp_feature_names = model.table.ids(axis="observation")
+        ds_feature_names = ds.coords["feature"]
+        assert (exp_feature_names == ds_feature_names).all()
+
+        exp_coord_names = [
+            "Intercept",
+            "host_common_name[T.long-tailed macaque]"
+        ]
+        ds_coord_names = ds.coords["covariate"]
+        assert (exp_coord_names == ds_coord_names).all()
+
+    def test_serial_to_xarray(self, example_model):
+        fit = example_model.fit
+        ds = util.fit_to_xarray(
+            fit=fit,
+            params=["beta", "phi"],
+            covariate_names=example_model.dmat.columns.tolist(),
+            feature_names=example_model.table.ids(axis="observation")
+        )
+        self.dataset_comparison(example_model, ds)
+
+    def test_parallel_to_xarray(self, example_parallel_model):
+        fits = example_parallel_model.fits
+        ds = util.fits_to_xarray(
+            fits=fits,
+            params=["beta", "phi"],
+            covariate_names=example_parallel_model.dmat.columns.tolist(),
+            feature_names=example_parallel_model.table.ids(axis="observation")
+        )
+        self.dataset_comparison(example_parallel_model, ds)

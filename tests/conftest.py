@@ -33,7 +33,7 @@ def metadata():
 
 
 @pytest.fixture(scope="session")
-def example_fit():
+def example_model():
     tbl = example_biom()
     md = example_metadata()
 
@@ -43,6 +43,24 @@ def example_fit():
         metadata=md,
         num_iter=100,
         chains=4,
+    )
+    nb.compile_model()
+    nb.fit_model()
+    return nb
+
+
+@pytest.fixture(scope="session")
+def example_parallel_model():
+    tbl = example_biom()
+    md = example_metadata()
+
+    nb = NegativeBinomial(
+        table=tbl,
+        formula="host_common_name",
+        metadata=md,
+        num_iter=100,
+        chains=4,
+        parallelize_across="features"
     )
     nb.compile_model()
     nb.fit_model()

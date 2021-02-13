@@ -26,9 +26,9 @@ class TestModelInheritance:
 
 
 class TestModelFit:
-    def test_nb_fit(self, table_biom, example_fit):
-        beta = example_fit.fit.stan_variable("beta")
-        phi = example_fit.fit.stan_variable("phi")
+    def test_nb_fit(self, table_biom, example_model):
+        beta = example_model.fit.stan_variable("beta")
+        phi = example_model.fit.stan_variable("phi")
         num_cov = 2
         num_chains = 4
         num_table_feats = 28
