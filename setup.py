@@ -10,10 +10,12 @@ setup(
     include_package_data=True,
     package_data={"": ["*.stan"]},
     install_requires=[
+        "numpy",
         "cmdstanpy",
         "dask[complete]",
         "biom-format",
         "patsy",
         "xarray"
-    ]
+    ],
+    extras_require={"dev": ["pytest", "scikit-bio"]}
 )

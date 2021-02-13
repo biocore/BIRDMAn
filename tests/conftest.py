@@ -1,3 +1,5 @@
+import warnings
+
 import biom
 import pandas as pd
 import pytest
@@ -40,6 +42,8 @@ def example_fit():
         formula="host_common_name",
         metadata=md,
         num_iter=100,
+        chains=4,
     )
-    _ = nb.fit_model()
+    nb.compile_model()
+    nb.fit_model()
     return nb
