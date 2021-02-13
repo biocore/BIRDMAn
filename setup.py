@@ -11,7 +11,7 @@ setup(
     package_data={"": ["*.stan"]},
     install_requires=[
         "cmdstanpy",
-        "dask",
+        "dask[complete]",
         "biom-format",
         "patsy",
         "xarray"
