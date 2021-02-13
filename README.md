@@ -8,15 +8,15 @@ Much of the code in this repository has been adapted from and inspired by [Jamie
 
 ## Installation
 
-BIRDMAn requires at at least Python 3.7 but has not been tested on newer versions. It is recommended to create a new conda environment for running BIRDMAn.
-
 ```bash
-pip install pystan==3.0.0b7
+pip install cmdstanpy
 conda install -c conda-forge dask biom-format patsy xarray
 git clone git@github.com:gibsramen/BIRDMAn.git
 cd BIRDMAn
 pip install .
 ```
+
+You have to install `cmdstan` through the `cmdstanpy.install_cmdstan` function first.
 
 ## Example Usage
 
@@ -37,5 +37,9 @@ nb = NegativeBinomial(
     cauchy_scale=5.0
 )
 
-fit = nb.fit_model()
+nb.compile_model()
+nb.fit_model()
+
+fit = nb.fit
+# done
 ```
