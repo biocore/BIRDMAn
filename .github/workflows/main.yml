@@ -28,10 +28,6 @@ jobs:
         shell: bash -l {0}
         run: conda info
 
-      - name: Install PyStan
-        shell: bash -l {0}
-        run: pip install pystan==3.0.0b7
-
       - name: Install conda packages
         shell: bash -l {0}
         run: |
@@ -39,7 +35,7 @@ jobs:
 
       - name: Install BIRDMAn
         shell: bash -l {0}
-        run: pip install -e .
+        run: pip install -e .[dev]
 
       - name: Run tests
         shell: bash -l {0}
