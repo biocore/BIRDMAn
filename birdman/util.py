@@ -9,15 +9,11 @@ import xarray as xr
 def alr_to_clr(x: np.ndarray) -> np.ndarray:
     """Convert ALR coordinates to centered CLR coordinates.
 
-    Parameters:
-    -----------
-    x: np.ndarray
-        matrix of ALR coordinates (features x draws)
+    :param x: Matrix of ALR coordinates (features x draws)
+    :type x: np.ndarray
 
-    Returns:
-    --------
-    np.ndarray
-        centered CLR coordinates
+    :returns: Matrix of centered CLR coordinates
+    :rtype: np.ndarray
     """
     num_draws = x.shape[1]
     z = np.zeros((1, num_draws))
@@ -29,15 +25,13 @@ def alr_to_clr(x: np.ndarray) -> np.ndarray:
 def convert_beta_coordinates(beta: np.ndarray) -> np.ndarray:
     """Convert feature-covariate coefficients from ALR to CLR.
 
-    Parameters:
-    -----------
-    beta: np.ndarray
-        beta ALR coefficients (n draws x p covariates x d features)
+    :param beta: Matrix of beta ALR coordinates (n draws x p covariates x
+        d features)
+    :type beta: np.ndarray
 
-    Returns:
-    --------
-    np.ndarray
-        beta CLR coefficients (p covariates x (d+1) features x n draws)
+    :returns: Matrix of beta CLR coordinates (p covariates x (d+1) features x
+        n draws)
+    :rtype: np.ndarray
     """
     # axis moving is an artifact of previous PyStan implementation
     # want dims to be (p covariates x d features x n draws)
@@ -50,6 +44,9 @@ def convert_beta_coordinates(beta: np.ndarray) -> np.ndarray:
     return beta_clr
 
 
+# TODO: Combine fit_to_xarray and fits_to_xarray
+# TODO: Add flag for which parameters to convert to CLR
+# NOTE: May be better to put into Model class instead of util module
 def fit_to_xarray(
     fit: CmdStanMCMC,
     params: list,
@@ -57,23 +54,24 @@ def fit_to_xarray(
     covariate_names: list
 ) -> xr.Dataset:
     """Save fitted parameters to xarray DataSet.
-    Note that matrix parameters are assumed to be betas and will be
-    converted to CLR coordinates.
 
-    Parameters:
-    -----------
-    fit: CmdStanMCMC
-        cmdstanpy fit model
-    params: list
-        List of parameters to include
-    feature_names: list
-        Names of features in table
-    covariate names: list
-        Names of covariates in design matrix
+    .. note:: Matrix parameters are assumed to be betas and will be converted
+       to CLR coordinates.
 
-    Returns:
-    --------
-    xr.Dataset
+    :param fit: Fitted cmdstan object
+    :type fit: CmdStanMCMC
+
+    :param params: Parameters to include in xarray Dataset
+    :type params: list[str]
+
+    :param feature_names: Names of features in feature table
+    :type feature_names: list[str]
+
+    :param covariate_names: Names of covariates in design matrix
+    :type covariate_names: list[str]
+
+    :returns: xarray Dataset of chosen parameter draws
+    :rtype: xr.Dataset
     """
     # TODO: Figure out how to handle parallelized model
     data_vars = dict()
@@ -108,20 +106,20 @@ def fits_to_xarray(
 ) -> xr.Dataset:
     """Save fitted parameters to xarray DataSet for multiple fits.
 
-    Parameters:
-    -----------
-    fits: List[CmdStanMCMC]
-        cmdstanpy fitted models
-    params: list
-        List of parameters to include
-    feature_names: list
-        Names of features in table
-    covariate names: list
-        Names of covariates in design matrix
+    :param fits: List of fitted cmdstan object
+    :type fits: list[CmdStanMCMC]
 
-    Returns:
-    --------
-    xr.Dataset
+    :param params: Parameters to include in xarray Dataset
+    :type params: list[str]
+
+    :param feature_names: Names of features in feature table
+    :type feature_names: list[str]
+
+    :param covariate_names: Names of covariates in design matrix
+    :type covariate_names: list[str]
+
+    :returns: xarray Dataset of chosen parameter draws
+    :rtype: xr.Dataset
     """
     assert len(feature_names) == len(fits)
 

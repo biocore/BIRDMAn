@@ -1,5 +1,3 @@
-__all__ = ["NegativeBinomial", "Multinomial"]
-
 import os
 from pkg_resources import resource_filename
 
@@ -22,16 +20,35 @@ DEFAULT_MODEL_DICT = {
 
 
 class NegativeBinomial(Model):
-    """Fit count data using serial negative binomial model.
+    """Fit count data using negative binomial model.
 
-    Parameters:
-    -----------
-    beta_prior : float
-        Normal prior standard deviation parameter for beta (default = 5.0)
-    cauchy_scale: float
-        Cauchy prior scale parameter for phi (default = 5.0)
-    parallelize_across: str
-        Whether to parallelize across microbes or chains (default = chains)
+    :param table: Feature table (features x samples)
+    :type table: biom.table.Table
+
+    :param formula: Design formula to use in model
+    :type formula: str
+
+    :param num_iter: Number of posterior draws (used for both warmup and
+        sampling), defaults to 2000
+    :type num_iter: int, optional
+
+    :param chains: Number of chains to use in MCMC, defaults to 4
+    :type chains: int, optional
+
+    :param seed: Random seed to use for sampling, defaults to 42
+    :type seed: float, optional
+
+    :param beta_prior: Standard deviation for normally distributed prior values
+        of beta, defaults to 5.0
+    :type beta_prior: float, optional
+
+    :param cauchy_scale: Scale parameter for half-Cauchy distributed prior
+        values of phi, defaults to 5.0
+    :type cauchy_scale: float, optional
+
+    :param parallelize_across: Whether to parallelize across features or chains
+        , defaults to 'chains'
+    :type parallelize_across: str, optional
     """
     def __init__(
         self,
@@ -78,10 +95,25 @@ class NegativeBinomial(Model):
 class Multinomial(Model):
     """Fit count data using serial multinomial model.
 
-    Parameters:
-    -----------
-    beta_prior : float
-        Normal prior standard deviation parameter for beta (default = 5.0)
+    :param table: Feature table (features x samples)
+    :type table: biom.table.Table
+
+    :param formula: Design formula to use in model
+    :type formula: str
+
+    :param num_iter: Number of posterior draws (used for both warmup and
+        sampling), defaults to 2000
+    :type num_iter: int, optional
+
+    :param chains: Number of chains to use in MCMC, defaults to 4
+    :type chains: int, optional
+
+    :param seed: Random seed to use for sampling, defaults to 42
+    :type seed: float, optional
+
+    :param beta_prior: Standard deviation for normally distributed prior values
+        of beta, defaults to 5.0
+    :type beta_prior: float, optional
     """
     def __init__(
         self,
@@ -94,7 +126,7 @@ class Multinomial(Model):
         beta_prior: float = 5.0,
     ):
         super().__init__(table, formula, metadata, "multinomial",
-                         num_iter, chains, seed)
+                         num_iter, chains, seed, parallelize_across="chains")
         param_dict = {
             "B_p": beta_prior,
         }

@@ -5,6 +5,7 @@
 *.pickle
 *.nc
 *.hpp
+*.DS_Store
 birdman/templates/negative_binomial
 birdman/templates/negative_binomial_single
 
