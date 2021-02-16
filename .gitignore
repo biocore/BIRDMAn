@@ -12,3 +12,4 @@ birdman/templates/negative_binomial_single
 *__pycache__/
 /data
 /build
+docs/_build
