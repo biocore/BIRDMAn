@@ -7,7 +7,34 @@ from patsy import dmatrix
 
 
 class Model:
-    """Base Stan model."""
+    """Base Stan model.
+
+    :param table: Feature table (features x samples)
+    :type table: biom.table.Table
+
+    :param formula: Design formula to use in model
+    :type formula: str
+
+    :param metadata: Metadata file for design matrix
+    :type metadata: pd.DataFrame
+
+    :param model_path: Filepath to Stan model
+    :type model_path: str
+
+    :param num_iter: Number of posterior draws (used for both warmup and
+        sampling), defaults to 2000
+    :type num_iter: int, optional
+
+    :param chains: Number of chains to use in MCMC, defaults to 4
+    :type chains: int, optional
+
+    :param seed: Random seed to use for sampling, defaults to 42
+    :type seed: float, optional
+
+    :param parallelize_across: Whether to parallelize across features or chains
+        , defaults to 'chains'
+    :type parallelize_across: str, optional
+    """
     def __init__(
         self,
         table: biom.table.Table,
@@ -44,6 +71,7 @@ class Model:
         }
 
     def compile_model(self):
+        """Compile Stan model."""
         self.sm = CmdStanModel(stan_file=self.model_path)
 
     def add_parameters(self, param_dict=None):
@@ -51,6 +79,7 @@ class Model:
         self.dat.update(param_dict)
 
     def fit_model(self, **kwargs):
+        """Fit model according to parallelization configuration."""
         if self.parallelize_across == "features":
             self.fits = self._fit_parallel(**kwargs)
         elif self.parallelize_across == "chains":
@@ -59,6 +88,7 @@ class Model:
             raise ValueError("parallelize_across must be features or chains!")
 
     def _fit_serial(self, **kwargs):
+        """Fit model by parallelizing across chains."""
         fit = self.sm.sample(
             chains=self.chains,
             parallel_chains=self.chains,  # run all chains in parallel
@@ -71,6 +101,7 @@ class Model:
         return fit
 
     def _fit_parallel(self, **kwargs):
+        """Fit model by parallelizing across features."""
         @dask.delayed
         def _fit_single(self, values):
             dat = self.dat

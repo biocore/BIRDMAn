@@ -4,7 +4,6 @@ from pkg_resources import resource_filename
 import biom
 import numpy as np
 import pandas as pd
-import xarray as xr
 
 from .model_base import Model
 from .util import convert_beta_coordinates
@@ -27,6 +26,9 @@ class NegativeBinomial(Model):
 
     :param formula: Design formula to use in model
     :type formula: str
+
+    :param metadata: Metadata file for design matrix
+    :type metadata: pd.DataFrame
 
     :param num_iter: Number of posterior draws (used for both warmup and
         sampling), defaults to 2000
@@ -72,25 +74,6 @@ class NegativeBinomial(Model):
         }
         self.add_parameters(param_dict)
 
-    def to_xarray(self) -> xr.Dataset:
-        """Convert fitted parameters to xarray object."""
-        if self.fit is None:
-            raise ValueError("Model has not been fit!")
-
-        beta_clr = convert_beta_coordinates(self.fit["beta"])
-        ds = xr.Dataset(
-            data_vars=dict(
-                beta=(["covariate", "feature", "draw"], beta_clr),
-                phi=(["feature", "draw"], self.fit["phi"])
-            ),
-            coords=dict(
-                covariate=self.dmat.columns,
-                feature=self.table.ids(axis="observation"),
-                draw=np.arange(self.num_iter*self.chains)
-            )
-        )
-        return ds
-
 
 class Multinomial(Model):
     """Fit count data using serial multinomial model.
@@ -100,6 +83,9 @@ class Multinomial(Model):
 
     :param formula: Design formula to use in model
     :type formula: str
+
+    :param metadata: Metadata file for design matrix
+    :type metadata: pd.DataFrame
 
     :param num_iter: Number of posterior draws (used for both warmup and
         sampling), defaults to 2000
@@ -133,21 +119,3 @@ class Multinomial(Model):
         self.add_parameters(param_dict)
         self.filepath = DEFAULT_MODEL_DICT["multinomial"]
         self.load_stancode()
-
-    def to_xarray(self) -> xr.Dataset:
-        """Convert fitted parameters to xarray object."""
-        if self.fit is None:
-            raise ValueError("Model has not been fit!")
-
-        beta_clr = convert_beta_coordinates(self.fit["beta"])
-        ds = xr.Dataset(
-            data_vars=dict(
-                beta=(["covariate", "feature", "draw"], beta_clr),
-            ),
-            coords=dict(
-                covariates=self.dmat.columns,
-                features=self.table.ids(axis="observation"),
-                draws=np.arange(self.num_iter*self.chains)
-            )
-        )
-        return ds
