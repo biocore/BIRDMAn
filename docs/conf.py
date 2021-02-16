@@ -41,7 +41,8 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # https://docs.readthedocs.io/en/stable/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
 autodoc_mock_imports = [
-    "biom-format"
+    "biom-format",
+    "numpy"
 ]
 
 
