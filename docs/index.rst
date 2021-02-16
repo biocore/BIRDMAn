@@ -45,3 +45,10 @@ In Python:
 
     default_model_example
     user_defined_model
+
+.. toctree::
+    :maxdepth: 2
+    :caption: API
+
+    models
+    util
