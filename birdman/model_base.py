@@ -50,15 +50,15 @@ class Model:
         """Add parameters from dict to be passed to Stan."""
         self.dat.update(param_dict)
 
-    def fit_model(self):
+    def fit_model(self, **kwargs):
         if self.parallelize_across == "features":
-            self.fits = self._fit_parallel()
+            self.fits = self._fit_parallel(**kwargs)
         elif self.parallelize_across == "chains":
-            self.fit = self._fit_serial()
+            self.fit = self._fit_serial(**kwargs)
         else:
             raise ValueError("parallelize_across must be features or chains!")
 
-    def _fit_serial(self):
+    def _fit_serial(self, **kwargs):
         fit = self.sm.sample(
             chains=self.chains,
             parallel_chains=self.chains,  # run all chains in parallel
@@ -66,10 +66,11 @@ class Model:
             iter_warmup=self.num_iter,    # use same num iter for warmup
             iter_sampling=self.num_iter,
             seed=self.seed,
+            **kwargs
         )
         return fit
 
-    def _fit_parallel(self):
+    def _fit_parallel(self, **kwargs):
         @dask.delayed
         def _fit_single(self, values):
             dat = self.dat
@@ -81,6 +82,7 @@ class Model:
                 iter_warmup=self.num_iter,    # use same num iter for warmup
                 iter_sampling=self.num_iter,
                 seed=self.seed,
+                **kwargs
             )
             return _fit
 
