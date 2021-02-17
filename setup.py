@@ -10,7 +10,7 @@ setup(
     include_package_data=True,
     package_data={"": ["*.stan"]},
     install_requires=[
-#        "numpy",
+        "numpy",
         "cmdstanpy",
         "dask[complete]",
         "biom-format",
