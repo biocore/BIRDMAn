@@ -78,10 +78,17 @@ def fit_to_xarray(
     for param in params:
         param_draws = fit.stan_variable(param)
         if param_draws.ndim == 3:  # matrix parameter
-            param_coords = ["covariate", "feature", "draw"]
             param_draws = convert_beta_coordinates(param_draws)
+
+            # Split parameters into individual chains
+            # Should be sequential i.e. 0-99 is chain 1, 100-199 is chain 2
+            # Becomes (chains x cov x features x draws)
+            # TODO: Can probably done smarter with np.reshape
+            param_draws = np.array(np.split(param_draws, fit.chains, axis=2))
+            param_coords = ["chain", "covariate", "feature", "draw"]
         elif param_draws.ndim == 2:  # vector parameter
-            param_coords = ["draw", "feature"]
+            param_draws = np.array(np.split(param_draws, fit.chains, axis=0))
+            param_coords = ["chain", "draw", "feature"]
         else:
             raise ValueError("Incompatible dimensionality!")
         data_vars[param] = (param_coords, param_draws)
@@ -91,10 +98,11 @@ def fit_to_xarray(
         coords=dict(
             covariate=covariate_names,
             feature=feature_names,
-            draw=np.arange(fit.num_draws_sampling*fit.chains)
+            draw=np.arange(fit.num_draws_sampling),
+            chain=np.arange(fit.chains)
         )
     )
-    ds = ds.transpose("covariate", "feature", "draw")
+    ds = ds.transpose("chain", "covariate", "feature", "draw")
     return ds
 
 
