@@ -2,11 +2,9 @@ import os
 from pkg_resources import resource_filename
 
 import biom
-import numpy as np
 import pandas as pd
 
 from .model_base import Model
-from .util import convert_beta_coordinates
 
 TEMPLATES = resource_filename("birdman", "templates")
 DEFAULT_MODEL_DICT = {

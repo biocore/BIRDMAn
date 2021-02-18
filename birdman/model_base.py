@@ -1,9 +1,15 @@
+from typing import Sequence
+import warnings
+
+import arviz as az
 import biom
-from cmdstanpy import CmdStanModel
+from cmdstanpy import CmdStanModel, CmdStanMCMC
 import dask
 import numpy as np
 import pandas as pd
 from patsy import dmatrix
+
+from .model_util import single_fit_to_xarray, multiple_fits_to_xarray
 
 
 class Model:
@@ -55,6 +61,7 @@ class Model:
         self.sample_names = table.ids(axis="sample")
         self.model_path = model_path
         self.sm = None
+        self.fit = None
         self.parallelize_across = parallelize_across
 
         self.dmat = dmatrix(formula, metadata.loc[self.sample_names],
@@ -81,7 +88,7 @@ class Model:
     def fit_model(self, **kwargs):
         """Fit model according to parallelization configuration."""
         if self.parallelize_across == "features":
-            self.fits = self._fit_parallel(**kwargs)
+            self.fit = self._fit_parallel(**kwargs)
         elif self.parallelize_across == "chains":
             self.fit = self._fit_serial(**kwargs)
         else:
@@ -124,3 +131,63 @@ class Model:
 
         _fits = dask.compute(*_fits)
         return _fits
+
+    def to_inference_object(
+            self,
+            params_to_include: Sequence,
+            feature_names: Sequence = None,
+            covariate_names: Sequence = None,
+            alr_params: Sequence = None,
+    ) -> az.InferenceData:
+        """Convert fitted Stan model into arviz InferenceData object.
+
+        .. note:: We don't use the arviz from_cmdstanpy function because it
+            does not transform the ALR coordinates and returns all parameters
+            (including irrelevant intermediates).
+
+        :param params_to_include: Names of parameters to keep
+        :type params_to_include: Sequence[str]
+
+        :param feature_names: Names of features, defaults to biom table
+            observation ids
+        :type feature_names: Sequence[str]
+
+        :param covariate_names: Names of covariates in design matrix, defaults
+            to columns of dmat
+        :type covariate_names: Sequence[str]
+
+        :param alr_params: Parameters to convert from ALR to CLR
+        :type alr_params: Sequence[str]
+
+        :returns: arviz InferenceData object with selected values/coordinates
+        :rtype: az.InferenceData
+        """
+        if self.fit is None:
+            raise ValueError("Model has not been fit!")
+
+        if feature_names is None:
+            feature_names = self.table.ids(axis="observation")
+        if covariate_names is None:
+            covariate_names = self.dmat.columns.tolist()
+
+        if isinstance(self.fit, CmdStanMCMC):
+            ds = single_fit_to_xarray(
+                fit=self.fit,
+                params=params_to_include,
+                feature_names=feature_names,
+                covariate_names=covariate_names,
+                alr_params=alr_params,
+            )
+        elif isinstance(self.fit, Sequence):
+            if alr_params is not None:
+                warnings.warn("ALR to CLR not performed on parallel models.",
+                              UserWarning)
+            ds = multiple_fits_to_xarray(
+                fits=self.fit,
+                params=params_to_include,
+                feature_names=feature_names,
+                covariate_names=covariate_names
+            )
+        else:
+            raise ValueError("Unrecognized fit type!")
+        return az.convert_to_inference_data(ds)

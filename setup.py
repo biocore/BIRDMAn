@@ -15,7 +15,8 @@ setup(
         "dask[complete]",
         "biom-format",
         "patsy",
-        "xarray"
+        "xarray",
+        "arviz"
     ],
     extras_require={"dev": ["pytest", "scikit-bio"]}
 )
