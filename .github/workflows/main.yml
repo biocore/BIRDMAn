@@ -30,7 +30,7 @@ jobs:
 
       - name: Install conda packages
         shell: bash -l {0}
-        run: conda install -c conda-forge dask biom-format patsy pytest xarray scikit-bio
+        run: conda install -c conda-forge dask biom-format patsy pytest xarray scikit-bio flake8
 
       - name: Install BIRDMAn
         shell: bash -l {0}
@@ -39,6 +39,10 @@ jobs:
       - name: Install cmdstan
         shell: bash -l {0}
         run: python -c "import cmdstanpy; cmdstanpy.install_cmdstan(version='2.25.0')"
+
+      - name: Check style
+        shell: bash -l {0}
+        run: flake8 birdman/*.py tests/*.py setup.py
 
       - name: Run tests
         shell: bash -l {0}
