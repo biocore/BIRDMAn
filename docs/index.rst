@@ -19,7 +19,7 @@ The easiest way to install the required dependencies is through ``conda``.
 
 .. code:: bash
 
-    conda install -c conda-forge dask biom-format patsy xarray
+    conda install -c conda-forge dask biom-format patsy xarray arviz
     git clone git@github.com:gibsramen/BIRDMAn.git
     cd BIRDMAn
     pip install -e .
