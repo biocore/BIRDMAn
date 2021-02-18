@@ -29,7 +29,8 @@ class TestToXArray:
             fit=example_model.fit,
             params=["beta", "phi"],
             covariate_names=example_model.dmat.columns.tolist(),
-            feature_names=example_model.table.ids(axis="observation")
+            feature_names=example_model.table.ids(axis="observation"),
+            alr_params=["beta"]
         )
         self.dataset_comparison(example_model, ds)
 

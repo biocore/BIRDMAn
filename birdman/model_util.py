@@ -13,12 +13,10 @@ def single_fit_to_xarray(
     fit: CmdStanMCMC,
     params: Sequence,
     feature_names: Sequence,
-    covariate_names: Sequence
+    covariate_names: Sequence,
+    alr_params: Sequence
 ) -> xr.Dataset:
     """Convert fitted Stan model into xarray Dataset.
-
-    .. note:: Matrix parameters are assumed to be betas and will be
-        converted to CLR coordinates.
 
     :param fit: Fitted model
     :type params: CmdStanMCMC
@@ -32,15 +30,18 @@ def single_fit_to_xarray(
     :param covariate_names: Names of covariates in design matrix
     :type covariate_names: Sequence[str]
 
+    :param alr_params: Names of parameters to convert from ALR to CLR
+    :type alr_params: Sequence[str]
+
     :returns: xarray Dataset of chosen parameter draws
     :rtype: xr.Dataset
-
     """
     data_vars = dict()
     for param in params:
         param_draws = fit.stan_variable(param)
         if param_draws.ndim == 3:  # matrix parameter
-            param_draws = convert_beta_coordinates(param_draws)
+            if param in alr_params:
+                param_draws = convert_beta_coordinates(param_draws)
 
             # Split parameters into individual chains
             # Should be sequential i.e. 0-99 is chain 1, 100-199 is chain 2

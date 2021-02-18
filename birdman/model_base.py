@@ -1,4 +1,4 @@
-from typing import List
+from typing import Sequence
 import warnings
 
 import arviz as az
@@ -134,10 +134,10 @@ class Model:
 
     def to_inference_object(
             self,
-            params_to_include: list,
-            feature_names: list = None,
-            covariate_names: list = None,
-            alr_params: list = None,
+            params_to_include: Sequence,
+            feature_names: Sequence = None,
+            covariate_names: Sequence = None,
+            alr_params: Sequence = None,
     ) -> az.InferenceData:
         """Convert fitted Stan model into arviz InferenceData object.
 
@@ -146,18 +146,18 @@ class Model:
             (including irrelevant intermediate).
 
         :param params_to_include: Names of parameters to keep
-        :type params_to_include: list[str]
+        :type params_to_include: Sequence[str]
 
         :param feature_names: Names of features, defaults to biom table
             observation ids
-        :type feature_names: list[str]
+        :type feature_names: Sequence[str]
 
         :param covariate_names: Names of covariates in design matrix, defaults
             to columns of dmat
-        :type covariate_names: list[str]
+        :type covariate_names: Sequence[str]
 
         :param alr_params: Parameters to convert from ALR to CLR
-        :type alr_params: list[str]
+        :type alr_params: Sequence[str]
 
         :returns: arviz InferenceData object with selected values/coordinates
         :rtype: az.InferenceData
@@ -172,18 +172,22 @@ class Model:
 
         if isinstance(self.fit, CmdStanMCMC):
             ds = single_fit_to_xarray(
+                fit=self.fit,
                 params=params_to_include,
                 feature_names=feature_names,
                 covariate_names=covariate_names,
                 alr_params=alr_params,
             )
-        elif isinstance(self.fit, List[CmdStanMCMC]):
+        elif isinstance(self.fit, Sequence):
             if alr_params is not None:
-                warnings.warn("ALR to CLR not performed on parallel models.")
+                warnings.warn("ALR to CLR not performed on parallel models.",
+                              UserWarning)
             ds = multiple_fits_to_xarray(
+                fits=self.fit,
                 params=params_to_include,
                 feature_names=feature_names,
                 covariate_names=covariate_names
             )
         else:
             raise ValueError("Unrecognized fit type!")
+        return az.convert_to_inference_data(ds)
