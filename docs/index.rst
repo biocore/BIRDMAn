@@ -24,7 +24,11 @@ The easiest way to install the required dependencies is through ``conda``.
     cd BIRDMAn
     pip install -e .
 
-If you are planning on contributing to BIRDMAn you must also install ``pytest`` and ``scikit-bio``.
+If you are planning on contributing to BIRDMAn you must also install the following packages:
+
+* `pytest <https://docs.pytest.org/en/stable/>`_
+* `scikit-bio <http://scikit-bio.org/>`_
+* `sphinx <https://www.sphinx-doc.org/en/master/>`_
 
 **Installing cmdstan**
 

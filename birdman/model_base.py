@@ -143,7 +143,7 @@ class Model:
 
         .. note:: We don't use the arviz from_cmdstanpy function because it
             does not transform the ALR coordinates and returns all parameters
-            (including irrelevant intermediate).
+            (including irrelevant intermediates).
 
         :param params_to_include: Names of parameters to keep
         :type params_to_include: Sequence[str]
