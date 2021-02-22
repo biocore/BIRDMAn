@@ -12,4 +12,5 @@ dependencies:
   - patsy
   - dask
   - biom-format
-prefix: /Users/gibs/miniconda3/envs/test
+  - arviz
+prefix: /Users/gibs/miniconda3/envs/birdman
