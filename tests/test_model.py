@@ -1,6 +1,7 @@
 import os
 from pkg_resources import resource_filename
 
+import numpy as np
 import pytest
 
 from birdman import NegativeBinomial
@@ -59,6 +60,30 @@ class TestToInference:
         target_groups = {"posterior", "sample_stats", "log_likelihood",
                          "posterior_predictive"}
         assert set(inference_data.groups()) == target_groups
+
+    def test_serial_to_inference_obs(self, example_model):
+        inference_data = example_model.to_inference_object(
+            params=["beta", "phi"],
+            coords={
+                "feature": example_model.feature_names,
+                "covariate": example_model.colnames
+            },
+            dims={
+                "beta": ["covariate", "feature"],
+                "phi": ["feature"]
+            },
+            alr_params=["beta"],
+            log_likelihood="log_lik",
+            posterior_predictive="y_predict",
+            include_observed_data=True
+        )
+        target_groups = {"posterior", "sample_stats", "log_likelihood",
+                         "posterior_predictive", "observed_data"}
+        assert set(inference_data.groups()) == target_groups
+        np.testing.assert_array_equal(
+            inference_data.observed_data["observed"],
+            example_model.dat["y"]
+        )
 
     def test_parallel_to_inference(self, example_parallel_model):
         inference_data = example_parallel_model.to_inference_object(

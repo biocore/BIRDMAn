@@ -171,7 +171,7 @@ class Model:
         :param dims: Dimensions of parameters in the model
         :type dims: dict
 
-        :param_concatenation_name: Name to aggregate features when combining
+        :param concatenation_name: Name to aggregate features when combining
             multiple fits, defaults to 'feature'
         :type concatentation_name: str, optional
 
@@ -219,4 +219,15 @@ class Model:
         else:
             raise ValueError("Unrecognized fit type!")
 
-        return fit_to_inference(self.fit, **args)
+        inference = fit_to_inference(self.fit, **args)
+        if include_observed_data:
+            obs = az.from_dict(
+                observed_data={"observed": self.dat["y"]},
+                coords={
+                    "sample": self.sample_names,
+                    "feature": self.feature_names
+                },
+                dims={"observed": ["sample", "feature"]}
+            )
+            inference = az.concat(inference, obs)
+        return inference
