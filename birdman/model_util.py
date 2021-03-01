@@ -1,10 +1,9 @@
 import re
-from typing import Sequence, Union
+from typing import Sequence
 
 import arviz as az
 from cmdstanpy import CmdStanMCMC
 import numpy as np
-import pandas as pd
 import xarray as xr
 
 from .util import convert_beta_coordinates
@@ -131,6 +130,10 @@ def multiple_fits_to_inference(
         k: [dim for dim in v if dim != concatenation_name]
         for k, v in dims.items()
     }
+
+    # If dims are unchanged it means the concatenation_name was not found
+    if new_dims == dims:
+        raise ValueError("concatenation_name must match dimensions in dims")
 
     po_list = []  # posterior
     ss_list = []  # sample stats
