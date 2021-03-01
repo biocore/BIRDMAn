@@ -18,7 +18,6 @@ parameters {
 transformed parameters {
   matrix[N, D-1] lam;
   matrix[N, D] lam_clr;
-  matrix[N, D] prob;
   vector[N] z;
   vector<lower=0>[D] phi;
 
@@ -51,10 +50,12 @@ model {
 
 generated quantities {
   matrix[N, D] y_predict;
+  matrix[N, D] log_lik;
 
   for (n in 1:N){
     for (i in 1:D){
       y_predict[n, i] = neg_binomial_2_log_rng(depth[n] + lam_clr[n, i], phi[i]);
+      log_lik[n, i] = neg_binomial_2_log_lpmf(y[n, i] | depth[n] + lam_clr[n, i], phi[i]);
     }
   }
 }
