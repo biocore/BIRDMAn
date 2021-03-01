@@ -137,6 +137,7 @@ class Model:
         params: Sequence[str],
         coords: dict,
         dims: dict,
+        concatenation_name: str = "feature",
         alr_params: Sequence[str] = None,
         include_observed_data: bool = False,
         posterior_predictive: str = None,
@@ -151,12 +152,12 @@ class Model:
             inf_obj = model.to_inference_object(
                 params=['beta', 'phi'],
                 coords={
-                    'features': model.feature_names,
-                    'covariates': model.colnames
+                    'feature': model.feature_names,
+                    'covariate': model.colnames
                 },
                 dims={
-                    'beta': ['covariates', 'features'],
-                    'phi': ['features']
+                    'beta': ['covariate', 'feature'],
+                    'phi': ['feature']
                 },
                 alr_params=['beta']
             )
@@ -169,6 +170,10 @@ class Model:
 
         :param dims: Dimensions of parameters in the model
         :type dims: dict
+
+        :param_concatenation_name: Name to aggregate features when combining
+            multiple fits, defaults to 'feature'
+        :type concatentation_name: str, optional
 
         :param alr_params: Parameters to convert from ALR to CLR (this will
             be ignored if the model has been parallelized across features)
@@ -193,10 +198,20 @@ class Model:
         if self.fit is None:
             raise ValueError("Model has not been fit!")
 
+        args = {
+            "params": params,
+            "coords": coords,
+            "dims": dims,
+            "posterior_predictive": posterior_predictive,
+            "log_likelihood": log_likelihood,
+        }
         if isinstance(self.fit, CmdStanMCMC):
             fit_to_inference = single_fit_to_inference
+            args["alr_params"] = alr_params
         elif isinstance(self.fit, Sequence):
             fit_to_inference = multiple_fits_to_inference
+            args["concatenation_name"] = concatenation_name
+            # TODO: Check that dims and concatenation_match
 
             if alr_params is not None:
                 warnings.warn("ALR to CLR not performed on parallel models.",
@@ -204,14 +219,4 @@ class Model:
         else:
             raise ValueError("Unrecognized fit type!")
 
-        ds = fit_to_inference(
-            fit=self.fit,
-            params=params,
-            coords=coords,
-            dims=dims,
-            alr_params=alr_params,
-            include_observed_data=include_observed_data,
-            posterior_predictive=posterior_predictive,
-            log_likelihood=log_likelihood
-        )
-        return az.convert_to_inference_data(ds)
+        return fit_to_inference(self.fit, **args)
