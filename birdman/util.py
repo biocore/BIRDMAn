@@ -24,16 +24,16 @@ def convert_beta_coordinates(beta: np.ndarray) -> np.ndarray:
         d features)
     :type beta: np.ndarray
 
-    :returns: Matrix of beta CLR coordinates (p covariates x (d+1) features x
-        n draws)
+    :returns: Matrix of beta CLR coordinates (n draws x p covariates x d+1
+        features)
     :rtype: np.ndarray
     """
     # axis moving is an artifact of previous PyStan implementation
     # want dims to be (p covariates x d features x n draws)
     # TODO: make this function work on the original dimensions
-    beta = np.moveaxis(beta, [1, 2, 0], [0, 1, 2])
-    num_covariates, num_features, num_draws = beta.shape
-    beta_clr = np.zeros((num_covariates, num_features+1, num_draws))
+    num_draws, num_covariates, num_features = beta.shape
+    beta_clr = np.zeros((num_draws, num_covariates, num_features+1))
     for i in range(num_covariates):  # TODO: vectorize
-        beta_clr[i, :, :] = alr_to_clr(beta[i, :, :])
+        beta_slice = beta[:, i, :].T  # features x draws
+        beta_clr[:, i, :] = alr_to_clr(beta_slice).T
     return beta_clr

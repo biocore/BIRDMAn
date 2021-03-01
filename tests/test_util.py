@@ -35,14 +35,11 @@ def test_convert_beta_coordinates():
         [0.4, 0.4, 0.1, 0.1],
         [0.1, 0.1, 0.1, 0.7]
     ])
-    # 4 covariates x (4-1) features x 2 draws
-    alr_coords = np.dstack([alr(draw1), alr(draw2)])
-    # 2 draws x 4 covariates x (4-1) features
-    alr_coords = np.moveaxis(alr_coords, [2, 0, 1], [0, 1, 2])
-    clr_coords = util.convert_beta_coordinates(alr_coords)  # p x (d+1) x n
-    exp_coords = np.dstack([clr(draw1), clr(draw2)])
+    alr_coords = np.stack([alr(draw1), alr(draw2)])  # 2 x 4 x 3
+    clr_coords = util.convert_beta_coordinates(alr_coords)  # 2 x 4 x 4
+    exp_coords = np.stack([clr(draw1), clr(draw2)])
     np.testing.assert_array_almost_equal(clr_coords, exp_coords)
 
-    clr_coords_sums = clr_coords.sum(axis=1)
-    exp_clr_coords_sums = np.zeros((4, 2))
+    clr_coords_sums = clr_coords.sum(axis=2)
+    exp_clr_coords_sums = np.zeros((2, 4))
     np.testing.assert_array_almost_equal(exp_clr_coords_sums, clr_coords_sums)
