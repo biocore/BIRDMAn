@@ -64,8 +64,11 @@ def single_fit_to_inference(
     for param in alr_params:
         # Want to run on each chain independently
         all_chain_clr_coords = []
-        for i in np.arange(fit.chains):
-            chain_alr_coords = inference.posterior[param].sel(chain=i)
+        all_chain_alr_coords = np.split(fit.stan_variable(param), 4, axis=0)
+        for i, chain_alr_coords in enumerate(all_chain_alr_coords):
+            # arviz 0.11.2 seems to flatten for some reason even though
+            # the PR was specifically supposed to do the opposite.
+            # Not sure what's going on but just going to go through cmdstanpy.
             chain_clr_coords = convert_beta_coordinates(chain_alr_coords)
             all_chain_clr_coords.append(chain_clr_coords)
         all_chain_clr_coords = np.array(all_chain_clr_coords)
@@ -80,10 +83,13 @@ def single_fit_to_inference(
         )
         inference.posterior[param] = param_da
 
-        # For now assume that beta dimensionality is 2D
-        inference.posterior = inference.posterior.drop_dims(
-            [f"{param}_dim_{i}" for i in range(2)]
-        )
+        # TODO: Clean this up
+        all_dims = list(inference.posterior.dims)
+        dims_to_drop = []
+        for dim in all_dims:
+            if re.match(f"{param}_dim_\\d", dim):
+                dims_to_drop.append(dim)
+        inference.posterior = inference.posterior.drop_dims(dims_to_drop)
     return inference
 
 

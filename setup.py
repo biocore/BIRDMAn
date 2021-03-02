@@ -16,7 +16,7 @@ setup(
         "biom-format",
         "patsy",
         "xarray",
-        "arviz==0.11.2"
+        "arviz>=0.11.2"
     ],
     extras_require={"dev": ["pytest", "scikit-bio"]}
 )

@@ -30,7 +30,7 @@ jobs:
 
       - name: Install conda packages
         shell: bash -l {0}
-        run: conda install -c conda-forge dask biom-format patsy pytest xarray scikit-bio flake8 arviz=0.11.1
+        run: conda install -c conda-forge dask biom-format patsy pytest xarray scikit-bio flake8 arviz>=0.11.2
 
       - name: Install BIRDMAn
         shell: bash -l {0}
