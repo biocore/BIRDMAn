@@ -28,9 +28,6 @@ def convert_beta_coordinates(beta: np.ndarray) -> np.ndarray:
         features)
     :rtype: np.ndarray
     """
-    # axis moving is an artifact of previous PyStan implementation
-    # want dims to be (p covariates x d features x n draws)
-    # TODO: make this function work on the original dimensions
     num_draws, num_covariates, num_features = beta.shape
     beta_clr = np.zeros((num_draws, num_covariates, num_features+1))
     for i in range(num_covariates):  # TODO: vectorize
