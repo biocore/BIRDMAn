@@ -170,7 +170,7 @@ def multiple_fits_to_inference(
         group_dict["log_likelihood"] = xr.concat(ll_list, concatenation_name)
     if posterior_predictive is not None:
         group_dict["posterior_predictive"] = xr.concat(pp_list,
-                                                       posterior_predictive)
+                                                       concatenation_name)
 
     all_group_inferences = []
     for group in group_dict:
