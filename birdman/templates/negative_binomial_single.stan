@@ -33,3 +33,13 @@ model {
     target += neg_binomial_2_log_lpmf(y[n] | depth[n] + lam[n], phi);
   }
 }
+
+generated quantities {
+  vector[N] log_lik;
+  vector[N] y_predict;
+
+  for (n in 1:N){
+    y_predict[n] = neg_binomial_2_log_rng(depth[n] + lam[n], phi);
+    log_lik[n] = neg_binomial_2_log_lpmf(y[n] | depth[n] + lam[n], phi);
+  }
+}
