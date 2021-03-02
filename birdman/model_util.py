@@ -1,139 +1,199 @@
+import re
 from typing import Sequence
 
-# import arviz as az
+import arviz as az
 from cmdstanpy import CmdStanMCMC
 import numpy as np
-import pandas as pd
 import xarray as xr
 
 from .util import convert_beta_coordinates
 
 
-def single_fit_to_xarray(
+def single_fit_to_inference(
     fit: CmdStanMCMC,
-    params: Sequence,
-    feature_names: Sequence,
-    covariate_names: Sequence,
-    alr_params: Sequence
+    params: Sequence[str],
+    coords: dict,
+    dims: dict,
+    alr_params: Sequence[str] = None,
+    posterior_predictive: str = None,
+    log_likelihood: str = None
 ) -> xr.Dataset:
-    """Convert fitted Stan model into xarray Dataset.
+    """Convert fitted Stan model into inference object.
 
     :param fit: Fitted model
     :type params: CmdStanMCMC
 
-    :param params: Parameters to include in xarray Dataset
+    :param params: Posterior fitted parameters to include
     :type params: Sequence[str]
 
-    :param feature_names: Names of features in feature table
-    :type feature_names: Sequence[str]
+    :param coords: Mapping of entries in dims to labels
+    :type coords: dict
 
-    :param covariate_names: Names of covariates in design matrix
-    :type covariate_names: Sequence[str]
+    :param dims: Dimensions of parameters in the model
+    :type dims: dict
 
-    :param alr_params: Names of parameters to convert from ALR to CLR
-    :type alr_params: Sequence[str]
+    :param alr_params: Parameters to convert from ALR to CLR (this will
+        be ignored if the model has been parallelized across features)
+    :type alr_params: Sequence[str], optional
 
-    :returns: xarray Dataset of chosen parameter draws
-    :rtype: xr.Dataset
+    :param posterior_predictive: Name of posterior predictive values from
+        Stan model to include in ``arviz`` InferenceData object
+    :type posterior_predictive: str, optional
+
+    :param log_likelihood: Name of log likelihood values from Stan model
+        to include in ``arviz`` InferenceData object
+    :type log_likelihood: str, optional
+
+    :returns: ``arviz`` InferenceData object with selected values
+    :rtype: az.InferenceData
     """
-    data_vars = dict()
-    for param in params:
-        param_draws = fit.stan_variable(param)
-        if param_draws.ndim == 3:  # matrix parameter
-            if param in alr_params:
-                param_draws = convert_beta_coordinates(param_draws)
-
-            # Split parameters into individual chains
-            # Should be sequential i.e. 0-99 is chain 1, 100-199 is chain 2
-            # Becomes (chains x cov x features x draws)
-            # TODO: Can probably done smarter with np.reshape
-            param_draws = np.array(np.split(param_draws, fit.chains,
-                                            axis=2))
-            param_coords = ["chain", "covariate", "feature", "draw"]
-        elif param_draws.ndim == 2:  # vector parameter
-            param_draws = np.array(np.split(param_draws, fit.chains,
-                                            axis=0))
-            param_coords = ["chain", "draw", "feature"]
-        else:
-            raise ValueError("Incompatible dimensionality!")
-        data_vars[param] = (param_coords, param_draws)
-
-    ds = xr.Dataset(
-        data_vars=data_vars,
-        coords=dict(
-            covariate=covariate_names,
-            feature=feature_names,
-            draw=np.arange(fit.num_draws_sampling),
-            chain=np.arange(fit.chains)
-        )
+    # remove alr params so initial dim fitting works
+    new_dims = {k: v for k, v in dims.items() if k not in alr_params}
+    inference = az.from_cmdstanpy(
+        posterior=fit,
+        posterior_predictive=posterior_predictive,
+        log_likelihood=log_likelihood,
+        coords=coords,
+        dims=new_dims
     )
-    ds = ds.transpose("covariate", "feature", "chain", "draw")
-    return ds
+
+    vars_to_drop = set(inference.posterior.data_vars).difference(params)
+    inference.posterior = _drop_data(inference.posterior, vars_to_drop)
+
+    # Convert each param in ALR coordinates to CLR coordinates
+    for param in alr_params:
+        # Want to run on each chain independently
+        all_chain_clr_coords = []
+        all_chain_alr_coords = np.split(fit.stan_variable(param), 4, axis=0)
+        for i, chain_alr_coords in enumerate(all_chain_alr_coords):
+            # arviz 0.11.2 seems to flatten for some reason even though
+            # the PR was specifically supposed to do the opposite.
+            # Not sure what's going on but just going to go through cmdstanpy.
+            chain_clr_coords = convert_beta_coordinates(chain_alr_coords)
+            all_chain_clr_coords.append(chain_clr_coords)
+        all_chain_clr_coords = np.array(all_chain_clr_coords)
+
+        tmp_dims = ["chain", "draw"] + dims[param]
+        chain_coords = {"chain": np.arange(fit.chains)}
+        draw_coords = {"draw": np.arange(fit.num_draws_sampling)}
+        param_da = xr.DataArray(
+            all_chain_clr_coords,
+            dims=tmp_dims,
+            coords={**coords, **chain_coords, **draw_coords}
+        )
+        inference.posterior[param] = param_da
+
+        # TODO: Clean this up
+        all_dims = list(inference.posterior.dims)
+        dims_to_drop = []
+        for dim in all_dims:
+            if re.match(f"{param}_dim_\\d", dim):
+                dims_to_drop.append(dim)
+        inference.posterior = inference.posterior.drop_dims(dims_to_drop)
+    return inference
 
 
-def multiple_fits_to_xarray(
+def multiple_fits_to_inference(
     fits: Sequence[CmdStanMCMC],
-    params: Sequence,
-    feature_names: Sequence,
-    covariate_names: Sequence
-) -> xr.Dataset:
+    params: Sequence[str],
+    coords: dict,
+    dims: dict,
+    concatenation_name: str,
+    posterior_predictive: str = None,
+    log_likelihood: str = None
+) -> az.InferenceData:
     """Save fitted parameters to xarray DataSet for multiple fits.
 
     :param fits: Fitted models for each feature
     :type params: Sequence[CmdStanMCMC]
 
-    :param params: Parameters to include in xarray Dataset
+    :param params: Posterior fitted parameters to include
     :type params: Sequence[str]
 
-    :param feature_names: Names of features in feature table
-    :type feature_names: Sequence[str]
+    :param coords: Mapping of entries in dims to labels
+    :type coords: dict
 
-    :param covariate_names: Names of covariates in design matrix
-    :type covariate_names: Sequence[str]
+    :param dims: Dimensions of parameters in the model
+    :type dims: dict
 
-    :returns: xarray Dataset of chosen parameter draws
-    :rtype: xr.Dataset
+    :param_concatenation_name: Name to aggregate features when combining
+        multiple fits, defaults to 'feature'
+    :type concatentation_name: str, optional
+
+    :param posterior_predictive: Name of posterior predictive values from
+        Stan model to include in ``arviz`` InferenceData object
+    :type posterior_predictive: str, optional
+
+    :param log_likelihood: Name of log likelihood values from Stan model
+        to include in ``arviz`` InferenceData object
+    :type log_likelihood: str, optional
+
+    :returns: ``arviz`` InferenceData object with selected values
+    :rtype: az.InferenceData
     """
-    assert len(feature_names) == len(fits)
+    # Remove the concatenation dimension from each individual fit
+    new_dims = {
+        k: [dim for dim in v if dim != concatenation_name]
+        for k, v in dims.items()
+    }
 
-    _fit = fits[0]
-    draw_range = np.arange(_fit.num_draws_sampling)
-    chain_range = np.arange(_fit.chains)
-    param_da_list = []
-    # Outer for loop creates DataArray for each parameter
-    for param in params:
-        all_feat_param_da_list = []
-        # Inner for loop creates list of DataArrays for each feature
-        for feat, fit in zip(feature_names, fits):
-            param_draws = fit.stan_variable(param)  # draw x cov
+    # If dims are unchanged it means the concatenation_name was not found
+    if new_dims == dims:
+        raise ValueError("concatenation_name must match dimensions in dims")
 
-            param_draws = np.array(np.split(param_draws, fit.chains,
-                                            axis=0))
-            if param_draws.ndim == 3:  # matrix parameter (chain x draw x cov)
-                # not sure if we have to CLR...
-                dims = ["chain", "draw", "covariate"]
-                coords = [chain_range, draw_range, covariate_names]
-            elif param_draws.ndim == 2:  # vector parameter (chain x draw)
-                dims = ["chain", "draw"]
-                coords = [chain_range, draw_range]
-            else:
-                raise ValueError("Incompatible dimensionality!")
-            feat_param_da = xr.DataArray(  # single feat-param da
-                param_draws,
-                coords=coords,
-                dims=dims,
-                name=param,
-            )
-            all_feat_param_da_list.append(feat_param_da)
-
-        # Concatenates all features for a given parameter to a DataArray
-        all_feat_param_da = xr.concat(
-            all_feat_param_da_list,
-            pd.Index(feature_names, name="feature"),
+    po_list = []  # posterior
+    ss_list = []  # sample stats
+    pp_list = []  # posterior predictive
+    ll_list = []  # log likelihood
+    for fit in fits:
+        ds = az.from_cmdstanpy(
+            posterior=fit,
+            posterior_predictive=posterior_predictive,
+            log_likelihood=log_likelihood,
+            coords=coords,
+            dims=new_dims
         )
-        param_da_list.append(all_feat_param_da)
+        vars_to_drop = set(ds.posterior.data_vars).difference(params)
+        ds.posterior = _drop_data(ds.posterior, vars_to_drop)
 
-    # Merges individual DataArrays for each parameter
-    ds = xr.merge(param_da_list)
-    ds = ds.transpose("covariate", "feature", "chain", "draw")
-    return ds
+        po_list.append(ds.posterior)
+        ss_list.append(ds.sample_stats)
+        if log_likelihood is not None:
+            ll_list.append(ds.log_likelihood)
+        if posterior_predictive is not None:
+            pp_list.append(ds.posterior_predictive)
+
+    po_ds = xr.concat(po_list, concatenation_name)
+    ss_ds = xr.concat(ss_list, concatenation_name)
+    group_dict = {"posterior": po_ds, "sample_stats": ss_ds}
+    if log_likelihood is not None:
+        group_dict["log_likelihood"] = xr.concat(ll_list, concatenation_name)
+    if posterior_predictive is not None:
+        group_dict["posterior_predictive"] = xr.concat(pp_list,
+                                                       posterior_predictive)
+
+    all_group_inferences = []
+    for group in group_dict:
+        group_ds = group_dict[group].assign_coords(
+            {concatenation_name: coords[concatenation_name]}
+        )
+        group_inf = az.InferenceData(**{group: group_ds})  # hacky
+        all_group_inferences.append(group_inf)
+
+    return az.concat(*all_group_inferences)
+
+
+def _drop_data(
+    dataset: xr.Dataset,
+    vars_to_drop: Sequence
+) -> xr.Dataset:
+    """Drop data and associated dimensions from inference group."""
+    new_dataset = dataset.drop_vars(vars_to_drop)
+    # TODO: Figure out how to do this more cleanly
+    dims_to_drop = []
+    for var in vars_to_drop:
+        for dim in new_dataset.dims:
+            if re.match(f"{var}_dim_\\d", dim):
+                dims_to_drop.append(dim)
+    new_dataset = new_dataset.drop_dims(dims_to_drop)
+    return new_dataset

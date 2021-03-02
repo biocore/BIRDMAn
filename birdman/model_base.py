@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from patsy import dmatrix
 
-from .model_util import single_fit_to_xarray, multiple_fits_to_xarray
+from .model_util import single_fit_to_inference, multiple_fits_to_inference
 
 
 class Model:
@@ -133,61 +133,101 @@ class Model:
         return _fits
 
     def to_inference_object(
-            self,
-            params_to_include: Sequence,
-            feature_names: Sequence = None,
-            covariate_names: Sequence = None,
-            alr_params: Sequence = None,
+        self,
+        params: Sequence[str],
+        coords: dict,
+        dims: dict,
+        concatenation_name: str = "feature",
+        alr_params: Sequence[str] = None,
+        include_observed_data: bool = False,
+        posterior_predictive: str = None,
+        log_likelihood: str = None
     ) -> az.InferenceData:
-        """Convert fitted Stan model into arviz InferenceData object.
+        """Convert fitted Stan model into ``arviz`` InferenceData object.
 
-        .. note:: We don't use the arviz from_cmdstanpy function because it
-            does not transform the ALR coordinates and returns all parameters
-            (including irrelevant intermediates).
+        Example for a simple Negative Binomial model:
 
-        :param params_to_include: Names of parameters to keep
-        :type params_to_include: Sequence[str]
+        .. code-block:: python
 
-        :param feature_names: Names of features, defaults to biom table
-            observation ids
-        :type feature_names: Sequence[str]
+            inf_obj = model.to_inference_object(
+                params=['beta', 'phi'],
+                coords={
+                    'feature': model.feature_names,
+                    'covariate': model.colnames
+                },
+                dims={
+                    'beta': ['covariate', 'feature'],
+                    'phi': ['feature']
+                },
+                alr_params=['beta']
+            )
 
-        :param covariate_names: Names of covariates in design matrix, defaults
-            to columns of dmat
-        :type covariate_names: Sequence[str]
+        :param params: Posterior fitted parameters to include
+        :type params: Sequence[str]
 
-        :param alr_params: Parameters to convert from ALR to CLR
-        :type alr_params: Sequence[str]
+        :param coords: Mapping of entries in dims to labels
+        :type coords: dict
 
-        :returns: arviz InferenceData object with selected values/coordinates
+        :param dims: Dimensions of parameters in the model
+        :type dims: dict
+
+        :param concatenation_name: Name to aggregate features when combining
+            multiple fits, defaults to 'feature'
+        :type concatentation_name: str, optional
+
+        :param alr_params: Parameters to convert from ALR to CLR (this will
+            be ignored if the model has been parallelized across features)
+        :type alr_params: Sequence[str], optional
+
+        :param include_observed_data: Whether to include the original feature
+            table values into the ``arviz`` InferenceData object, default is
+            False
+        :type include_observed_data: bool, optional
+
+        :param posterior_predictive: Name of posterior predictive values from
+            Stan model to include in ``arviz`` InferenceData object
+        :type posterior_predictive: str, optional
+
+        :param log_likelihood: Name of log likelihood values from Stan model
+            to include in ``arviz`` InferenceData object
+        :type log_likelihood: str, optional
+
+        :returns: ``arviz`` InferenceData object with selected values
         :rtype: az.InferenceData
         """
         if self.fit is None:
             raise ValueError("Model has not been fit!")
 
-        if feature_names is None:
-            feature_names = self.table.ids(axis="observation")
-        if covariate_names is None:
-            covariate_names = self.dmat.columns.tolist()
-
+        args = {
+            "params": params,
+            "coords": coords,
+            "dims": dims,
+            "posterior_predictive": posterior_predictive,
+            "log_likelihood": log_likelihood,
+        }
         if isinstance(self.fit, CmdStanMCMC):
-            ds = single_fit_to_xarray(
-                fit=self.fit,
-                params=params_to_include,
-                feature_names=feature_names,
-                covariate_names=covariate_names,
-                alr_params=alr_params,
-            )
+            fit_to_inference = single_fit_to_inference
+            args["alr_params"] = alr_params
         elif isinstance(self.fit, Sequence):
+            fit_to_inference = multiple_fits_to_inference
+            args["concatenation_name"] = concatenation_name
+            # TODO: Check that dims and concatenation_match
+
             if alr_params is not None:
                 warnings.warn("ALR to CLR not performed on parallel models.",
                               UserWarning)
-            ds = multiple_fits_to_xarray(
-                fits=self.fit,
-                params=params_to_include,
-                feature_names=feature_names,
-                covariate_names=covariate_names
-            )
         else:
             raise ValueError("Unrecognized fit type!")
-        return az.convert_to_inference_data(ds)
+
+        inference = fit_to_inference(self.fit, **args)
+        if include_observed_data:
+            obs = az.from_dict(
+                observed_data={"observed": self.dat["y"]},
+                coords={
+                    "sample": self.sample_names,
+                    "feature": self.feature_names
+                },
+                dims={"observed": ["sample", "feature"]}
+            )
+            inference = az.concat(inference, obs)
+        return inference

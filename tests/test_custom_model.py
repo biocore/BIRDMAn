@@ -29,15 +29,23 @@ def test_custom_model(table_biom, metadata):
     custom_model.fit_model()
 
     inference = custom_model.to_inference_object(
-        params_to_include=["beta_var"],
+        params=["beta_var"],
+        coords={
+            "feature": custom_model.feature_names,
+            "covariate": custom_model.colnames
+        },
+        dims={
+            "beta_var": ["covariate", "feature"],
+            "phi": ["feature"]
+        },
         alr_params=["beta_var"]
     )
 
-    assert inference.groups() == ["posterior"]
+    assert set(inference.groups()) == {"posterior", "sample_stats"}
     ds = inference.posterior
 
     assert ds.coords._names == {"chain", "covariate", "draw", "feature"}
-    assert ds["beta_var"].shape == (2, 28, 4, 100)
+    assert set(ds["beta_var"].shape) == {2, 28, 4, 100}
 
     exp_feature_names = table_biom.ids(axis="observation")
     ds_feature_names = ds.coords["feature"]
