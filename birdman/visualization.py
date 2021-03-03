@@ -4,10 +4,10 @@ from matplotlib.lines import Line2D
 import numpy as np
 
 
-def plot_differential_intervals(
+def plot_parameter_estimates(
     inference_object: az.InferenceData,
     parameter: str,
-    coord: dict,
+    coord: dict = None,
     num_std: float = 1.0
 ):
     """Plot credible intervals of estimated parameters.
@@ -19,14 +19,21 @@ def plot_differential_intervals(
     :type parameter: str
 
     :param coord: Coordinates of parameter to plot
-    :type coord: dict
+    :type coord: dict, optional
 
-    :param num_std: Number of standard deviations to plot as error bars
-    :type num_std: float
+    :param num_std: Number of standard deviations to plot as error bars,
+        defaults to 1.0
+    :type num_std: float, optional
 
     :returns: matplotlib axes figure
     """
     posterior = inference_object.posterior
+    if len(posterior[parameter].coords) > 3 and coord is None:
+        raise ValueError(
+            "Must provide coordinates if plotting multi-dimensional parameter"
+            " estimates!"
+        )
+
     param_medians = posterior[parameter].sel(**coord).median(["chain", "draw"])
     param_stds = posterior[parameter].sel(**coord).std(["chain", "draw"])
     sort_indices = param_medians.argsort().data
@@ -35,7 +42,6 @@ def plot_differential_intervals(
 
     fig, ax = plt.subplots(1, 1)
     x = np.arange(len(param_medians))
-    ax.axhline(y=0, color="black", linestyle="--")
     ax.errorbar(x=x, y=param_medians, yerr=param_stds*num_std)
     ax.scatter(x=x, y=param_medians)
 
@@ -107,4 +113,5 @@ def plot_posterior_predictive_checks(inference_object: az.InferenceData):
     ax.set_ylabel("Count")
     ax.set_xlabel("Table Entry")
     plt.tight_layout()
+
     return ax
