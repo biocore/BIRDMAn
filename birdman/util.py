@@ -18,7 +18,7 @@ def alr_to_clr(x: np.ndarray) -> np.ndarray:
 
 
 def clr_to_alr(x: np.ndarray) -> np.ndarray:
-    """Convert CLR coordinates to centered ALR coordinates.
+    """Convert CLR coordinates to ALR coordinates.
 
     :param x: Matrix of centered CLR coordinates (features x draws)
     :type x: np.ndarray

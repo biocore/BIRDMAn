@@ -11,7 +11,7 @@ def hotelling_ttest(
     inference_object: az.InferenceData,
     coord: dict,
     parameter: str = "beta",
-):
+) -> Tuple[np.float64, np.float64]:
     """Test if covariate-draws centered around zero.
 
     Uses `Hotelling's T-squared test\
@@ -27,6 +27,9 @@ def hotelling_ttest(
 
     :param parameter: Name of parameter to test, defaults to 'beta'
     :type parameter: str, optional
+
+    :returns: :math:`t^2` & p-value
+    :rtype: Tuple(float, float)
     """
     data = inference_object.posterior[parameter].sel(coord)
     data = data.stack(sample=("chain", "draw")).data
@@ -39,7 +42,7 @@ def _hotelling(x: np.ndarray) -> Tuple[np.float64, np.float64]:
     :param x: Centered CLR data matrix (features x draws)
     :type x: np.ndarray
 
-    :returns: Tuple of t^2 test statistic and p-value
+    :returns: :math:`t^2` & p-value
     :rtype: Tuple(float, float)
     """
     x_alr = clr_to_alr(x)  # Can't use CLR b/c covariance matrix is singular
