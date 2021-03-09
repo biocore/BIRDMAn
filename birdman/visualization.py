@@ -28,7 +28,7 @@ def plot_parameter_estimates(
     :returns: matplotlib axes figure
     """
     posterior = inference_object.posterior
-    if len(posterior[parameter].coords) > 3 and coord is None:
+    if len(posterior[parameter].coords) > 3 and not coord:
         raise ValueError(
             "Must provide coordinates if plotting multi-dimensional parameter"
             " estimates!"
