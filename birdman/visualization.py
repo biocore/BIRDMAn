@@ -7,7 +7,7 @@ import numpy as np
 def plot_parameter_estimates(
     inference_object: az.InferenceData,
     parameter: str,
-    coord: dict = None,
+    coord: dict = dict(),
     num_std: float = 1.0
 ):
     """Plot credible intervals of estimated parameters.
@@ -34,16 +34,16 @@ def plot_parameter_estimates(
             " estimates!"
         )
 
-    param_medians = posterior[parameter].sel(**coord).median(["chain", "draw"])
+    param_means = posterior[parameter].sel(**coord).mean(["chain", "draw"])
     param_stds = posterior[parameter].sel(**coord).std(["chain", "draw"])
-    sort_indices = param_medians.argsort().data
-    param_medians = param_medians.data[sort_indices]
+    sort_indices = param_means.argsort().data
+    param_means = param_means.data[sort_indices]
     param_stds = param_stds.data[sort_indices]
 
     fig, ax = plt.subplots(1, 1)
-    x = np.arange(len(param_medians))
-    ax.errorbar(x=x, y=param_medians, yerr=param_stds*num_std)
-    ax.scatter(x=x, y=param_medians)
+    x = np.arange(len(param_means))
+    ax.errorbar(x=x, y=param_means, yerr=param_stds*num_std)
+    ax.scatter(x=x, y=param_means)
 
     ax.set_xlabel("Feature")
     ax.set_ylabel("Differential")
@@ -69,7 +69,7 @@ def plot_posterior_predictive_checks(inference_object: az.InferenceData):
 
     obs = inference_object.observed_data.to_array().values.ravel()
     ppc = inference_object.posterior_predictive
-    ppc_median = ppc.mean(["chain", "draw"]).to_array().values[0]
+    ppc_mean = ppc.mean(["chain", "draw"]).to_array().values[0]
     ppc_lower = ppc.quantile(0.025, ["chain", "draw"]).to_array().values[0]
     ppc_upper = ppc.quantile(0.975, ["chain", "draw"]).to_array().values[0]
     ppc_in_ci = (obs < ppc_upper) & (obs > ppc_lower)
@@ -77,7 +77,7 @@ def plot_posterior_predictive_checks(inference_object: az.InferenceData):
 
     sort_indices = obs.argsort()
     obs = obs[sort_indices]
-    ppc_median = ppc_median[sort_indices]
+    ppc_mean = ppc_mean[sort_indices]
     ppc_lower = ppc_lower[sort_indices]
     ppc_upper = ppc_upper[sort_indices]
 
@@ -85,7 +85,7 @@ def plot_posterior_predictive_checks(inference_object: az.InferenceData):
     x = np.arange(len(obs))
     ax.plot(x, obs, zorder=3, color="black")
     y_min, y_max = ax.get_ylim()
-    ax.scatter(x=x, y=ppc_median, zorder=1, color="gray")
+    ax.scatter(x=x, y=ppc_mean, zorder=1, color="gray")
     for i, (lower, upper) in enumerate(zip(ppc_lower, ppc_upper)):
         ax.plot(  # credible interval
             [i, i],
@@ -97,11 +97,11 @@ def plot_posterior_predictive_checks(inference_object: az.InferenceData):
 
     obs_legend_entry = Line2D([0], [0], color="black", linewidth=2)
     ci_legend_entry = Line2D([0], [0], color="lightgray", linewidth=2)
-    ppc_median_legend_entry = Line2D([0], [0], color="gray", marker="o",
-                                     linewidth=0)
+    ppc_mean_legend_entry = Line2D([0], [0], color="gray", marker="o",
+                                   linewidth=0)
     ax.legend(
-        handles=[obs_legend_entry, ci_legend_entry, ppc_median_legend_entry],
-        labels=["Observed", "95% Credible Interval", "Median"],
+        handles=[obs_legend_entry, ci_legend_entry, ppc_mean_legend_entry],
+        labels=["Observed", "95% Credible Interval", "Mean"],
         bbox_to_anchor=[0.5, -0.2],
         loc="center",
         ncol=3
