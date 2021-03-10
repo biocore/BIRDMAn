@@ -8,6 +8,7 @@
 *.DS_Store
 birdman/templates/negative_binomial
 birdman/templates/negative_binomial_single
+tests/custom_model
 
 *__pycache__/
 /data
