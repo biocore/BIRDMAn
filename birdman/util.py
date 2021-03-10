@@ -17,6 +17,19 @@ def alr_to_clr(x: np.ndarray) -> np.ndarray:
     return x_clr
 
 
+def clr_to_alr(x: np.ndarray) -> np.ndarray:
+    """Convert CLR coordinates to ALR coordinates.
+
+    :param x: Matrix of centered CLR coordinates (features x draws)
+    :type x: np.ndarray
+
+    :returns: Matrix of ALR coordinates
+    :rtype: np.ndarray
+    """
+    ref = x[0, :]  # first feature as reference
+    return (x - ref)[1:, :]
+
+
 def convert_beta_coordinates(beta: np.ndarray) -> np.ndarray:
     """Convert feature-covariate coefficients from ALR to CLR.
 

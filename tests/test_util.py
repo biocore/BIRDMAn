@@ -20,6 +20,22 @@ def test_alr_to_clr():
     np.testing.assert_array_almost_equal(clr_mat, exp_clr)
 
 
+def test_clr_to_alr():
+    mat = np.array([
+        [0.1, 0.2, 0.3, 0.4, 0.3],
+        [0.3, 0.1, 0.1, 0.2, 0.5],
+        [0.4, 0.3, 0.5, 0.1, 0.1],
+        [0.2, 0.4, 0.1, 0.3, 0.1]
+    ])
+
+    # skbio alr & clr take rows as compositions, columns as components
+    clr_mat = clr(mat.T)
+    alr_mat = util.clr_to_alr(clr_mat.T).T
+    exp_alr = alr(mat.T)
+
+    np.testing.assert_array_almost_equal(alr_mat, exp_alr)
+
+
 def test_convert_beta_coordinates():
     # Total: (n draws x p covariates x d features)
     # Each draw: (p covariates x d features)

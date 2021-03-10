@@ -55,4 +55,5 @@ In Python:
     :caption: API
 
     models
+    stats
     util
