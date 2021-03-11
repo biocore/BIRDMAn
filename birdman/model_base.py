@@ -130,6 +130,8 @@ class Model:
             _fits.append(_fit)
 
         _fits = dask.compute(*_fits)
+        # Set data back to full table
+        self.dat["y"] = self.table.matrix_data.todense().T.astype(int)
         return _fits
 
     def to_inference_object(
