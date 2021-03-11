@@ -4,64 +4,25 @@ from birdman import visualization as viz
 
 
 class TestRankPlot:
-    def test_rank_plot_beta(self, example_model):
-        inference = example_model.to_inference_object(
-            params=["beta", "phi"],
-            coords={
-                "feature": example_model.feature_names,
-                "covariate": example_model.colnames,
-            },
-            dims={
-                "beta": ["covariate", "feature"],
-                "phi": ["feature"],
-            },
-            alr_params=["beta"],
-        )
-
+    def test_rank_plot_beta(self, example_inf):
         viz.plot_parameter_estimates(
-            inference_object=inference,
+            inference_object=example_inf,
             parameter="beta",
             coord={"covariate": "host_common_name[T.long-tailed macaque]"},
             num_std=1
         )
 
-    def test_rank_plot_phi(self, example_model):
-        inference = example_model.to_inference_object(
-            params=["beta", "phi"],
-            coords={
-                "feature": example_model.feature_names,
-                "covariate": example_model.colnames,
-            },
-            dims={
-                "beta": ["covariate", "feature"],
-                "phi": ["feature"],
-            },
-            alr_params=["beta"],
-        )
-
+    def test_rank_plot_phi(self, example_inf):
         viz.plot_parameter_estimates(
-            inference_object=inference,
+            inference_object=example_inf,
             parameter="phi",
             num_std=1
         )
 
-    def test_rank_plot_no_coord(self, example_model):
-        inference = example_model.to_inference_object(
-            params=["beta", "phi"],
-            coords={
-                "feature": example_model.feature_names,
-                "covariate": example_model.colnames,
-            },
-            dims={
-                "beta": ["covariate", "feature"],
-                "phi": ["feature"],
-            },
-            alr_params=["beta"],
-        )
-
+    def test_rank_plot_no_coord(self, example_inf):
         with pytest.raises(ValueError) as excinfo:
             viz.plot_parameter_estimates(
-                inference_object=inference,
+                inference_object=example_inf,
                 parameter="beta",
                 num_std=1
             )
@@ -72,23 +33,8 @@ class TestRankPlot:
 
 
 class TestPPCPlot:
-    def test_ppc(self, example_model):
-        inference = example_model.to_inference_object(
-            params=["beta", "phi"],
-            coords={
-                "feature": example_model.feature_names,
-                "covariate": example_model.colnames,
-            },
-            dims={
-                "beta": ["covariate", "feature"],
-                "phi": ["feature"],
-            },
-            alr_params=["beta"],
-            include_observed_data=True,
-            posterior_predictive="y_predict"
-        )
-
-        viz.plot_posterior_predictive_checks(inference)
+    def test_ppc(self, example_inf):
+        viz.plot_posterior_predictive_checks(example_inf)
 
     def test_ppc_no_pp(self, example_model):
         inference = example_model.to_inference_object(

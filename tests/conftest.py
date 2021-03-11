@@ -38,8 +38,7 @@ def metadata():
     return example_metadata()
 
 
-@pytest.fixture(scope="session")
-def example_model():
+def model():
     tbl = example_biom()
     md = example_metadata()
 
@@ -56,7 +55,11 @@ def example_model():
 
 
 @pytest.fixture(scope="session")
-def example_parallel_model():
+def example_model():
+    return model()
+
+
+def parallel_model():
     tbl = example_biom()
     md = example_metadata()
 
@@ -71,3 +74,49 @@ def example_parallel_model():
     nb.compile_model()
     nb.fit_model()
     return nb
+
+
+@pytest.fixture(scope="session")
+def example_parallel_model():
+    return parallel_model()
+
+
+@pytest.fixture(scope="session")
+def example_inf():
+    nb = model()
+    inference = nb.to_inference_object(
+        params=["beta", "phi"],
+        coords={
+            "feature": nb.feature_names,
+            "covariate": nb.colnames,
+        },
+        dims={
+            "beta": ["covariate", "feature"],
+            "phi": ["feature"],
+        },
+        alr_params=["beta"],
+        posterior_predictive="y_predict",
+        log_likelihood="log_lik",
+        include_observed_data=True
+    )
+    return inference
+
+
+@pytest.fixture(scope="session")
+def example_parallel_inf():
+    nb = parallel_model()
+    inference = nb.to_inference_object(
+        params=["beta", "phi"],
+        coords={
+            "feature": nb.feature_names,
+            "covariate": nb.colnames,
+        },
+        dims={
+            "beta": ["covariate", "feature"],
+            "phi": ["feature"],
+        },
+        posterior_predictive="y_predict",
+        log_likelihood="log_lik",
+        include_observed_data=True
+    )
+    return inference
