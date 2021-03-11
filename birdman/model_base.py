@@ -231,3 +231,21 @@ class Model:
             )
             inference = az.concat(inference, obs)
         return inference
+
+    def diagnose(self):
+        """Use built-in diagnosis function of ``cmdstanpy``."""
+        if self.fit is None:
+            raise ValueError("Model has not been fit!")
+        if self.parallelize_across == "chains":
+            return self.fit.diagnose()
+        if self.parallelize_across == "features":
+            return [x.diagnose() for x in self.fit]
+
+    def summary(self):
+        """Use built-in summary function of ``cmdstanpy``."""
+        if self.fit is None:
+            raise ValueError("Model has not been fit!")
+        if self.parallelize_across == "chains":
+            return self.fit.summary()
+        if self.parallelize_across == "features":
+            return [x.summary() for x in self.fit]
