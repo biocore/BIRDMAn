@@ -25,7 +25,7 @@ def ess(
 
     :param kwargs: Keyword arguments to pass to ``az.ess``
     """
-    return az.ess(inference_object, params, **kwargs)
+    return az.ess(inference_object, var_names=params, **kwargs)
 
 
 def rhat(
@@ -48,4 +48,4 @@ def rhat(
 
     :param kwargs: Keyword arguments to pass to ``az.rhat``
     """
-    return az.rhat(inference_object, params, **kwargs)
+    return az.rhat(inference_object, var_names=params, **kwargs)
