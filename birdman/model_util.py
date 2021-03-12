@@ -52,16 +52,19 @@ def single_fit_to_inference(
     new_dims = {k: v for k, v in dims.items() if k not in alr_params}
 
     extra_dims = dict()
+    extra_coords = dict()
     if log_likelihood is not None:
         extra_dims.update({log_likelihood: ["sample", "feature"]})
+        extra_coords.update({"sample": sample_names})
     if posterior_predictive is not None:
         extra_dims.update({posterior_predictive: ["sample", "feature"]})
+        extra_coords.update({"sample": sample_names})
 
     new_dims.update(extra_dims)
 
     inference = az.from_cmdstanpy(
         posterior=fit,
-        coords=coords,
+        coords={**coords, **extra_coords},
         log_likelihood=log_likelihood,
         posterior_predictive=posterior_predictive,
         dims=new_dims

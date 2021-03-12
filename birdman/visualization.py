@@ -67,26 +67,32 @@ def plot_posterior_predictive_checks(inference_object: az.InferenceData):
     if "observed_data" not in inference_object.groups():
         raise ValueError("Must include observed data to perform PPC!")
 
-    obs = inference_object.observed_data.to_array().values.ravel()
-    ppc = inference_object.posterior_predictive
-    ppc_mean = ppc.mean(["chain", "draw"]).to_array().values[0]
-    ppc_lower = ppc.quantile(0.025, ["chain", "draw"]).to_array().values[0]
-    ppc_upper = ppc.quantile(0.975, ["chain", "draw"]).to_array().values[0]
-    ppc_in_ci = (obs < ppc_upper) & (obs > ppc_lower)
-    pct_in_ci = ppc_in_ci.sum() / len(ppc_in_ci) * 100
+    obs = inference_object.observed_data.transpose("sample", "feature")
+    ppc = inference_object.posterior_predictive.transpose(
+        "chain", "draw", "sample", "feature"
+    )
+    ppc_mean = ppc.mean(["chain", "draw"])
+    ppc_lower = ppc.quantile(0.025, ["chain", "draw"])
+    ppc_upper = ppc.quantile(0.975, ["chain", "draw"])
+    ppc_in_ci = (
+        (obs["observed"] <= ppc_upper["y_predict"])
+        & (obs["observed"] >= ppc_lower["y_predict"])
+    )
+    pct_in_ci = ppc_in_ci.data.sum() / len(ppc_in_ci.data.ravel()) * 100
 
-    sort_indices = obs.argsort()
-    obs = obs[sort_indices]
-    ppc_mean = ppc_mean[sort_indices]
-    ppc_lower = ppc_lower[sort_indices]
-    ppc_upper = ppc_upper[sort_indices]
+    obs_data = obs["observed"].data.reshape(-1)
+    sort_indices = obs_data.argsort()
+    obs_data = obs_data[sort_indices]
+    ppc_mean_data = ppc_mean["y_predict"].data.reshape(-1)[sort_indices]
+    ppc_lower_data = ppc_lower["y_predict"].data.reshape(-1)[sort_indices]
+    ppc_upper_data = ppc_upper["y_predict"].data.reshape(-1)[sort_indices]
 
     fig, ax = plt.subplots(1, 1)
-    x = np.arange(len(obs))
-    ax.plot(x, obs, zorder=3, color="black")
+    x = np.arange(len(obs_data))
+    ax.plot(x, obs_data, zorder=3, color="black")
     y_min, y_max = ax.get_ylim()
-    ax.scatter(x=x, y=ppc_mean, zorder=1, color="gray")
-    for i, (lower, upper) in enumerate(zip(ppc_lower, ppc_upper)):
+    ax.scatter(x=x, y=ppc_mean_data, zorder=1, color="gray")
+    for i, (lower, upper) in enumerate(zip(ppc_lower_data, ppc_upper_data)):
         ax.plot(  # credible interval
             [i, i],
             [lower, upper],

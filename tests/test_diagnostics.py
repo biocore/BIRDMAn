@@ -1,4 +1,4 @@
-import birdman.diagostics as diag
+import birdman.diagnostics as diag
 
 
 def test_ess(example_inf, example_parallel_inf):
