@@ -16,7 +16,9 @@ setup(
         "biom-format",
         "patsy",
         "xarray",
-        "arviz>=0.11.2"
+        "arviz @ git+git://github.com/arviz-devs/arviz.git"
+        # Temporary solution until github.com/arviz-devs/arviz/pull/1579
+        # is included in on PyPI
     ],
     extras_require={"dev": ["pytest", "scikit-bio"]}
 )

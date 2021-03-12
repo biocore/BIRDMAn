@@ -7,8 +7,8 @@ from birdman import stats
 class TestHotelling:
     def test_hotelling(self):
         p, n = 50, 100  # 50 features, 100 draws
-        Xrand = np.random.randn(p, n)
-        Xreal = np.random.randn(p, n)
+        Xrand = np.random.normal(loc=0, scale=0.1, size=(p, n))
+        Xreal = np.random.normal(loc=0, scale=0.1, size=(p, n))
         Xreal[0, :] += 10  # increment first feature uniformly by 10
 
         _, pval = stats._hotelling(Xrand)
