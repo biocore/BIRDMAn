@@ -55,5 +55,13 @@ In Python:
     :caption: API
 
     models
+    diagnostics
     stats
     util
+
+Indices and tables
+------------------
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
