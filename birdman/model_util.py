@@ -50,6 +50,15 @@ def single_fit_to_inference(
     """
     # remove alr params so initial dim fitting works
     new_dims = {k: v for k, v in dims.items() if k not in alr_params}
+
+    extra_dims = dict()
+    if log_likelihood is not None:
+        extra_dims.update({log_likelihood: ["sample", "feature"]})
+    if posterior_predictive is not None:
+        extra_dims.update({posterior_predictive: ["sample", "feature"]})
+
+    new_dims.update(extra_dims)
+
     inference = az.from_cmdstanpy(
         posterior=fit,
         coords=coords,
@@ -103,7 +112,8 @@ def multiple_fits_to_inference(
     concatenation_name: str,
     posterior_predictive: str = None,
     log_likelihood: str = None,
-    sample_names: Sequence[str] = None
+    sample_names: Sequence[str] = None,
+    feature_names: Sequence[str] = None
 ) -> az.InferenceData:
     """Save fitted parameters to xarray DataSet for multiple fits.
 
@@ -173,28 +183,13 @@ def multiple_fits_to_inference(
     ss_ds = xr.concat(ss_list, concatenation_name)
     group_dict = {"posterior": po_ds, "sample_stats": ss_ds}
 
-    # Flatten table values for use in arviz built-in stats
     if log_likelihood is not None:
-        ll_ds = xr.concat(ll_list, concatenation_name)
-        ll_data = ll_ds[log_likelihood].values
-        ll_ds = ll_ds.drop_vars([log_likelihood])  # drop to save mem
-        ll_data = ll_data.reshape(fit.chains, fit.num_draws_sampling, -1)
-        ll_ds = ll_ds.assign_coords(table_entry=np.arange(ll_data.shape[-1]))
-        ll_ds[log_likelihood] = (("chain", "draw", "table_entry"),
-                                 ll_data)
-        ll_dim_name = f"{log_likelihood}_dim_0"
-        ll_ds = ll_ds.drop_dims([ll_dim_name])
+        ll_ds = _concat_table_draws(log_likelihood, ll_list, sample_names,
+                                    "feature")
         group_dict["log_likelihood"] = ll_ds
     if posterior_predictive is not None:
-        pp_ds = xr.concat(pp_list, concatenation_name)
-        pp_data = pp_ds[posterior_predictive].values
-        pp_ds = pp_ds.drop_vars([posterior_predictive])  # drop to save mem
-        pp_data = pp_data.reshape(fit.chains, fit.num_draws_sampling, -1)
-        pp_ds = pp_ds.assign_coords(table_entry=np.arange(pp_data.shape[-1]))
-        pp_ds[posterior_predictive] = (("chain", "draw", "table_entry"),
-                                       pp_data)
-        pp_dim_name = f"{posterior_predictive}_dim_0"
-        pp_ds = pp_ds.drop_dims([pp_dim_name])
+        pp_ds = _concat_table_draws(posterior_predictive, pp_list,
+                                    sample_names, "feature")
         group_dict["posterior_predictive"] = pp_ds
 
     all_group_inferences = []
@@ -224,3 +219,18 @@ def _drop_data(
                 dims_to_drop.append(dim)
     new_dataset = new_dataset.drop_dims(dims_to_drop)
     return new_dataset
+
+
+def _concat_table_draws(
+    group: str,
+    da_list: Sequence[xr.DataArray],
+    sample_names: Sequence[str],
+    concatenation_name: str
+):
+    """For posterior predictive & log likelihood."""
+    ds = xr.concat(da_list, concatenation_name)
+    dim_name = f"{group}_dim_0"
+    ds = ds.rename_dims({dim_name: "sample"})
+    ds = ds.assign_coords({"sample": sample_names})
+    ds = ds.reset_coords([dim_name], drop=True)
+    return ds

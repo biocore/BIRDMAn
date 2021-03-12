@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import xarray as xr
 
 from birdman import model_util as mu
 
@@ -95,15 +96,13 @@ class TestPPLL:
             log_likelihood="log_lik",
             sample_names=example_model.sample_names
         )
-        inf_data = inf.posterior_predictive["y_predict"].values
-        inf_data = inf_data.reshape(4, 100, 24, 28, order="F")
-        nb_data = example_model.fit.stan_variable("y_predict")
-        nb_data = np.array(np.split(nb_data, 4, axis=0))
-        print(inf_data.shape, nb_data.shape)
-        np.testing.assert_array_almost_equal(nb_data, inf_data)
-        assert 0
-        #self.pp_comparison(example_model, inf.posterior_predictive)
-        #self.ll_comparison(example_model, inf.log_likelihood)
+
+        d = {"posterior_predictive": "y_predict", "log_likelihood": "log_lik"}
+        for k, v in d.items():
+            inf_data = inf[k][v].values
+            nb_data = example_model.fit.stan_variable(v)
+            nb_data = np.array(np.split(nb_data, 4, axis=0))
+            np.testing.assert_array_almost_equal(nb_data, inf_data)
 
     def test_parallel_ppll(self, example_parallel_model):
         inf = mu.multiple_fits_to_inference(
@@ -120,7 +119,49 @@ class TestPPLL:
             posterior_predictive="y_predict",
             log_likelihood="log_lik",
             concatenation_name="feature",
-            sample_names=example_parallel_model.sample_names
+            sample_names=example_parallel_model.sample_names,
+            feature_names=example_parallel_model.feature_names
         )
-        self.pp_comparison(example_parallel_model, inf.posterior_predictive)
-        self.ll_comparison(example_parallel_model, inf.log_likelihood)
+
+        dim_order = ("chain", "draw", "sample", "feature")
+
+        nb_ll_data = np.stack([
+            x.stan_variable("log_lik")
+            for x in example_parallel_model.fit
+        ], axis=2)
+        nb_ll_data = np.array(np.split(nb_ll_data, 4, axis=0))
+
+        nb_ll = xr.Dataset(
+            {"log_lik": (dim_order, nb_ll_data)},
+            coords={
+                "chain": np.arange(4),
+                "draw": np.arange(100),
+                "sample": example_parallel_model.sample_names,
+                "feature": example_parallel_model.feature_names
+            }
+        )
+
+        nb_pp_data = np.stack([
+            x.stan_variable("y_predict")
+            for x in example_parallel_model.fit
+        ], axis=2)
+        nb_pp_data = np.array(np.split(nb_pp_data, 4, axis=0))
+
+        nb_pp = xr.Dataset(
+            {"y_predict": (dim_order, nb_pp_data)},
+            coords={
+                "chain": np.arange(4),
+                "draw": np.arange(100),
+                "sample": example_parallel_model.sample_names,
+                "feature": example_parallel_model.feature_names
+            }
+        )
+
+        inf_ll = inf.log_likelihood["log_lik"]
+        inf_ll_data = inf_ll.transpose(*dim_order)
+        np.testing.assert_array_almost_equal(inf_ll_data, nb_ll.log_lik.values)
+
+        inf_pp = inf.posterior_predictive["y_predict"]
+        inf_pp_data = inf_pp.transpose(*dim_order)
+        np.testing.assert_array_almost_equal(inf_pp_data,
+                                             nb_pp.y_predict.values)
