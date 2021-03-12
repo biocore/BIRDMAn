@@ -206,6 +206,7 @@ class Model:
             "dims": dims,
             "posterior_predictive": posterior_predictive,
             "log_likelihood": log_likelihood,
+            "sample_names": self.sample_names
         }
         if isinstance(self.fit, CmdStanMCMC):
             fit_to_inference = single_fit_to_inference

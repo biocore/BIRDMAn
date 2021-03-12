@@ -49,3 +49,12 @@ def rhat(
     :param kwargs: Keyword arguments to pass to ``az.rhat``
     """
     return az.rhat(inference_object, var_names=params, **kwargs)
+
+
+# z.to_stacked_array("g", sample_dims=["chain", "draw"]).shape
+def loo(
+    inference_object: az.InferenceData,
+    **kwargs
+):
+
+    return

@@ -74,3 +74,53 @@ class TestToInference:
             )
         assert str(excinfo.value) == ("concatenation_name must match "
                                       "dimensions in dims")
+
+
+# Posterior predictive & log likelihood
+class TestPPLL:
+    def test_serial_ppll(self, example_model):
+        inf = mu.single_fit_to_inference(
+            fit=example_model.fit,
+            coords={
+                "feature": example_model.feature_names,
+                "covariate": example_model.colnames
+            },
+            dims={
+                "beta": ["covariate", "feature"],
+                "phi": ["feature"]
+            },
+            params=["beta", "phi"],
+            alr_params=["beta"],
+            posterior_predictive="y_predict",
+            log_likelihood="log_lik",
+            sample_names=example_model.sample_names
+        )
+        inf_data = inf.posterior_predictive["y_predict"].values
+        inf_data = inf_data.reshape(4, 100, 24, 28, order="F")
+        nb_data = example_model.fit.stan_variable("y_predict")
+        nb_data = np.array(np.split(nb_data, 4, axis=0))
+        print(inf_data.shape, nb_data.shape)
+        np.testing.assert_array_almost_equal(nb_data, inf_data)
+        assert 0
+        #self.pp_comparison(example_model, inf.posterior_predictive)
+        #self.ll_comparison(example_model, inf.log_likelihood)
+
+    def test_parallel_ppll(self, example_parallel_model):
+        inf = mu.multiple_fits_to_inference(
+            fits=example_parallel_model.fit,
+            coords={
+                "feature": example_parallel_model.feature_names,
+                "covariate": example_parallel_model.colnames
+            },
+            dims={
+                "beta": ["covariate", "feature"],
+                "phi": ["feature"]
+            },
+            params=["beta", "phi"],
+            posterior_predictive="y_predict",
+            log_likelihood="log_lik",
+            concatenation_name="feature",
+            sample_names=example_parallel_model.sample_names
+        )
+        self.pp_comparison(example_parallel_model, inf.posterior_predictive)
+        self.ll_comparison(example_parallel_model, inf.log_likelihood)
