@@ -54,7 +54,8 @@ class TestToInference:
                 "beta": ["covariate", "feature"],
                 "phi": ["feature"]
             },
-            concatenation_name="feature"
+            concatenation_name="feature",
+            feature_names=example_parallel_model.feature_names
         )
         self.dataset_comparison(example_parallel_model, inf.posterior)
 
@@ -71,7 +72,8 @@ class TestToInference:
                     "beta": ["covariate", "feature"],
                     "phi": ["feature"]
                 },
-                concatenation_name="mewtwo"
+                concatenation_name="mewtwo",
+                feature_names=example_parallel_model.feature_names
             )
         assert str(excinfo.value) == ("concatenation_name must match "
                                       "dimensions in dims")

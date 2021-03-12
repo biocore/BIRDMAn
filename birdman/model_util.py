@@ -45,6 +45,9 @@ def single_fit_to_inference(
         to include in ``arviz`` InferenceData object
     :type log_likelihood: str, optional
 
+    :param sample_names: Sample names to label PP and/or LL
+    :type sample_names: Sequence[str]
+
     :returns: ``arviz`` InferenceData object with selected values
     :rtype: az.InferenceData
     """
@@ -113,10 +116,10 @@ def multiple_fits_to_inference(
     coords: dict,
     dims: dict,
     concatenation_name: str,
+    feature_names: Sequence[str],
     posterior_predictive: str = None,
     log_likelihood: str = None,
     sample_names: Sequence[str] = None,
-    feature_names: Sequence[str] = None
 ) -> az.InferenceData:
     """Save fitted parameters to xarray DataSet for multiple fits.
 
@@ -144,8 +147,11 @@ def multiple_fits_to_inference(
         to include in ``arviz`` InferenceData object
     :type log_likelihood: str, optional
 
-    :param sample_names: Names of table samples
-    :type sample_names: Sequence[str], optional
+    :param sample_names: Sample names to label PP and/or LL
+    :type sample_names: Sequence[str]
+
+    :param feature_names: Feature names to label concatenation
+    :type feature_name: Sequence[str]
 
     :returns: ``arviz`` InferenceData object with selected values
     :rtype: az.InferenceData
@@ -229,7 +235,7 @@ def _concat_table_draws(
     da_list: Sequence[xr.DataArray],
     sample_names: Sequence[str],
     concatenation_name: str
-):
+) -> xr.Dataset:
     """For posterior predictive & log likelihood."""
     ds = xr.concat(da_list, concatenation_name)
     dim_name = f"{group}_dim_0"
