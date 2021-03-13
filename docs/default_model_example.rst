@@ -65,7 +65,7 @@ We then have to compile and fit our model. This is very straightforward in BIRDM
 
 Now we have our parameter estimates which we can use in downstream analyses. Many of BIRDMAn's included analysis & visualization functions take an ``arviz.InferenceData`` object. We provide a simple method to convert your BIRDMAn fit into this data structure.
 
-The ``coords`` & ``dims`` arguments follow the ``xarray`` data structure (as that is what ``arviz`` wraps). In this example we want to keep the fitted ``beta`` and ``phi`` parameters and we annotate the dimensions as ``covariate × feature`` and ``feature`` respectively. We also provide the covariate names and feature names. Next, we specify that we want to include the ``log likelihood`` and ``posterior predictive`` values we calculated while model fitting. These will be useful for diagnostics. Finally, we include the observed data (the original counts in the feature table) so we can see how well our model did.
+The ``coords`` & ``dims`` arguments follow the ``xarray`` data structure (as that is what ``arviz`` wraps). In this example we want to keep the fitted ``beta`` and ``phi`` parameters and we annotate the dimensions as ``covariate × feature`` and ``feature`` respectively. We also provide the covariate names and feature names. Next, we specify that we want to include the ``log likelihood`` and ``posterior predictive`` values we calculated while model fitting. These will be useful for diagnostics. We include the observed data (the original counts in the feature table) so we can see how well our model did.
 
 .. code-block:: python
 
@@ -85,27 +85,16 @@ The ``coords`` & ``dims`` arguments follow the ``xarray`` data structure (as tha
         include_observed_data=True
     )
 
-Finally, we'll plot the feature differentials and their standard deviations. This will eventually be wrapped into its own function in BIRDMAn so you won't have to implement it manually.
+Finally, we'll plot the feature differentials and their standard deviations. We specify that we are interested in the ``diet[T.DIO]`` differentials but you can easily plot whichever parameter you like through the combination of the ``parameter`` and ``coord`` arguments.
 
 .. code-block:: python
 
-    import matplotlib.pyplot as plt
-    import numpy as np
+    import birdman.visualization as viz
 
-    posterior = inference.posterior
-    coord = {"covariate": "diet[T.DIO]"}
-    param_medians = posterior["beta"].sel(**coord).median(["chain", "draw"])
-    param_stds = posterior["beta"].sel(**coord).std(["chain", "draw"])
-    sort_indices = param_medians.argsort().data
-    param_medians = param_medians.data[sort_indices]
-    param_stds = param_stds.data[sort_indices]
-
-    fig, ax = plt.subplots(1, 1)
-    x = np.arange(len(param_medians))
-    ax.errorbar(x=x, y=param_medians, yerr=param_stds, zorder=0)
-    ax.scatter(x=x, y=param_medians, zorder=1, color="black", s=5)
-    ax.axhline(y=0, color="gray", linestyle="--", linewidth=2)
-    ax.set_xlabel("Feature")
-    ax.set_ylabel("Differential")
+    ax = viz.plot_parameter_estimates(
+        inference,
+        parameter="beta",
+        coord={"covariate": "diet[T.DIO]"},
+    )
 
 .. image:: imgs/example_differentials.png

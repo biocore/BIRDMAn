@@ -42,8 +42,8 @@ def plot_parameter_estimates(
 
     fig, ax = plt.subplots(1, 1)
     x = np.arange(len(param_means))
-    ax.errorbar(x=x, y=param_means, yerr=param_stds*num_std)
-    ax.scatter(x=x, y=param_means)
+    ax.errorbar(x=x, y=param_means, yerr=param_stds*num_std, zorder=0)
+    ax.scatter(x=x, y=param_means, color="black", zorder=2, s=5)
 
     ax.set_xlabel("Feature")
     ax.set_ylabel("Differential")

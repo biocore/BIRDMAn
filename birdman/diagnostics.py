@@ -27,6 +27,9 @@ def ess(
     :type params: List[str]
 
     :param kwargs: Keyword arguments to pass to ``az.ess``
+
+    :returns: Estimated effective sample sizes
+    :rtype: xr.Dataset
     """
     return az.ess(inference_object, var_names=params, **kwargs)
 
@@ -52,11 +55,14 @@ def rhat(
     :type params: List[str]
 
     :param kwargs: Keyword arguments to pass to ``az.rhat``
+
+    :returns: Estimated Rhat values
+    :rtype: xr.Dataset
     """
     return az.rhat(inference_object, var_names=params, **kwargs)
 
 
-def loo(inference_object: az.InferenceData):
+def loo(inference_object: az.InferenceData) -> az.ELPDData:
     """Compute Pareto-smoothed importance sampling LOO CV.
 
     Wrapper function for ``az.loo``.
@@ -71,6 +77,9 @@ def loo(inference_object: az.InferenceData):
 
     :param inference_object: Inference object with posterior draws
     :type inference_object: az.InferenceData
+
+    :returns: Estimated log pointwise predictive density
+    :rtype: az.ELPDData
     """
     # We save "sample" as a dimension which causes problems with arviz
     # See https://github.com/arviz-devs/arviz/issues/1613 for details

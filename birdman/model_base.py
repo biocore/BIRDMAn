@@ -21,25 +21,25 @@ class Model:
     :param formula: Design formula to use in model
     :type formula: str
 
-    :param metadata: Metadata file for design matrix
+    :param metadata: Metadata for design matrix
     :type metadata: pd.DataFrame
 
     :param model_path: Filepath to Stan model
     :type model_path: str
 
     :param num_iter: Number of posterior draws (used for both warmup and
-        sampling), defaults to 2000
-    :type num_iter: int, optional
+        sampling), defaults to 500
+    :type num_iter: int
 
     :param chains: Number of chains to use in MCMC, defaults to 4
-    :type chains: int, optional
+    :type chains: int
 
     :param seed: Random seed to use for sampling, defaults to 42
-    :type seed: float, optional
+    :type seed: float
 
     :param parallelize_across: Whether to parallelize across features or chains
         , defaults to 'chains'
-    :type parallelize_across: str, optional
+    :type parallelize_across: str
     """
     def __init__(
         self,
@@ -47,7 +47,7 @@ class Model:
         formula: str,
         metadata: pd.DataFrame,
         model_path: str,
-        num_iter: int = 2000,
+        num_iter: int = 500,
         chains: int = 4,
         seed: float = 42,
         parallelize_across: str = "chains"
@@ -175,7 +175,7 @@ class Model:
 
         :param concatenation_name: Name to aggregate features when combining
             multiple fits, defaults to 'feature'
-        :type concatentation_name: str, optional
+        :type concatentation_name: str
 
         :param alr_params: Parameters to convert from ALR to CLR (this will
             be ignored if the model has been parallelized across features)
@@ -184,7 +184,7 @@ class Model:
         :param include_observed_data: Whether to include the original feature
             table values into the ``arviz`` InferenceData object, default is
             False
-        :type include_observed_data: bool, optional
+        :type include_observed_data: bool
 
         :param posterior_predictive: Name of posterior predictive values from
             Stan model to include in ``arviz`` InferenceData object
