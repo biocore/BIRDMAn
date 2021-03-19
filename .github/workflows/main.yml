@@ -13,6 +13,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9"]
+
     steps:
       - uses: actions/checkout@v2
         with:
@@ -22,7 +26,7 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: birdman
-          python-version: 3.7
+          python-version: ${{ matrix.python-version }}
 
       - name: Test conda installation
         shell: bash -l {0}
