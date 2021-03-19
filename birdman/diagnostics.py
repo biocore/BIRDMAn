@@ -81,11 +81,7 @@ def loo(inference_object: az.InferenceData) -> az.ELPDData:
     :returns: Estimated log pointwise predictive density
     :rtype: az.ELPDData
     """
-    # We save "sample" as a dimension which causes problems with arviz
-    # See https://github.com/arviz-devs/arviz/issues/1613 for details
-    inf_copy = inference_object.copy()
-    inf_copy.log_likelihood = inf_copy.log_likelihood.rename({"sample": "_"})
-    return az.loo(inf_copy)
+    return az.loo(inference_object)
 
 
 def r2_score(inference_object: az.InferenceData) -> pd.Series:
@@ -108,11 +104,11 @@ def r2_score(inference_object: az.InferenceData) -> pd.Series:
         raise ValueError("Inference data is missing observed data!")
 
     y_true = inference_object.observed_data["observed"]
-    y_true = y_true.stack(entry=["sample", "feature"]).data
+    y_true = y_true.stack(entry=["tbl_sample", "feature"]).data
 
     pp = inference_object.posterior_predictive
     # Assume only one data variable
     pp_name = list(pp.data_vars)[0]
     y_pred = pp[pp_name].stack(mcmc_sample=["chain", "draw"])
-    y_pred = y_pred.stack(entry=["sample", "feature"]).data
+    y_pred = y_pred.stack(entry=["tbl_sample", "feature"]).data
     return az.r2_score(y_true, y_pred)

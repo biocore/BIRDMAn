@@ -228,10 +228,10 @@ class Model:
             obs = az.from_dict(
                 observed_data={"observed": self.dat["y"]},
                 coords={
-                    "sample": self.sample_names,
+                    "tbl_sample": self.sample_names,
                     "feature": self.feature_names
                 },
-                dims={"observed": ["sample", "feature"]}
+                dims={"observed": ["tbl_sample", "feature"]}
             )
             inference = az.concat(inference, obs)
         return inference

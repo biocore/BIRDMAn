@@ -125,7 +125,7 @@ class TestPPLL:
             feature_names=example_parallel_model.feature_names
         )
 
-        dim_order = ("chain", "draw", "sample", "feature")
+        dim_order = ("chain", "draw", "tbl_sample", "feature")
 
         nb_ll_data = np.stack([
             x.stan_variable("log_lik")
@@ -138,7 +138,7 @@ class TestPPLL:
             coords={
                 "chain": np.arange(4),
                 "draw": np.arange(100),
-                "sample": example_parallel_model.sample_names,
+                "tbl_sample": example_parallel_model.sample_names,
                 "feature": example_parallel_model.feature_names
             }
         )
@@ -154,7 +154,7 @@ class TestPPLL:
             coords={
                 "chain": np.arange(4),
                 "draw": np.arange(100),
-                "sample": example_parallel_model.sample_names,
+                "tbl_sample": example_parallel_model.sample_names,
                 "feature": example_parallel_model.feature_names
             }
         )

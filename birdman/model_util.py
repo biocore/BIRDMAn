@@ -57,11 +57,11 @@ def single_fit_to_inference(
     extra_dims = dict()
     extra_coords = dict()
     if log_likelihood is not None:
-        extra_dims.update({log_likelihood: ["sample", "feature"]})
-        extra_coords.update({"sample": sample_names})
+        extra_dims.update({log_likelihood: ["tbl_sample", "feature"]})
+        extra_coords.update({"tbl_sample": sample_names})
     if posterior_predictive is not None:
-        extra_dims.update({posterior_predictive: ["sample", "feature"]})
-        extra_coords.update({"sample": sample_names})
+        extra_dims.update({posterior_predictive: ["tbl_sample", "feature"]})
+        extra_coords.update({"tbl_sample": sample_names})
 
     new_dims.update(extra_dims)
 
@@ -239,7 +239,7 @@ def _concat_table_draws(
     """For posterior predictive & log likelihood."""
     ds = xr.concat(da_list, concatenation_name)
     dim_name = f"{group}_dim_0"
-    ds = ds.rename_dims({dim_name: "sample"})
-    ds = ds.assign_coords({"sample": sample_names})
+    ds = ds.rename_dims({dim_name: "tbl_sample"})
+    ds = ds.assign_coords({"tbl_sample": sample_names})
     ds = ds.reset_coords([dim_name], drop=True)
     return ds

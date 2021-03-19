@@ -67,9 +67,9 @@ def plot_posterior_predictive_checks(inference_object: az.InferenceData):
     if "observed_data" not in inference_object.groups():
         raise ValueError("Must include observed data to perform PPC!")
 
-    obs = inference_object.observed_data.transpose("sample", "feature")
+    obs = inference_object.observed_data.transpose("tbl_sample", "feature")
     ppc = inference_object.posterior_predictive.transpose(
-        "chain", "draw", "sample", "feature"
+        "chain", "draw", "tbl_sample", "feature"
     )
     ppc_mean = ppc.mean(["chain", "draw"])
     ppc_lower = ppc.quantile(0.025, ["chain", "draw"])
