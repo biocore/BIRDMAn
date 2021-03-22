@@ -12,7 +12,7 @@ DEFAULT_MODEL_DICT = {
         "chains": os.path.join(TEMPLATES, "negative_binomial.stan"),
         "features": os.path.join(TEMPLATES, "negative_binomial_single.stan")
     },
-    "multinomial": "templates/multinomial.stan",
+    "multinomial": os.path.join(TEMPLATES, "multinomial.stan")
 }
 
 
@@ -94,6 +94,18 @@ class NegativeBinomial(Model):
 class Multinomial(Model):
     """Fit count data using serial multinomial model.
 
+    .. math::
+
+        y_i &\\sim \\textrm{Multinomial}(\\eta_i)
+
+        \\eta_i &= \\textrm{alr}^{-1}(x_i \\cdot \\beta)
+
+    Priors:
+
+    .. math::
+
+        \\beta_j \\sim \\textrm{Normal}(0, B_p), B_p \\in \\mathbb{R}_{>0}
+
     :param table: Feature table (features x samples)
     :type table: biom.table.Table
 
@@ -127,11 +139,11 @@ class Multinomial(Model):
         seed: float = 42,
         beta_prior: float = 5.0,
     ):
-        super().__init__(table, formula, metadata, "multinomial",
-                         num_iter, chains, seed, parallelize_across="chains")
+        filepath = DEFAULT_MODEL_DICT["multinomial"]
+        super().__init__(table, formula, metadata, filepath, num_iter, chains,
+                         seed, parallelize_across="chains")
+
         param_dict = {
             "B_p": beta_prior,
         }
         self.add_parameters(param_dict)
-        self.filepath = DEFAULT_MODEL_DICT["multinomial"]
-        self.load_stancode()

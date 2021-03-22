@@ -74,11 +74,11 @@ def plot_posterior_predictive_checks(inference_object: az.InferenceData):
     ppc_mean = ppc.mean(["chain", "draw"])
     ppc_lower = ppc.quantile(0.025, ["chain", "draw"])
     ppc_upper = ppc.quantile(0.975, ["chain", "draw"])
-    ppc_in_ci = (
-        (obs["observed"] <= ppc_upper["y_predict"])
-        & (obs["observed"] >= ppc_lower["y_predict"])
-    )
-    pct_in_ci = ppc_in_ci.data.sum() / len(ppc_in_ci.data.ravel()) * 100
+    # ppc_in_ci = (
+    #     (obs["observed"] <= ppc_upper["y_predict"])
+    #     & (obs["observed"] >= ppc_lower["y_predict"])
+    # )
+    # pct_in_ci = ppc_in_ci.data.sum() / len(ppc_in_ci.data.ravel()) * 100
 
     obs_data = obs["observed"].data.reshape(-1)
     sort_indices = obs_data.argsort()
@@ -113,9 +113,6 @@ def plot_posterior_predictive_checks(inference_object: az.InferenceData):
         ncol=3
     )
 
-    ax.set_title(
-        f"{round(pct_in_ci, 2)}% of Predictions in 95% Credible Interval"
-    )
     ax.set_ylabel("Count")
     ax.set_xlabel("Table Entry")
     plt.tight_layout()

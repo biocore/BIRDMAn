@@ -62,7 +62,7 @@ def rhat(
     return az.rhat(inference_object, var_names=params, **kwargs)
 
 
-def loo(inference_object: az.InferenceData) -> az.ELPDData:
+def loo(inference_object: az.InferenceData, **kwargs) -> az.ELPDData:
     """Compute Pareto-smoothed importance sampling LOO CV.
 
     Wrapper function for ``az.loo``.
@@ -78,10 +78,12 @@ def loo(inference_object: az.InferenceData) -> az.ELPDData:
     :param inference_object: Inference object with posterior draws
     :type inference_object: az.InferenceData
 
+    :param kwargs: Keyword arguments to pass to ``az.loo``
+
     :returns: Estimated log pointwise predictive density
     :rtype: az.ELPDData
     """
-    return az.loo(inference_object)
+    return az.loo(inference_object, **kwargs)
 
 
 def r2_score(inference_object: az.InferenceData) -> pd.Series:
