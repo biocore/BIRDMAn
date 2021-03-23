@@ -21,13 +21,18 @@ parameters {
 transformed parameters {
   matrix[N, D-1] lam;
   matrix[N, D] lam_clr;
+  vector[N] samp_subj;
   vector<lower=0>[D] phi;
 
   for (i in 1:D){
     phi[i] = 1. / reciprocal_phi[i];
   }
+  samp_subj = Z*subj_int;  // N x 1
 
-  lam = x*beta + Z*subj_int;
+  lam = x*beta;  // N x D-1
+  for (n in 1:N){
+    lam[n] += samp_subj[n];
+  }
   lam_clr = append_col(to_vector(rep_array(0, N)), lam);
 }
 
