@@ -24,9 +24,9 @@ class NegativeBinomial(Model):
 
         y_{ij} &\\sim \\textrm{NB}(\\mu_{ij},\\phi_j)
 
-        \\mu_{ij} &= n_i \\times p_{ij}
+        \\mu_{ij} &= n_i p_{ij}
 
-        \\textrm{alr}^{-1}(p_i) &= x_i \\cdot \\beta
+        \\textrm{alr}^{-1}(p_i) &= x_i \\beta
 
     Priors:
 
@@ -100,9 +100,9 @@ class NegativeBinomialLME(Model):
 
         y_{ij} &\\sim \\textrm{NB}(\\mu_{ij},\\phi_j)
 
-        \\mu_{ij} &= n_i \\times p_{ij}
+        \\mu_{ij} &= n_i p_{ij}
 
-        \\textrm{alr}^{-1}(p_i) &= x_i \\cdot \\beta + z_i \\cdot u
+        \\textrm{alr}^{-1}(p_i) &= x_i \\beta + z_i u
 
     Priors:
 
@@ -113,7 +113,7 @@ class NegativeBinomialLME(Model):
         \\frac{1}{\\phi_j} &\\sim \\textrm{Cauchy}(0, C_s), C_s \\in
             \\mathbb{R}_{>0}
 
-        \\u_{\\textrm{subj}} &\\sim \\textrm{Normal}(0, u_p), u_p \\in
+        u_{\\textrm{subj}} &\\sim \\textrm{Normal}(0, u_p), u_p \\in
             \\mathbb{R}_{>0}
 
 
@@ -187,7 +187,7 @@ class Multinomial(Model):
 
         y_i &\\sim \\textrm{Multinomial}(\\eta_i)
 
-        \\eta_i &= \\textrm{alr}^{-1}(x_i \\cdot \\beta)
+        \\eta_i &= \\textrm{alr}^{-1}(x_i \\beta)
 
     Priors:
 
