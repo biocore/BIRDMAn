@@ -71,7 +71,7 @@ def plot_posterior_predictive_checks(inference_object: az.InferenceData):
     ppc = inference_object.posterior_predictive.transpose(
         "chain", "draw", "tbl_sample", "feature"
     )
-    ppc_mean = ppc.mean(["chain", "draw"])
+    ppc_median = ppc.median(["chain", "draw"])
     ppc_lower = ppc.quantile(0.025, ["chain", "draw"])
     ppc_upper = ppc.quantile(0.975, ["chain", "draw"])
     # ppc_in_ci = (
@@ -83,7 +83,7 @@ def plot_posterior_predictive_checks(inference_object: az.InferenceData):
     obs_data = obs["observed"].data.reshape(-1)
     sort_indices = obs_data.argsort()
     obs_data = obs_data[sort_indices]
-    ppc_mean_data = ppc_mean["y_predict"].data.reshape(-1)[sort_indices]
+    ppc_median_data = ppc_median["y_predict"].data.reshape(-1)[sort_indices]
     ppc_lower_data = ppc_lower["y_predict"].data.reshape(-1)[sort_indices]
     ppc_upper_data = ppc_upper["y_predict"].data.reshape(-1)[sort_indices]
 
@@ -91,7 +91,7 @@ def plot_posterior_predictive_checks(inference_object: az.InferenceData):
     x = np.arange(len(obs_data))
     ax.plot(x, obs_data, zorder=3, color="black")
     y_min, y_max = ax.get_ylim()
-    ax.scatter(x=x, y=ppc_mean_data, zorder=1, color="gray")
+    ax.scatter(x=x, y=ppc_median_data, zorder=1, color="gray")
     for i, (lower, upper) in enumerate(zip(ppc_lower_data, ppc_upper_data)):
         ax.plot(  # credible interval
             [i, i],
@@ -103,11 +103,11 @@ def plot_posterior_predictive_checks(inference_object: az.InferenceData):
 
     obs_legend_entry = Line2D([0], [0], color="black", linewidth=2)
     ci_legend_entry = Line2D([0], [0], color="lightgray", linewidth=2)
-    ppc_mean_legend_entry = Line2D([0], [0], color="gray", marker="o",
-                                   linewidth=0)
+    ppc_median_legend_entry = Line2D([0], [0], color="gray", marker="o",
+                                     linewidth=0)
     ax.legend(
-        handles=[obs_legend_entry, ci_legend_entry, ppc_mean_legend_entry],
-        labels=["Observed", "95% Credible Interval", "Mean"],
+        handles=[obs_legend_entry, ci_legend_entry, ppc_median_legend_entry],
+        labels=["Observed", "95% Credible Interval", "Median"],
         bbox_to_anchor=[0.5, -0.2],
         loc="center",
         ncol=3
