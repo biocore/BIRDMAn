@@ -91,12 +91,16 @@ def single_fit_to_inference(
         all_chain_clr_coords = np.array(all_chain_clr_coords)
 
         tmp_dims = ["chain", "draw"] + dims[param]
-        chain_coords = {"chain": np.arange(fit.chains)}
-        draw_coords = {"draw": np.arange(fit.num_draws_sampling)}
+        mcmc_coords = {
+            "chain": np.arange(fit.chains),
+            "draw": np.arange(fit.num_draws_sampling)
+        }
+        # restrict param DataArray to only required dims/coords
+        tmp_coords = {k: coords[k] for k in dims[param]}
         param_da = xr.DataArray(
             all_chain_clr_coords,
             dims=tmp_dims,
-            coords={**coords, **chain_coords, **draw_coords}
+            coords={**tmp_coords, **mcmc_coords}
         )
         inference.posterior[param] = param_da
 
