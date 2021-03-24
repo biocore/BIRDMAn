@@ -2,6 +2,7 @@ import os
 from pkg_resources import resource_filename
 
 import biom
+import numpy as np
 import pandas as pd
 
 from .model_base import Model
@@ -171,6 +172,8 @@ class NegativeBinomialLME(Model):
         # Encode group IDs starting at 1 because Stan 1-indexes arrays
         group_var_series = metadata[group_var].loc[self.sample_names]
         samp_subj_map = group_var_series.astype("category").cat.codes + 1
+        # Encoding as categories uses alphabetic sorting
+        self.groups = np.sort(group_var_series.unique())
 
         param_dict = {
             "B_p": beta_prior,
