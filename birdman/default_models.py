@@ -167,14 +167,16 @@ class NegativeBinomialLME(Model):
         filepath = DEFAULT_MODEL_DICT["negative_binomial"]["lme"]
         super().__init__(table, formula, metadata, filepath, num_iter, chains,
                          seed, parallelize_across="chains")
+
+        # Encode group IDs starting at 1 because Stan 1-indexes arrays
         group_var_series = metadata[group_var].loc[self.sample_names]
-        samp_subj_map = pd.get_dummies(group_var_series)
+        samp_subj_map = group_var_series.astype("category").cat.codes + 1
 
         param_dict = {
             "B_p": beta_prior,
             "phi_s": cauchy_scale,
             "S": len(group_var_series.unique()),
-            "Z": samp_subj_map.values,
+            "subj_ids": samp_subj_map.values,
             "u_p": group_var_prior
         }
         self.add_parameters(param_dict)

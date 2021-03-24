@@ -1,15 +1,15 @@
 data {
-  int<lower=0> N;       // number of sample IDs
-  int<lower=0> S;       // number of groups (subjects)
-  int<lower=0> D;       // number of dimensions
-  int<lower=0> p;       // number of covariates
-  real depth[N];        // sequencing depths of microbes
-  matrix[N, p] x;       // covariate matrix
-  matrix[N, S] Z;       // mapping of sample to subject
-  int y[N, D];          // observed microbe abundances
-  real<lower=0> B_p;    // stdev for covariate Beta Normal prior
-  real<lower=0> phi_s;  // scale for dispersion Cauchy prior
-  real<lower=0> u_p;    // stdev for subject intercept Normal prior
+  int<lower=0> N;                     // number of sample IDs
+  int<lower=0> S;                     // number of groups (subjects)
+  int<lower=0> D;                     // number of dimensions
+  int<lower=0> p;                     // number of covariates
+  real depth[N];                      // sequencing depths of microbes
+  matrix[N, p] x;                     // covariate matrix
+  int<lower=1, upper=S> subj_ids[N];  // mapping of samples to subject IDs
+  int y[N, D];                        // observed microbe abundances
+  real<lower=0> B_p;                  // stdev for covariate Beta Normal prior
+  real<lower=0> phi_s;                // scale for dispersion Cauchy prior
+  real<lower=0> u_p;                  // stdev for subject intercept Normal prior
 }
 
 parameters {
@@ -21,17 +21,15 @@ parameters {
 transformed parameters {
   matrix[N, D-1] lam;
   matrix[N, D] lam_clr;
-  vector[N] samp_subj;
   vector<lower=0>[D] phi;
 
   for (i in 1:D){
     phi[i] = 1. / reciprocal_phi[i];
   }
-  samp_subj = Z*subj_int;  // N x 1
 
   lam = x*beta;  // N x D-1
   for (n in 1:N){
-    lam[n] += samp_subj[n];
+    lam[n] += subj_int[subj_ids[n]];
   }
   lam_clr = append_col(to_vector(rep_array(0, N)), lam);
 }
