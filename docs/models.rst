@@ -14,4 +14,5 @@ Default Models
 --------------
 
 .. autoclass:: birdman.default_models.NegativeBinomial
+.. autoclass:: birdman.default_models.NegativeBinomialLME
 .. autoclass:: birdman.default_models.Multinomial

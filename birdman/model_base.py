@@ -37,8 +37,8 @@ class Model:
     :param seed: Random seed to use for sampling, defaults to 42
     :type seed: float
 
-    :param parallelize_across: Whether to parallelize across features or chains
-        , defaults to 'chains'
+    :param parallelize_across: Whether to parallelize across features or
+        chains, defaults to 'chains'
     :type parallelize_across: str
     """
     def __init__(

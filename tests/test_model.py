@@ -4,7 +4,7 @@ from pkg_resources import resource_filename
 import numpy as np
 import pytest
 
-from birdman import NegativeBinomial
+from birdman import NegativeBinomial, NegativeBinomialLME
 
 TEMPLATES = resource_filename("birdman", "templates")
 
@@ -39,6 +39,41 @@ class TestModelFit:
         num_draws = num_chains*num_iter
         assert beta.shape == (num_draws, num_cov, num_table_feats - 1)
         assert phi.shape == (num_draws, num_table_feats)
+
+    def test_nb_lme(self, table_biom, metadata):
+        md = metadata.copy()
+        np.random.seed(42)
+        md["group"] = np.random.randint(low=0, high=3, size=md.shape[0])
+        md["group"] = "G" + md["group"].astype(str)
+        nb_lme = NegativeBinomialLME(
+            table=table_biom,
+            formula="host_common_name",
+            group_var="group",
+            metadata=md,
+            num_iter=100,
+        )
+        nb_lme.compile_model()
+        nb_lme.fit_model()
+
+        inf = nb_lme.to_inference_object(
+            params=["beta", "phi", "subj_int"],
+            coords={
+                "feature": nb_lme.feature_names,
+                "covariate": nb_lme.colnames,
+                "group": nb_lme.groups
+            },
+            dims={
+                "beta": ["covariate", "feature"],
+                "phi": ["feature"],
+                "subj_int": ["group", "feature"]
+            },
+            alr_params=["beta", "subj_int"],
+            include_observed_data=False
+        )
+        post = inf.posterior
+        assert post["subj_int"].dims == ("chain", "draw", "group", "feature")
+        assert post["subj_int"].shape == (4, 100, 3, 28)
+        assert (post.coords["group"].values == ["G0", "G1", "G2"]).all()
 
 
 class TestToInference:
