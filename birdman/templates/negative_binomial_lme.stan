@@ -15,7 +15,7 @@ data {
 parameters {
   matrix[p, D-1] beta;
   vector<lower=0>[D] reciprocal_phi;
-  vector<lower=0>[S] subj_int;
+  vector[S] subj_int;
 }
 
 transformed parameters {
