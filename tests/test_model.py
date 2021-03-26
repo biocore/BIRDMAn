@@ -65,13 +65,14 @@ class TestModelFit:
             dims={
                 "beta": ["covariate", "feature"],
                 "phi": ["feature"],
-                "subj_int": ["group"]
+                "subj_int": ["group", "feature"]
             },
-            alr_params=["beta"],
+            alr_params=["beta", "subj_int"],
             include_observed_data=False
         )
         post = inf.posterior
-        assert post["subj_int"].dims == ("chain", "draw", "group")
+        assert post["subj_int"].dims == ("chain", "draw", "group", "feature")
+        assert post["subj_int"].shape == (4, 100, 3, 28)
         assert (post.coords["group"].values == ["G0", "G1", "G2"]).all()
 
 

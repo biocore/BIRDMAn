@@ -15,7 +15,7 @@ data {
 parameters {
   matrix[p, D-1] beta;
   vector<lower=0>[D] reciprocal_phi;
-  vector[S] subj_int;
+  matrix[S, D-1] subj_int;
 }
 
 transformed parameters {
@@ -43,9 +43,9 @@ model {
     for (j in 1:p){
       beta[j, i] ~ normal(0., B_p); // uninformed prior
     }
-  }
-  for (i in 1:S){
-    subj_int[i] ~ normal(0., u_p);
+    for (j in 1:S){
+      subj_int[j, i] ~ normal(0., u_p);
+    }
   }
 
   // generating counts

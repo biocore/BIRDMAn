@@ -66,8 +66,8 @@ class NegativeBinomial(Model):
         values of phi, defaults to 5.0
     :type cauchy_scale: float
 
-    :param parallelize_across: Whether to parallelize across features or chains
-        , defaults to 'chains'
+    :param parallelize_across: Whether to parallelize across features or
+        chains, defaults to 'chains'
     :type parallelize_across: str
     """
     def __init__(
@@ -114,8 +114,7 @@ class NegativeBinomialLME(Model):
         \\frac{1}{\\phi_j} &\\sim \\textrm{Cauchy}(0, C_s), C_s \\in
             \\mathbb{R}_{>0}
 
-        u_{\\textrm{subj}} &\\sim \\textrm{Normal}(0, u_p), u_p \\in
-            \\mathbb{R}_{>0}
+        u_j &\\sim \\textrm{Normal}(0, u_p), u_p \\in \\mathbb{R}_{>0}
 
 
     :param table: Feature table (features x samples)
