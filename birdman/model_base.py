@@ -5,7 +5,6 @@ import arviz as az
 import biom
 from cmdstanpy import CmdStanModel, CmdStanMCMC
 import dask
-import numpy as np
 import pandas as pd
 from patsy import dmatrix
 

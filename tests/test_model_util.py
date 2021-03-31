@@ -32,13 +32,13 @@ class TestToInference:
             coords={
                 "feature": example_model.feature_names,
                 "covariate": example_model.colnames,
-                #"sample": example_model.sample_names
+                "sample": example_model.sample_names
             },
             dims={
                 "beta": ["covariate", "feature"],
                 "phi": ["feature"],
-                #"log_lhood": ["sample", "feature"],
-                #"y_predict": ["sample", "feature"]
+                "log_lhood": ["sample", "feature"],
+                "y_predict": ["sample", "feature"]
             },
             params=["beta", "phi"],
             alr_params=["beta"]
