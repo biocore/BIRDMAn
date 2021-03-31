@@ -18,7 +18,7 @@ def single_fit_to_inference(
     posterior_predictive: str = None,
     log_likelihood: str = None,
     sample_names: Sequence[str] = None,
-) -> xr.Dataset:
+) -> az.InferenceData:
     """Convert fitted Stan model into inference object.
 
     :param fit: Fitted model
