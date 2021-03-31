@@ -305,7 +305,36 @@ class Multinomial(Model):
                          seed, parallelize_across="chains")
 
         param_dict = {
-            "depth": table.sum(axis="sample").astype(int),  # sampling depths
             "B_p": beta_prior,
+            "depth": table.sum(axis="sample").astype(int)
         }
         self.add_parameters(param_dict)
+
+    def to_inference_object(self) -> az.InferenceData:
+        """Convert fitted Stan model into ``arviz`` InferenceData object.
+
+        :returns: ``arviz`` InferenceData object with selected values
+        :rtype: az.InferenceData
+        """
+        dims = {
+            "beta": ["covariate", "feature"],
+            "log_lhood": ["tbl_sample"],
+            "y_predict": ["tbl_sample", "feature"]
+        }
+        coords = {
+            "covariate": self.colnames,
+            "feature": self.feature_names,
+            "tbl_sample": self.sample_names
+        }
+
+        # TODO: May want to allow not passing PP/LL/OD in the future
+        inf = super().to_inference_object(
+            params=["beta", "phi"],
+            dims=dims,
+            coords=coords,
+            alr_params=["beta"],
+            posterior_predictive="y_predict",
+            log_likelihood="log_lhood",
+            include_observed_data=True,
+        )
+        return inf

@@ -3,7 +3,7 @@ from pkg_resources import resource_filename
 
 import numpy as np
 
-from birdman import NegativeBinomial, NegativeBinomialLME
+from birdman import Multinomial, NegativeBinomial, NegativeBinomialLME
 
 TEMPLATES = resource_filename("birdman", "templates")
 
@@ -56,10 +56,21 @@ class TestModelFit:
 
         inf = nb_lme.to_inference_object()
         post = inf.posterior
-        print(post)
         assert post["subj_int"].dims == ("chain", "draw", "group", "feature")
         assert post["subj_int"].shape == (4, 100, 3, 28)
         assert (post.coords["group"].values == ["G0", "G1", "G2"]).all()
+
+    def test_mult(self, table_biom, metadata):
+        md = metadata.copy()
+        np.random.seed(42)
+        mult = Multinomial(
+            table=table_biom,
+            formula="host_common_name",
+            metadata=md,
+            num_iter=100,
+        )
+        mult.compile_model()
+        mult.fit_model()
 
 
 class TestToInference:
