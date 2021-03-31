@@ -14,13 +14,10 @@ parameters {
 }
 
 transformed parameters {
-  matrix[N, D-1] lam;
   matrix[N, D] lam_clr;
-  vector[N] z;
   simplex[D] theta[N];
 
-  lam = x * beta;
-  lam_clr = append_col(to_vector(rep_array(0, N)), lam);
+  lam_clr = append_col(to_vector(rep_array(0, N)), x*beta);
   for (n in 1:N){
     theta[n] = softmax(to_vector(lam_clr[n,]));
   }
@@ -36,5 +33,15 @@ model {
   // generating counts
   for (n in 1:N){
     target += multinomial_lpmf(y[n,] | to_vector(theta[n,]));
+  }
+}
+
+generated quantities {
+  int y_predict[N, D];
+  vector[N] log_lhood;
+
+  for (n in 1:N){
+    y_predict[n,] = multinomial_rng(theta[n], depth[n]);
+    log_lhood[n] = multinomial_lpmf(y[n,] | to_vector(theta[n,]));
   }
 }
