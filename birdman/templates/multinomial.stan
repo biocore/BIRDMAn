@@ -2,7 +2,7 @@ data {
   int<lower=0> N;       // number of samples
   int<lower=0> D;       // number of dimensions
   int<lower=0> p;       // number of covariates
-  real depth[N];        // sequencing depths of microbes
+  int depth[N];         // sequencing depths of microbes
   matrix[N, p] x;       // covariate matrix
   int y[N, D];          // observed microbe abundances
   real<lower=0> B_p;    // stdev for Beta Normal prior
@@ -19,9 +19,8 @@ transformed parameters {
   vector[N] z;
   simplex[D] theta[N];
 
-  z = to_vector(rep_array(0, N));
   lam = x * beta;
-  lam_clr = append_col(z, lam);
+  lam_clr = append_col(to_vector(rep_array(0, N)), lam);
   for (n in 1:N){
     theta[n] = softmax(to_vector(lam_clr[n,]));
   }

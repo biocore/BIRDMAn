@@ -1,7 +1,7 @@
 data {
   int<lower=0> N;       // number of samples
   int<lower=0> p;       // number of covariates
-  real depth[N];        // sequencing depths of microbe
+  real depth[N];        // log sequencing depths of microbe
   matrix[N, p] x;       // covariate matrix
   int y[N];             // observed microbe abundances
   real<lower=0> B_p;    // stdev for Beta Normal prior

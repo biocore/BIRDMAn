@@ -3,7 +3,7 @@ data {
   int<lower=0> S;                     // number of groups (subjects)
   int<lower=0> D;                     // number of dimensions
   int<lower=0> p;                     // number of covariates
-  real depth[N];                      // sequencing depths of microbes
+  real depth[N];                      // log sequencing depths of microbes
   matrix[N, p] x;                     // covariate matrix
   int<lower=1, upper=S> subj_ids[N];  // mapping of samples to subject IDs
   int y[N, D];                        // observed microbe abundances
