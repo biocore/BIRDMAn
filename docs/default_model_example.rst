@@ -65,25 +65,9 @@ We then have to compile and fit our model. This is very straightforward in BIRDM
 
 Now we have our parameter estimates which we can use in downstream analyses. Many of BIRDMAn's included analysis & visualization functions take an ``arviz.InferenceData`` object. We provide a simple method to convert your BIRDMAn fit into this data structure.
 
-The ``coords`` & ``dims`` arguments follow the ``xarray`` data structure (as that is what ``arviz`` wraps). In this example we want to keep the fitted ``beta`` and ``phi`` parameters and we annotate the dimensions as ``covariate × feature`` and ``feature`` respectively. We also provide the covariate names and feature names. Next, we specify that we want to include the ``log likelihood`` and ``posterior predictive`` values we calculated while model fitting. These will be useful for diagnostics. We include the observed data (the original counts in the feature table) so we can see how well our model did.
-
 .. code-block:: python
 
-    inference = nb.to_inference_object(
-        params=["beta", "phi"],
-        coords={
-            "feature": nb.feature_names,
-            "covariate": nb.colnames,
-        },
-        dims={
-            "beta": ["covariate", "feature"],
-            "phi": ["feature"],
-        },
-        alr_params=["beta"],
-        posterior_predictive="y_predict",
-        log_likelihood="log_lik",
-        include_observed_data=True
-    )
+    inference = nb.to_inference_object()
 
 Finally, we'll plot the feature differentials and their standard deviations. We specify that we are interested in the ``diet[T.DIO]`` differentials but you can easily plot whichever parameter you like through the combination of the ``parameter`` and ``coord`` arguments.
 
