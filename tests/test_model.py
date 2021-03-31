@@ -2,7 +2,6 @@ import os
 from pkg_resources import resource_filename
 
 import numpy as np
-import pytest
 
 from birdman import NegativeBinomial, NegativeBinomialLME
 
@@ -55,22 +54,9 @@ class TestModelFit:
         nb_lme.compile_model()
         nb_lme.fit_model()
 
-        inf = nb_lme.to_inference_object(
-            params=["beta", "phi", "subj_int"],
-            coords={
-                "feature": nb_lme.feature_names,
-                "covariate": nb_lme.colnames,
-                "group": nb_lme.groups
-            },
-            dims={
-                "beta": ["covariate", "feature"],
-                "phi": ["feature"],
-                "subj_int": ["group", "feature"]
-            },
-            alr_params=["beta", "subj_int"],
-            include_observed_data=False
-        )
+        inf = nb_lme.to_inference_object()
         post = inf.posterior
+        print(post)
         assert post["subj_int"].dims == ("chain", "draw", "group", "feature")
         assert post["subj_int"].shape == (4, 100, 3, 28)
         assert (post.coords["group"].values == ["G0", "G1", "G2"]).all()
@@ -78,80 +64,13 @@ class TestModelFit:
 
 class TestToInference:
     def test_serial_to_inference(self, example_model):
-        inference_data = example_model.to_inference_object(
-            params=["beta", "phi"],
-            coords={
-                "feature": example_model.feature_names,
-                "covariate": example_model.colnames
-            },
-            dims={
-                "beta": ["covariate", "feature"],
-                "phi": ["feature"]
-            },
-            alr_params=["beta"],
-            log_likelihood="log_lik",
-            posterior_predictive="y_predict"
-        )
-        target_groups = {"posterior", "sample_stats", "log_likelihood",
-                         "posterior_predictive"}
-        assert set(inference_data.groups()) == target_groups
-
-    def test_serial_to_inference_obs(self, example_model):
-        inference_data = example_model.to_inference_object(
-            params=["beta", "phi"],
-            coords={
-                "feature": example_model.feature_names,
-                "covariate": example_model.colnames
-            },
-            dims={
-                "beta": ["covariate", "feature"],
-                "phi": ["feature"]
-            },
-            alr_params=["beta"],
-            log_likelihood="log_lik",
-            posterior_predictive="y_predict",
-            include_observed_data=True
-        )
+        inference_data = example_model.to_inference_object()
         target_groups = {"posterior", "sample_stats", "log_likelihood",
                          "posterior_predictive", "observed_data"}
         assert set(inference_data.groups()) == target_groups
-        np.testing.assert_array_equal(
-            inference_data.observed_data["observed"],
-            example_model.dat["y"]
-        )
 
     def test_parallel_to_inference(self, example_parallel_model):
-        inference_data = example_parallel_model.to_inference_object(
-            params=["beta", "phi"],
-            coords={
-                "feature": example_parallel_model.feature_names,
-                "covariate": example_parallel_model.colnames
-            },
-            dims={
-                "beta": ["covariate", "feature"],
-                "phi": ["feature"]
-            },
-        )
-        target_groups = {"posterior", "sample_stats"}
-        assert set(inference_data.groups()) == target_groups
-
-    def test_parallel_to_inference_alr_to_clr(self, example_parallel_model):
-        with pytest.warns(UserWarning) as w:
-            inference_data = example_parallel_model.to_inference_object(
-                params=["beta", "phi"],
-                coords={
-                    "feature": example_parallel_model.feature_names,
-                    "covariate": example_parallel_model.colnames
-                },
-                dims={
-                    "beta": ["covariate", "feature"],
-                    "phi": ["feature"]
-                },
-                alr_params=["beta"]
-            )
-
-        assert w[0].message.args[0] == (
-            "ALR to CLR not performed on parallel models."
-        )
-        target_groups = {"posterior", "sample_stats"}
+        inference_data = example_parallel_model.to_inference_object()
+        target_groups = {"posterior", "sample_stats", "log_likelihood",
+                         "posterior_predictive", "observed_data"}
         assert set(inference_data.groups()) == target_groups

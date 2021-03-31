@@ -7,6 +7,7 @@
 *.hpp
 *.DS_Store
 birdman/templates/negative_binomial
+birdman/templates/multinomial
 birdman/templates/negative_binomial_single
 birdman/templates/negative_binomial_lme
 tests/custom_model

@@ -5,7 +5,6 @@ import arviz as az
 import biom
 from cmdstanpy import CmdStanModel, CmdStanMCMC
 import dask
-import numpy as np
 import pandas as pd
 from patsy import dmatrix
 
@@ -73,7 +72,6 @@ class Model:
             "D": table.shape[0],
             "N": table.shape[1],                        # number of samples
             "p": self.dmat.shape[1],                    # number of covariates
-            "depth": np.log(table.sum(axis="sample")),  # sampling depths
             "x": self.dmat.values,                      # design matrix
         }
 
@@ -206,7 +204,6 @@ class Model:
             "dims": dims,
             "posterior_predictive": posterior_predictive,
             "log_likelihood": log_likelihood,
-            "sample_names": self.sample_names,
         }
         if isinstance(self.fit, CmdStanMCMC):
             fit_to_inference = single_fit_to_inference
@@ -214,7 +211,6 @@ class Model:
         elif isinstance(self.fit, Sequence):
             fit_to_inference = multiple_fits_to_inference
             args["concatenation_name"] = concatenation_name
-            args["feature_names"] = self.feature_names
             # TODO: Check that dims and concatenation_match
 
             if alr_params is not None:

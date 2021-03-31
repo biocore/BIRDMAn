@@ -3,7 +3,7 @@ data {
   int<lower=0> S;                     // number of groups (subjects)
   int<lower=0> D;                     // number of dimensions
   int<lower=0> p;                     // number of covariates
-  real depth[N];                      // sequencing depths of microbes
+  real depth[N];                      // log sequencing depths of microbes
   matrix[N, p] x;                     // covariate matrix
   int<lower=1, upper=S> subj_ids[N];  // mapping of samples to subject IDs
   int y[N, D];                        // observed microbe abundances
@@ -58,12 +58,12 @@ model {
 
 generated quantities {
   matrix[N, D] y_predict;
-  matrix[N, D] log_lik;
+  matrix[N, D] log_lhood;
 
   for (n in 1:N){
     for (i in 1:D){
       y_predict[n, i] = neg_binomial_2_log_rng(depth[n] + lam_clr[n, i], phi[i]);
-      log_lik[n, i] = neg_binomial_2_log_lpmf(y[n, i] | depth[n] + lam_clr[n, i], phi[i]);
+      log_lhood[n, i] = neg_binomial_2_log_lpmf(y[n, i] | depth[n] + lam_clr[n, i], phi[i]);
     }
   }
 }

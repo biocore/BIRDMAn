@@ -1,6 +1,7 @@
 import os
 from pkg_resources import resource_filename
 
+import arviz as az
 import biom
 import numpy as np
 import pandas as pd
@@ -87,10 +88,44 @@ class NegativeBinomial(Model):
                          seed, parallelize_across)
 
         param_dict = {
+            "depth": np.log(table.sum(axis="sample")),  # sampling depths
             "B_p": beta_prior,
             "phi_s": cauchy_scale
         }
         self.add_parameters(param_dict)
+
+    def to_inference_object(self) -> az.InferenceData:
+        """Convert fitted Stan model into ``arviz`` InferenceData object.
+
+        :returns: ``arviz`` InferenceData object with selected values
+        :rtype: az.InferenceData
+        """
+        dims = {
+            "beta": ["covariate", "feature"],
+            "phi": ["feature"],
+            "log_lhood": ["tbl_sample", "feature"],
+            "y_predict": ["tbl_sample", "feature"]
+        }
+        coords = {
+            "covariate": self.colnames,
+            "feature": self.feature_names,
+            "tbl_sample": self.sample_names
+        }
+
+        # TODO: May want to allow not passing PP/LL/OD in the future
+        args = dict()
+        if self.parallelize_across == "chains":
+            args["alr_params"] = ["beta"]
+        inf = super().to_inference_object(
+            params=["beta", "phi"],
+            dims=dims,
+            coords=coords,
+            posterior_predictive="y_predict",
+            log_likelihood="log_lhood",
+            include_observed_data=True,
+            **args
+        )
+        return inf
 
 
 class NegativeBinomialLME(Model):
@@ -148,7 +183,7 @@ class NegativeBinomialLME(Model):
     :type cauchy_scale: float
 
     :param group_var_prior: Standard deviation for normally distributed prior
-        prior values of group_var, defaults to 1.0
+        values of group_var, defaults to 1.0
     :type group_var_prior: float
     """
     def __init__(
@@ -175,6 +210,7 @@ class NegativeBinomialLME(Model):
         self.groups = np.sort(group_var_series.unique())
 
         param_dict = {
+            "depth": np.log(table.sum(axis="sample")),  # sampling depths
             "B_p": beta_prior,
             "phi_s": cauchy_scale,
             "S": len(group_var_series.unique()),
@@ -182,6 +218,38 @@ class NegativeBinomialLME(Model):
             "u_p": group_var_prior
         }
         self.add_parameters(param_dict)
+
+    def to_inference_object(self) -> az.InferenceData:
+        """Convert fitted Stan model into ``arviz`` InferenceData object.
+
+        :returns: ``arviz`` InferenceData object with selected values
+        :rtype: az.InferenceData
+        """
+        dims = {
+            "beta": ["covariate", "feature"],
+            "phi": ["feature"],
+            "subj_int": ["group", "feature"],
+            "log_lhood": ["tbl_sample", "feature"],
+            "y_predict": ["tbl_sample", "feature"]
+        }
+        coords = {
+            "covariate": self.colnames,
+            "feature": self.feature_names,
+            "tbl_sample": self.sample_names,
+            "group": self.groups
+        }
+
+        # TODO: May want to allow not passing PP/LL/OD in the future
+        inf = super().to_inference_object(
+            params=["beta", "phi"],
+            dims=dims,
+            coords=coords,
+            posterior_predictive="y_predict",
+            log_likelihood="log_lhood",
+            alr_params=["beta", "subj_int"],
+            include_observed_data=True,
+        )
+        return inf
 
 
 class Multinomial(Model):
@@ -237,6 +305,7 @@ class Multinomial(Model):
                          seed, parallelize_across="chains")
 
         param_dict = {
+            "depth": table.sum(axis="sample").astype(int),  # sampling depths
             "B_p": beta_prior,
         }
         self.add_parameters(param_dict)

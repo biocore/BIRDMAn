@@ -17,5 +17,6 @@ def test_r2_score(example_inf, example_parallel_inf):
 
 
 def test_loo(example_inf, example_parallel_inf):
+    print(example_inf)
     diag.loo(example_inf)
     diag.loo(example_parallel_inf)
