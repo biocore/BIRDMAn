@@ -8,7 +8,7 @@ from birdman import model_util as mu
 class TestToInference:
     def dataset_comparison(self, model, ds):
         coord_names = ds.coords._names
-        assert coord_names == {"feature", "draw", "covariate", "chain"}
+        assert {"feature", "draw", "covariate", "chain"}.issubset(coord_names)
         assert set(ds["beta"].shape) == {2, 28, 4, 100}
         assert set(ds["phi"].shape) == {28, 4, 100}
 
@@ -32,13 +32,13 @@ class TestToInference:
             coords={
                 "feature": example_model.feature_names,
                 "covariate": example_model.colnames,
-                "sample": example_model.sample_names
+                "tbl_sample": example_model.sample_names
             },
             dims={
                 "beta": ["covariate", "feature"],
                 "phi": ["feature"],
-                "log_lhood": ["sample", "feature"],
-                "y_predict": ["sample", "feature"]
+                "log_lhood": ["tbl_sample", "feature"],
+                "y_predict": ["tbl_sample", "feature"]
             },
             params=["beta", "phi"],
             alr_params=["beta"]

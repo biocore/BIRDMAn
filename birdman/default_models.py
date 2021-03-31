@@ -228,7 +228,7 @@ class NegativeBinomialLME(Model):
         dims = {
             "beta": ["covariate", "feature"],
             "phi": ["feature"],
-            "subj_int": ["subject", "feature"],
+            "subj_int": ["group", "feature"],
             "log_lhood": ["tbl_sample", "feature"],
             "y_predict": ["tbl_sample", "feature"]
         }
@@ -236,7 +236,7 @@ class NegativeBinomialLME(Model):
             "covariate": self.colnames,
             "feature": self.feature_names,
             "tbl_sample": self.sample_names,
-            "subject": self.groups
+            "group": self.groups
         }
 
         # TODO: May want to allow not passing PP/LL/OD in the future

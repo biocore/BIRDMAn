@@ -54,22 +54,9 @@ class TestModelFit:
         nb_lme.compile_model()
         nb_lme.fit_model()
 
-        inf = nb_lme.to_inference_object(
-            params=["beta", "phi", "subj_int"],
-            coords={
-                "feature": nb_lme.feature_names,
-                "covariate": nb_lme.colnames,
-                "group": nb_lme.groups
-            },
-            dims={
-                "beta": ["covariate", "feature"],
-                "phi": ["feature"],
-                "subj_int": ["group", "feature"]
-            },
-            alr_params=["beta", "subj_int"],
-            include_observed_data=False
-        )
+        inf = nb_lme.to_inference_object()
         post = inf.posterior
+        print(post)
         assert post["subj_int"].dims == ("chain", "draw", "group", "feature")
         assert post["subj_int"].shape == (4, 100, 3, 28)
         assert (post.coords["group"].values == ["G0", "G1", "G2"]).all()
