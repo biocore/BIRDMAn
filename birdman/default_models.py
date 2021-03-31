@@ -87,6 +87,7 @@ class NegativeBinomial(Model):
                          seed, parallelize_across)
 
         param_dict = {
+            "depth": np.log(table.sum(axis="sample")),  # sampling depths
             "B_p": beta_prior,
             "phi_s": cauchy_scale
         }
@@ -175,6 +176,7 @@ class NegativeBinomialLME(Model):
         self.groups = np.sort(group_var_series.unique())
 
         param_dict = {
+            "depth": np.log(table.sum(axis="sample")),  # sampling depths
             "B_p": beta_prior,
             "phi_s": cauchy_scale,
             "S": len(group_var_series.unique()),
@@ -237,6 +239,7 @@ class Multinomial(Model):
                          seed, parallelize_across="chains")
 
         param_dict = {
+            "depth": table.sum(axis="sample").astype(int),  # sampling depths
             "B_p": beta_prior,
         }
         self.add_parameters(param_dict)

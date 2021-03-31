@@ -73,7 +73,6 @@ class Model:
             "D": table.shape[0],
             "N": table.shape[1],                        # number of samples
             "p": self.dmat.shape[1],                    # number of covariates
-            "depth": np.log(table.sum(axis="sample")),  # sampling depths
             "x": self.dmat.values,                      # design matrix
         }
 

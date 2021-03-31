@@ -54,20 +54,14 @@ def single_fit_to_inference(
     # remove alr params so initial dim fitting works
     new_dims = {k: v for k, v in dims.items() if k not in alr_params}
 
-    extra_dims = dict()
-    extra_coords = dict()
-    if log_likelihood is not None:
-        extra_dims.update({log_likelihood: ["tbl_sample", "feature"]})
-        extra_coords.update({"tbl_sample": sample_names})
-    if posterior_predictive is not None:
-        extra_dims.update({posterior_predictive: ["tbl_sample", "feature"]})
-        extra_coords.update({"tbl_sample": sample_names})
-
-    new_dims.update(extra_dims)
+    if log_likelihood is not None and log_likelihood not in dims:
+        raise KeyError("Must include dimensions for log-likelihood!")
+    if posterior_predictive is not None and posterior_predictive not in dims:
+        raise KeyError("Must include dimensions for posterior predictive!")
 
     inference = az.from_cmdstanpy(
         posterior=fit,
-        coords={**coords, **extra_coords},
+        coords=coords,
         log_likelihood=log_likelihood,
         posterior_predictive=posterior_predictive,
         dims=new_dims
