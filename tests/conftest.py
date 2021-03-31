@@ -84,39 +84,12 @@ def example_parallel_model():
 @pytest.fixture(scope="session")
 def example_inf():
     nb = model()
-    inference = nb.to_inference_object(
-        params=["beta", "phi"],
-        coords={
-            "feature": nb.feature_names,
-            "covariate": nb.colnames,
-        },
-        dims={
-            "beta": ["covariate", "feature"],
-            "phi": ["feature"],
-        },
-        alr_params=["beta"],
-        posterior_predictive="y_predict",
-        log_likelihood="log_lik",
-        include_observed_data=True
-    )
+    inference = nb.to_inference_object()
     return inference
 
 
 @pytest.fixture(scope="session")
 def example_parallel_inf():
     nb = parallel_model()
-    inference = nb.to_inference_object(
-        params=["beta", "phi"],
-        coords={
-            "feature": nb.feature_names,
-            "covariate": nb.colnames,
-        },
-        dims={
-            "beta": ["covariate", "feature"],
-            "phi": ["feature"],
-        },
-        posterior_predictive="y_predict",
-        log_likelihood="log_lik",
-        include_observed_data=True
-    )
+    inference = nb.to_inference_object()
     return inference

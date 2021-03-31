@@ -37,19 +37,8 @@ class TestPPCPlot:
         viz.plot_posterior_predictive_checks(example_inf)
 
     def test_ppc_no_pp(self, example_model):
-        inference = example_model.to_inference_object(
-            params=["beta", "phi"],
-            coords={
-                "feature": example_model.feature_names,
-                "covariate": example_model.colnames,
-            },
-            dims={
-                "beta": ["covariate", "feature"],
-                "phi": ["feature"],
-            },
-            alr_params=["beta"],
-            include_observed_data=True,
-        )
+        inference = example_model.to_inference_object().copy()
+        delattr(inference, "posterior_predictive")
 
         with pytest.raises(ValueError) as excinfo:
             viz.plot_posterior_predictive_checks(inference)
@@ -58,19 +47,8 @@ class TestPPCPlot:
         assert str(excinfo.value) == exp_msg
 
     def test_ppc_no_obs(self, example_model):
-        inference = example_model.to_inference_object(
-            params=["beta", "phi"],
-            coords={
-                "feature": example_model.feature_names,
-                "covariate": example_model.colnames,
-            },
-            dims={
-                "beta": ["covariate", "feature"],
-                "phi": ["feature"],
-            },
-            alr_params=["beta"],
-            posterior_predictive="y_predict"
-        )
+        inference = example_model.to_inference_object().copy()
+        delattr(inference, "observed_data")
 
         with pytest.raises(ValueError) as excinfo:
             viz.plot_posterior_predictive_checks(inference)

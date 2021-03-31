@@ -17,7 +17,6 @@ def single_fit_to_inference(
     alr_params: Sequence[str] = None,
     posterior_predictive: str = None,
     log_likelihood: str = None,
-    sample_names: Sequence[str] = None,
 ) -> az.InferenceData:
     """Convert fitted Stan model into inference object.
 
@@ -44,12 +43,6 @@ def single_fit_to_inference(
     :param log_likelihood: Name of log likelihood values from Stan model
         to include in ``arviz`` InferenceData object
     :type log_likelihood: str, optional
-
-    :param sample_names: Sample names to label PP and/or LL
-    :type sample_names: Sequence[str]
-
-    :returns: ``arviz`` InferenceData object with selected values
-    :rtype: az.InferenceData
     """
     # remove alr params so initial dim fitting works
     new_dims = {k: v for k, v in dims.items() if k not in alr_params}
@@ -114,10 +107,8 @@ def multiple_fits_to_inference(
     coords: dict,
     dims: dict,
     concatenation_name: str,
-    feature_names: Sequence[str],
     posterior_predictive: str = None,
     log_likelihood: str = None,
-    sample_names: Sequence[str] = None,
 ) -> az.InferenceData:
     """Save fitted parameters to xarray DataSet for multiple fits.
 
@@ -144,12 +135,6 @@ def multiple_fits_to_inference(
     :param log_likelihood: Name of log likelihood values from Stan model
         to include in ``arviz`` InferenceData object
     :type log_likelihood: str, optional
-
-    :param sample_names: Sample names to label PP and/or LL
-    :type sample_names: Sequence[str]
-
-    :param feature_names: Feature names to label concatenation
-    :type feature_name: Sequence[str]
 
     :returns: ``arviz`` InferenceData object with selected values
     :rtype: az.InferenceData
@@ -191,12 +176,10 @@ def multiple_fits_to_inference(
     group_dict = {"posterior": po_ds, "sample_stats": ss_ds}
 
     if log_likelihood is not None:
-        ll_ds = _concat_table_draws(log_likelihood, ll_list, sample_names,
-                                    "feature")
+        ll_ds = xr.concat(ll_list, concatenation_name)
         group_dict["log_likelihood"] = ll_ds
     if posterior_predictive is not None:
-        pp_ds = _concat_table_draws(posterior_predictive, pp_list,
-                                    sample_names, "feature")
+        pp_ds = xr.concat(pp_list, concatenation_name)
         group_dict["posterior_predictive"] = pp_ds
 
     all_group_inferences = []
@@ -226,18 +209,3 @@ def _drop_data(
                 dims_to_drop.append(dim)
     new_dataset = new_dataset.drop_dims(dims_to_drop)
     return new_dataset
-
-
-def _concat_table_draws(
-    group: str,
-    da_list: Sequence[xr.DataArray],
-    sample_names: Sequence[str],
-    concatenation_name: str
-) -> xr.Dataset:
-    """For posterior predictive & log likelihood."""
-    ds = xr.concat(da_list, concatenation_name)
-    dim_name = f"{group}_dim_0"
-    ds = ds.rename_dims({dim_name: "tbl_sample"})
-    ds = ds.assign_coords({"tbl_sample": sample_names})
-    ds = ds.reset_coords([dim_name], drop=True)
-    return ds

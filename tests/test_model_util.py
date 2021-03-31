@@ -31,11 +31,14 @@ class TestToInference:
             fit=example_model.fit,
             coords={
                 "feature": example_model.feature_names,
-                "covariate": example_model.colnames
+                "covariate": example_model.colnames,
+                #"sample": example_model.sample_names
             },
             dims={
                 "beta": ["covariate", "feature"],
-                "phi": ["feature"]
+                "phi": ["feature"],
+                #"log_lhood": ["sample", "feature"],
+                #"y_predict": ["sample", "feature"]
             },
             params=["beta", "phi"],
             alr_params=["beta"]
@@ -55,7 +58,6 @@ class TestToInference:
                 "phi": ["feature"]
             },
             concatenation_name="feature",
-            feature_names=example_parallel_model.feature_names
         )
         self.dataset_comparison(example_parallel_model, inf.posterior)
 
@@ -73,7 +75,6 @@ class TestToInference:
                     "phi": ["feature"]
                 },
                 concatenation_name="mewtwo",
-                feature_names=example_parallel_model.feature_names
             )
         assert str(excinfo.value) == ("concatenation_name must match "
                                       "dimensions in dims")
@@ -86,20 +87,23 @@ class TestPPLL:
             fit=example_model.fit,
             coords={
                 "feature": example_model.feature_names,
-                "covariate": example_model.colnames
+                "covariate": example_model.colnames,
+                "sample": example_model.sample_names,
             },
             dims={
                 "beta": ["covariate", "feature"],
-                "phi": ["feature"]
+                "phi": ["feature"],
+                "log_lhood": ["sample", "feature"],
+                "y_predict": ["sample", "feature"]
             },
             params=["beta", "phi"],
             alr_params=["beta"],
             posterior_predictive="y_predict",
-            log_likelihood="log_lik",
-            sample_names=example_model.sample_names
+            log_likelihood="log_lhood",
         )
 
-        d = {"posterior_predictive": "y_predict", "log_likelihood": "log_lik"}
+        d = {"posterior_predictive": "y_predict",
+             "log_likelihood": "log_lhood"}
         for k, v in d.items():
             inf_data = inf[k][v].values
             nb_data = example_model.fit.stan_variable(v)
@@ -111,30 +115,31 @@ class TestPPLL:
             fits=example_parallel_model.fit,
             coords={
                 "feature": example_parallel_model.feature_names,
-                "covariate": example_parallel_model.colnames
+                "covariate": example_parallel_model.colnames,
+                "tbl_sample": example_parallel_model.sample_names
             },
             dims={
                 "beta": ["covariate", "feature"],
-                "phi": ["feature"]
+                "phi": ["feature"],
+                "log_lhood": ["tbl_sample", "feature"],
+                "y_predict": ["tbl_sample", "feature"]
             },
             params=["beta", "phi"],
             posterior_predictive="y_predict",
-            log_likelihood="log_lik",
+            log_likelihood="log_lhood",
             concatenation_name="feature",
-            sample_names=example_parallel_model.sample_names,
-            feature_names=example_parallel_model.feature_names
         )
 
         dim_order = ("chain", "draw", "tbl_sample", "feature")
 
         nb_ll_data = np.stack([
-            x.stan_variable("log_lik")
+            x.stan_variable("log_lhood")
             for x in example_parallel_model.fit
         ], axis=2)
         nb_ll_data = np.array(np.split(nb_ll_data, 4, axis=0))
 
         nb_ll = xr.Dataset(
-            {"log_lik": (dim_order, nb_ll_data)},
+            {"log_lhood": (dim_order, nb_ll_data)},
             coords={
                 "chain": np.arange(4),
                 "draw": np.arange(100),
@@ -159,9 +164,10 @@ class TestPPLL:
             }
         )
 
-        inf_ll = inf.log_likelihood["log_lik"]
+        inf_ll = inf.log_likelihood["log_lhood"]
         inf_ll_data = inf_ll.transpose(*dim_order)
-        np.testing.assert_array_almost_equal(inf_ll_data, nb_ll.log_lik.values)
+        np.testing.assert_array_almost_equal(inf_ll_data,
+                                             nb_ll.log_lhood.values)
 
         inf_pp = inf.posterior_predictive["y_predict"]
         inf_pp_data = inf_pp.transpose(*dim_order)
