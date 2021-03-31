@@ -1,6 +1,5 @@
 import os
 from pkg_resources import resource_filename
-from typing import Sequence
 
 import arviz as az
 import biom
@@ -184,7 +183,7 @@ class NegativeBinomialLME(Model):
     :type cauchy_scale: float
 
     :param group_var_prior: Standard deviation for normally distributed prior
-        prior values of group_var, defaults to 1.0
+        values of group_var, defaults to 1.0
     :type group_var_prior: float
     """
     def __init__(
@@ -219,6 +218,38 @@ class NegativeBinomialLME(Model):
             "u_p": group_var_prior
         }
         self.add_parameters(param_dict)
+
+    def to_inference_object(self) -> az.InferenceData:
+        """Convert fitted Stan model into ``arviz`` InferenceData object.
+
+        :returns: ``arviz`` InferenceData object with selected values
+        :rtype: az.InferenceData
+        """
+        dims = {
+            "beta": ["covariate", "feature"],
+            "phi": ["feature"],
+            "subj_int": ["subject", "feature"],
+            "log_lhood": ["tbl_sample", "feature"],
+            "y_predict": ["tbl_sample", "feature"]
+        }
+        coords = {
+            "covariate": self.colnames,
+            "feature": self.feature_names,
+            "tbl_sample": self.sample_names,
+            "subject": self.groups
+        }
+
+        # TODO: May want to allow not passing PP/LL/OD in the future
+        inf = super().to_inference_object(
+            params=["beta", "phi"],
+            dims=dims,
+            coords=coords,
+            posterior_predictive="y_predict",
+            log_likelihood="log_lhood",
+            alr_params=["beta", "subj_int"],
+            include_observed_data=True,
+        )
+        return inf
 
 
 class Multinomial(Model):
