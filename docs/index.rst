@@ -46,10 +46,13 @@ In Python:
 
 .. toctree::
     :maxdepth: 2
-    :caption: Tutorial
+    :caption: User Guide
 
     default_model_example
-    user_defined_model
+    custom_model
+    diagnosting_model
+    working_with_stan_code
+    working_with_arviz
 
 .. toctree::
     :maxdepth: 2
