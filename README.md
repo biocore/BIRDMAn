@@ -14,11 +14,12 @@ Currently BIRDMAn requires Python 3.7 or higher.
 ```bash
 conda install -c conda-forge dask biom-format patsy xarray
 pip install cmdstanpy
+pip install git+git://github.com/arviz-devs/arviz.git
 git clone git@github.com:gibsramen/BIRDMAn.git
 cd BIRDMAn
 pip install .
 ```
 
-You have to install `cmdstan` through the `cmdstanpy.install_cmdstan` function first.
+You have to install `cmdstan` through the `cmdstanpy.install_cmdstan` function first. See the [CmdStanPy documentation](https://mc-stan.org/cmdstanpy/installation.html#install-cmdstan) for details.
 
 See the [documentation](https://birdman.readthedocs.io/en/latest/?badge=latest) for details on usage.
