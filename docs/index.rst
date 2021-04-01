@@ -59,6 +59,7 @@ In Python:
     diagnostics
     stats
     util
+    visualization
 
 Indices and tables
 ------------------

@@ -8,7 +8,7 @@ class TestRankPlot:
         viz.plot_parameter_estimates(
             inference_object=example_inf,
             parameter="beta",
-            coord={"covariate": "host_common_name[T.long-tailed macaque]"},
+            coords={"covariate": "host_common_name[T.long-tailed macaque]"},
             num_std=1
         )
 
@@ -19,7 +19,7 @@ class TestRankPlot:
             num_std=1
         )
 
-    def test_rank_plot_no_coord(self, example_inf):
+    def test_rank_plot_no_coords(self, example_inf):
         with pytest.raises(ValueError) as excinfo:
             viz.plot_parameter_estimates(
                 inference_object=example_inf,
