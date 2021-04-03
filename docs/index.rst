@@ -50,9 +50,15 @@ In Python:
 
     default_model_example
     custom_model
-    diagnosting_model
-    working_with_stan_code
+    diagnosing_model
+    writing_stan_code
     working_with_arviz
+
+.. toctree::
+    :maxdepth: 2
+    :caption: How BIRDMAn Works
+
+    bayesian_inference
 
 .. toctree::
     :maxdepth: 2
