@@ -21,6 +21,7 @@ The easiest way to install the required dependencies is through ``conda``.
 
     conda install -c conda-forge dask biom-format patsy xarray
     git clone git@github.com:gibsramen/BIRDMAn.git
+    pip install git+git://github.com/arviz-devs/arviz.git
     cd BIRDMAn
     pip install -e .
 
@@ -45,10 +46,19 @@ In Python:
 
 .. toctree::
     :maxdepth: 2
-    :caption: Tutorial
+    :caption: User Guide
 
     default_model_example
-    user_defined_model
+    custom_model
+    diagnosing_model
+    writing_stan_code
+    working_with_arviz
+
+.. toctree::
+    :maxdepth: 2
+    :caption: How BIRDMAn Works
+
+    bayesian_inference
 
 .. toctree::
     :maxdepth: 2
@@ -58,6 +68,7 @@ In Python:
     diagnostics
     stats
     util
+    visualization
 
 Indices and tables
 ------------------

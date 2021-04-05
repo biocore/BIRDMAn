@@ -7,7 +7,7 @@ import numpy as np
 def plot_parameter_estimates(
     inference_object: az.InferenceData,
     parameter: str,
-    coord: dict = dict(),
+    coords: dict = dict(),
     num_std: float = 1.0
 ):
     """Plot credible intervals of estimated parameters.
@@ -18,8 +18,8 @@ def plot_parameter_estimates(
     :param parameter: Name of parameter to plot
     :type parameter: str
 
-    :param coord: Coordinates of parameter to plot
-    :type coord: dict, optional
+    :param coords: Coordinates of parameter to plot
+    :type coords: dict, optional
 
     :param num_std: Number of standard deviations to plot as error bars,
         defaults to 1.0
@@ -28,14 +28,14 @@ def plot_parameter_estimates(
     :returns: matplotlib axes figure
     """
     posterior = inference_object.posterior
-    if len(posterior[parameter].coords) > 3 and not coord:
+    if len(posterior[parameter].coords) > 3 and not coords:
         raise ValueError(
             "Must provide coordinates if plotting multi-dimensional parameter"
             " estimates!"
         )
 
-    param_means = posterior[parameter].sel(**coord).mean(["chain", "draw"])
-    param_stds = posterior[parameter].sel(**coord).std(["chain", "draw"])
+    param_means = posterior[parameter].sel(**coords).mean(["chain", "draw"])
+    param_stds = posterior[parameter].sel(**coords).std(["chain", "draw"])
     sort_indices = param_means.argsort().data
     param_means = param_means.data[sort_indices]
     param_stds = param_stds.data[sort_indices]
@@ -44,9 +44,6 @@ def plot_parameter_estimates(
     x = np.arange(len(param_means))
     ax.errorbar(x=x, y=param_means, yerr=param_stds*num_std, zorder=0)
     ax.scatter(x=x, y=param_means, color="black", zorder=2, s=5)
-
-    ax.set_xlabel("Feature")
-    ax.set_ylabel("Differential")
 
     return ax
 
