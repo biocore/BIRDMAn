@@ -8,7 +8,8 @@
 BIRDMAn: Bayesian Inferential Regression for Differential Microbiome Analysis
 =============================================================================
 
-BIRDMAn is a framework for performing differential abundance on microbiome data through a Bayesian lens. We provide several default models but also allow users to create their own statistical models based on their specific experimental designs/questions. If you have issues or feature requests please post them on the `GitHub repository <https://github.com/gibsramen/BIRDMAn>`_.
+BIRDMAn is a framework for performing differential abundance on microbiome data through a Bayesian lens.
+We provide several default models but also allow users to create their own statistical models based on their specific experimental designs/questions.
 
 Installation
 ------------
