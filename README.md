@@ -2,6 +2,7 @@
 
 [![GitHub Actions CI](https://github.com/gibsramen/birdman/workflows/BIRDMAn%20CI/badge.svg)](https://github.com/gibsramen/BIRDMAn/actions)
 [![Documentation Status](https://readthedocs.org/projects/birdman/badge/?version=latest)](https://birdman.readthedocs.io/en/latest/?badge=latest)
+[![PyPI](https://img.shields.io/pypi/v/birdman.svg)](https://pypi.org/project/birdman)
 
 **B**ayesian **I**nferential **R**egression for **D**ifferential **M**icrobiome **An**alysis (**BIRDMAn**) is a framework for performing differential abundance analysis through Bayesian inference.
 
@@ -15,9 +16,7 @@ Currently BIRDMAn requires Python 3.7 or higher.
 conda install -c conda-forge dask biom-format patsy xarray
 pip install cmdstanpy
 pip install git+git://github.com/arviz-devs/arviz.git
-git clone git@github.com:gibsramen/BIRDMAn.git
-cd BIRDMAn
-pip install .
+pip install birdman
 ```
 
 You have to install `cmdstan` through the `cmdstanpy.install_cmdstan` function first. See the [CmdStanPy documentation](https://mc-stan.org/cmdstanpy/installation.html#install-cmdstan) for details.
