@@ -13,10 +13,7 @@ BIRDMAn is a framework for performing differential abundance on microbiome data 
 Installation
 ------------
 
-.. note::
-
-    BIRDMAn requires Python >= 3.7
-
+.. note:: BIRDMAn requires Python >= 3.7
 
 There are several dependencies you must install to use BIRDMAn.
 The easiest way to install the required dependencies is through ``conda``.
