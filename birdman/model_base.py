@@ -100,12 +100,13 @@ class Model:
             parallelizing across features (optional)
         :type dask_cluster: dask_jobqueue
 
-        :param jobs: Number of jobs to run parallel jobs if parallelizing
-            across features, defaults to 4 (optional)
+        :param jobs: Number of jobs to run in parallel jobs if parallelizing
+            across features, defaults to 4
         :type jobs: int
         """
         if self.parallelize_across == "features":
-            self.fit = self._fit_parallel(sampler_args)
+            self.fit = self._fit_parallel(dask_cluster=dask_cluster, jobs=jobs,
+                                          sampler_args=sampler_args)
         elif self.parallelize_across == "chains":
             if None not in [dask_cluster, jobs]:
                 warnings.warn(
@@ -148,7 +149,7 @@ class Model:
         :param dask_cluster: Dask jobqueue to run parallel jobs (optional)
         :type dask_cluster: dask_jobqueue
 
-        :param jobs: Number of jobs to run parallel jobs, defaults to 4
+        :param jobs: Number of jobs to run parallel in parallel, defaults to 4
         :type jobs: int
 
         :param sampler_args: Additional parameters to pass to CmdStanPy
