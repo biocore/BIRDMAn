@@ -146,7 +146,7 @@ class Model:
             _fits.append(_fit)
 
         futures = dask.persist(*_fits)
-        all_fits = dask.compute(futures)
+        all_fits = dask.compute(futures)[0]
         # Set data back to full table
         self.dat["y"] = self.table.matrix_data.todense().T.astype(int)
         return all_fits
