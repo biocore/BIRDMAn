@@ -31,6 +31,7 @@ setup(
         "numpy",
         "cmdstanpy",
         "dask[complete]",
+        "dask-jobqueue",
         "biom-format",
         "patsy",
         "xarray",

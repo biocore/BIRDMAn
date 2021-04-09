@@ -5,6 +5,7 @@ import arviz as az
 import biom
 from cmdstanpy import CmdStanModel, CmdStanMCMC
 import dask
+import dask_jobqueue
 import pandas as pd
 from patsy import dmatrix
 
@@ -105,8 +106,25 @@ class Model:
         )
         return fit
 
-    def _fit_parallel(self, **kwargs):
-        """Fit model by parallelizing across features."""
+    def _fit_parallel(
+        self,
+        dask_cluster: dask_jobqueue.JobQueueCluster = None,
+        nodes: int = 1,
+        **kwargs
+    ):
+        """Fit model by parallelizing across features.
+
+        :param dask_cluster: Dask jobqueue to run parallel jobs
+        :type dask_cluster: dask_jobqueue
+
+        :param nodes: Number of nodes to run parallel jobs, defaults to 1
+        :type nodes: int
+
+        :param kwargs: Other arguments to CmdStanPy sampler
+        """
+        if dask_cluster is not None:
+            dask_cluster.scale(nodes)
+
         @dask.delayed
         def _fit_single(self, values):
             dat = self.dat
@@ -127,10 +145,11 @@ class Model:
             _fit = _fit_single(self, v)
             _fits.append(_fit)
 
-        _fits = dask.compute(*_fits)
+        futures = dask.persist(*_fits)
+        all_fits = dask.compute(futures)
         # Set data back to full table
         self.dat["y"] = self.table.matrix_data.todense().T.astype(int)
-        return _fits
+        return all_fits
 
     def to_inference_object(
         self,
