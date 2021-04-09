@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import List, Sequence
 import warnings
 
 import arviz as az
@@ -76,25 +76,56 @@ class Model:
             "x": self.dmat.values,                      # design matrix
         }
 
-    def compile_model(self):
+    def compile_model(self) -> None:
         """Compile Stan model."""
         self.sm = CmdStanModel(stan_file=self.model_path)
 
-    def add_parameters(self, param_dict=None):
+    def add_parameters(self, param_dict=None) -> None:
         """Add parameters from dict to be passed to Stan."""
         self.dat.update(param_dict)
 
-    def fit_model(self, **kwargs):
-        """Fit model according to parallelization configuration."""
+    def fit_model(
+        self,
+        sampler_args: dict = None,
+        dask_cluster: dask_jobqueue.JobQueueCluster = None,
+        jobs: int = 4,
+    ) -> None:
+        """Fit model according to parallelization configuration.
+
+        :param sampler_args: Additional parameters to pass to CmdStanPy
+            sampler (optional)
+        :type sampler_args: dict
+
+        :param dask_cluster: Dask jobqueue to run parallel jobs if
+            parallelizing across features (optional)
+        :type dask_cluster: dask_jobqueue
+
+        :param jobs: Number of jobs to run parallel jobs if parallelizing
+            across features, defaults to 4 (optional)
+        :type jobs: int
+        """
         if self.parallelize_across == "features":
-            self.fit = self._fit_parallel(**kwargs)
+            self.fit = self._fit_parallel(sampler_args)
         elif self.parallelize_across == "chains":
-            self.fit = self._fit_serial(**kwargs)
+            if None not in [dask_cluster, jobs]:
+                warnings.warn(
+                    "dask_cluster and jobs ignored when parallelizing"
+                    " across chains."
+                )
+            self.fit = self._fit_serial(sampler_args)
         else:
             raise ValueError("parallelize_across must be features or chains!")
 
-    def _fit_serial(self, **kwargs):
-        """Fit model by parallelizing across chains."""
+    def _fit_serial(self, sampler_args: dict = None) -> CmdStanMCMC:
+        """Fit model by parallelizing across chains.
+
+        :param sampler_args: Additional parameters to pass to CmdStanPy
+            sampler (optional)
+        :type sampler_args: dict
+        """
+        if sampler_args is None:
+            sampler_args = dict()
+
         fit = self.sm.sample(
             chains=self.chains,
             parallel_chains=self.chains,  # run all chains in parallel
@@ -102,28 +133,33 @@ class Model:
             iter_warmup=self.num_iter,    # use same num iter for warmup
             iter_sampling=self.num_iter,
             seed=self.seed,
-            **kwargs
+            **sampler_args
         )
         return fit
 
     def _fit_parallel(
         self,
         dask_cluster: dask_jobqueue.JobQueueCluster = None,
-        nodes: int = 1,
-        **kwargs
-    ):
+        jobs: int = 4,
+        sampler_args: dict = None,
+    ) -> List[CmdStanMCMC]:
         """Fit model by parallelizing across features.
 
-        :param dask_cluster: Dask jobqueue to run parallel jobs
+        :param dask_cluster: Dask jobqueue to run parallel jobs (optional)
         :type dask_cluster: dask_jobqueue
 
-        :param nodes: Number of nodes to run parallel jobs, defaults to 1
-        :type nodes: int
+        :param jobs: Number of jobs to run parallel jobs, defaults to 4
+        :type jobs: int
 
-        :param kwargs: Other arguments to CmdStanPy sampler
+        :param sampler_args: Additional parameters to pass to CmdStanPy
+            sampler (optional)
+        :type sampler_args: dict
         """
+        if sampler_args is None:
+            sampler_args = dict()
+
         if dask_cluster is not None:
-            dask_cluster.scale(nodes)
+            dask_cluster.scale(jobs=jobs)
 
         @dask.delayed
         def _fit_single(self, values):
@@ -136,7 +172,7 @@ class Model:
                 iter_warmup=self.num_iter,    # use same num iter for warmup
                 iter_sampling=self.num_iter,
                 seed=self.seed,
-                **kwargs
+                **sampler_args
             )
             return _fit
 
