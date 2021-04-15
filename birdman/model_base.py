@@ -197,7 +197,9 @@ class Model:
         alr_params: Sequence[str] = None,
         include_observed_data: bool = False,
         posterior_predictive: str = None,
-        log_likelihood: str = None
+        log_likelihood: str = None,
+        dask_cluster: dask_jobqueue.JobQueueCluster = None,
+        jobs: int = 4
     ) -> az.InferenceData:
         """Convert fitted Stan model into ``arviz`` InferenceData object.
 
@@ -248,6 +250,12 @@ class Model:
             to include in ``arviz`` InferenceData object
         :type log_likelihood: str, optional
 
+        :param dask_cluster: Dask jobqueue to run parallel jobs (optional)
+        :type dask_cluster: dask_jobqueue
+
+        :param jobs: Number of jobs to run in parallel, defaults to 4
+        :type jobs: int
+
         :returns: ``arviz`` InferenceData object with selected values
         :rtype: az.InferenceData
         """
@@ -267,6 +275,8 @@ class Model:
         elif isinstance(self.fit, Sequence):
             fit_to_inference = multiple_fits_to_inference
             args["concatenation_name"] = concatenation_name
+            args["dask_cluster"] = dask_cluster
+            args["jobs"] = jobs
             # TODO: Check that dims and concatenation_match
 
             if alr_params is not None:

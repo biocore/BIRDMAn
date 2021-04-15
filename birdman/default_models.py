@@ -94,7 +94,7 @@ class NegativeBinomial(Model):
         }
         self.add_parameters(param_dict)
 
-    def to_inference_object(self) -> az.InferenceData:
+    def to_inference_object(self, dask_cluster=None, jobs=4) -> az.InferenceData:
         """Convert fitted Stan model into ``arviz`` InferenceData object.
 
         :returns: ``arviz`` InferenceData object with selected values
@@ -116,6 +116,9 @@ class NegativeBinomial(Model):
         args = dict()
         if self.parallelize_across == "chains":
             args["alr_params"] = ["beta"]
+        else:
+            args["dask_cluster"] = dask_cluster
+            args["jobs"] = jobs
         inf = super().to_inference_object(
             params=["beta", "phi"],
             dims=dims,
