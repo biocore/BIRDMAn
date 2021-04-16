@@ -94,8 +94,18 @@ class NegativeBinomial(Model):
         }
         self.add_parameters(param_dict)
 
-    def to_inference_object(self, dask_cluster=None, jobs=4) -> az.InferenceData:
+    def to_inference_object(
+        self,
+        dask_cluster=None,
+        jobs=4
+    ) -> az.InferenceData:
         """Convert fitted Stan model into ``arviz`` InferenceData object.
+
+        :param dask_cluster: Dask jobqueue to run parallel jobs (optional)
+        :type dask_cluster: dask_jobqueue
+
+        :param jobs: Number of jobs to run in parallel, defaults to 4
+        :type jobs: int
 
         :returns: ``arviz`` InferenceData object with selected values
         :rtype: az.InferenceData
