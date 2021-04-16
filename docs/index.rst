@@ -51,6 +51,7 @@ In Python:
 
     default_model_example
     custom_model
+    parallelization
     diagnosing_model
     writing_stan_code
     working_with_arviz

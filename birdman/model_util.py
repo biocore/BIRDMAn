@@ -3,6 +3,8 @@ from typing import Sequence
 
 import arviz as az
 from cmdstanpy import CmdStanMCMC
+import dask
+import dask_jobqueue
 import numpy as np
 import xarray as xr
 
@@ -43,6 +45,9 @@ def single_fit_to_inference(
     :param log_likelihood: Name of log likelihood values from Stan model
         to include in ``arviz`` InferenceData object
     :type log_likelihood: str, optional
+
+    :returns: ``arviz`` InferenceData object with selected values
+    :rtype: az.InferenceData
     """
     # remove alr params so initial dim fitting works
     new_dims = {k: v for k, v in dims.items() if k not in alr_params}
@@ -109,6 +114,8 @@ def multiple_fits_to_inference(
     concatenation_name: str,
     posterior_predictive: str = None,
     log_likelihood: str = None,
+    dask_cluster: dask_jobqueue.JobQueueCluster = None,
+    jobs: int = 4
 ) -> az.InferenceData:
     """Save fitted parameters to xarray DataSet for multiple fits.
 
@@ -136,9 +143,18 @@ def multiple_fits_to_inference(
         to include in ``arviz`` InferenceData object
     :type log_likelihood: str, optional
 
+    :param dask_cluster: Dask jobqueue to run parallel jobs (optional)
+    :type dask_cluster: dask_jobqueue.JobQueueCluster, optional
+
+    :param jobs: Number of jobs to run in parallel, defaults to 4
+    :type jobs: int
+
     :returns: ``arviz`` InferenceData object with selected values
     :rtype: az.InferenceData
     """
+    if dask_cluster is not None:
+        dask_cluster.scale(jobs=jobs)
+
     # Remove the concatenation dimension from each individual fit
     new_dims = {
         k: [dim for dim in v if dim != concatenation_name]
@@ -149,37 +165,46 @@ def multiple_fits_to_inference(
     if new_dims == dims:
         raise ValueError("concatenation_name must match dimensions in dims")
 
-    po_list = []  # posterior
-    ss_list = []  # sample stats
-    pp_list = []  # posterior predictive
-    ll_list = []  # log likelihood
+    # Remove the unnecessary posterior dimensions
+    all_vars = fits[0].stan_variables().keys()
+    vars_to_drop = set(all_vars).difference(params)
+    if log_likelihood is not None:
+        vars_to_drop.remove(log_likelihood)
+    if posterior_predictive is not None:
+        vars_to_drop.remove(posterior_predictive)
+
+    inf_list = []
     for fit in fits:
-        ds = az.from_cmdstanpy(
-            posterior=fit,
+        single_feat_inf = _single_feature_to_inf(
+            fit=fit,
+            coords=coords,
+            dims=new_dims,
             posterior_predictive=posterior_predictive,
             log_likelihood=log_likelihood,
-            coords=coords,
-            dims=new_dims
+            vars_to_drop=vars_to_drop
         )
-        vars_to_drop = set(ds.posterior.data_vars).difference(params)
-        ds.posterior = _drop_data(ds.posterior, vars_to_drop)
+        inf_list.append(single_feat_inf)
 
-        po_list.append(ds.posterior)
-        ss_list.append(ds.sample_stats)
-        if log_likelihood is not None:
-            ll_list.append(ds.log_likelihood)
-        if posterior_predictive is not None:
-            pp_list.append(ds.posterior_predictive)
+    group_list = []
+    group_list.append(dask.persist(*[x.posterior for x in inf_list]))
+    group_list.append(dask.persist(*[x.sample_stats for x in inf_list]))
+    if log_likelihood is not None:
+        group_list.append(dask.persist(*[x.log_likelihood for x in inf_list]))
+    if posterior_predictive is not None:
+        group_list.append(
+            dask.persist(*[x.posterior_predictive for x in inf_list])
+        )
 
-    po_ds = xr.concat(po_list, concatenation_name)
-    ss_ds = xr.concat(ss_list, concatenation_name)
+    group_list = dask.compute(*group_list)
+    po_ds = xr.concat(group_list[0], concatenation_name)
+    ss_ds = xr.concat(group_list[1], concatenation_name)
     group_dict = {"posterior": po_ds, "sample_stats": ss_ds}
 
     if log_likelihood is not None:
-        ll_ds = xr.concat(ll_list, concatenation_name)
+        ll_ds = xr.concat(group_list[2], concatenation_name)
         group_dict["log_likelihood"] = ll_ds
     if posterior_predictive is not None:
-        pp_ds = xr.concat(pp_list, concatenation_name)
+        pp_ds = xr.concat(group_list[3], concatenation_name)
         group_dict["posterior_predictive"] = pp_ds
 
     all_group_inferences = []
@@ -195,9 +220,30 @@ def multiple_fits_to_inference(
     return az.concat(*all_group_inferences)
 
 
+@dask.delayed
+def _single_feature_to_inf(
+    fit: CmdStanMCMC,
+    coords: dict,
+    dims: dict,
+    vars_to_drop: Sequence[str],
+    posterior_predictive: str = None,
+    log_likelihood: str = None,
+) -> az.InferenceData:
+    """Convert single feature fit to InferenceData."""
+    feat_inf = az.from_cmdstanpy(
+        posterior=fit,
+        posterior_predictive=posterior_predictive,
+        log_likelihood=log_likelihood,
+        coords=coords,
+        dims=dims
+    )
+    feat_inf.posterior = _drop_data(feat_inf.posterior, vars_to_drop)
+    return feat_inf
+
+
 def _drop_data(
     dataset: xr.Dataset,
-    vars_to_drop: Sequence
+    vars_to_drop: Sequence[str],
 ) -> xr.Dataset:
     """Drop data and associated dimensions from inference group."""
     new_dataset = dataset.drop_vars(vars_to_drop)
