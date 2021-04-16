@@ -144,7 +144,7 @@ def multiple_fits_to_inference(
     :type log_likelihood: str, optional
 
     :param dask_cluster: Dask jobqueue to run parallel jobs (optional)
-    :type dask_cluster: dask_jobqueue
+    :type dask_cluster: dask_jobqueue.JobQueueCluster, optional
 
     :param jobs: Number of jobs to run in parallel, defaults to 4
     :type jobs: int
@@ -228,7 +228,8 @@ def _single_feature_to_inf(
     vars_to_drop: Sequence[str],
     posterior_predictive: str = None,
     log_likelihood: str = None,
-):
+) -> az.InferenceData:
+    """Convert single feature fit to InferenceData."""
     feat_inf = az.from_cmdstanpy(
         posterior=fit,
         posterior_predictive=posterior_predictive,

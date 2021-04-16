@@ -3,6 +3,7 @@ from pkg_resources import resource_filename
 
 import arviz as az
 import biom
+import dask_jobqueue
 import numpy as np
 import pandas as pd
 
@@ -96,13 +97,13 @@ class NegativeBinomial(Model):
 
     def to_inference_object(
         self,
-        dask_cluster=None,
-        jobs=4
+        dask_cluster: dask_jobqueue.JobQueueCluster = None,
+        jobs: int = 4
     ) -> az.InferenceData:
         """Convert fitted Stan model into ``arviz`` InferenceData object.
 
         :param dask_cluster: Dask jobqueue to run parallel jobs (optional)
-        :type dask_cluster: dask_jobqueue
+        :type dask_cluster: dask_jobqueue.JobQueueCluster, optional
 
         :param jobs: Number of jobs to run in parallel, defaults to 4
         :type jobs: int
