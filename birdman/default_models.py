@@ -50,9 +50,12 @@ class NegativeBinomial(Model):
     :param metadata: Metadata for design matrix
     :type metadata: pd.DataFrame
 
-    :param num_iter: Number of posterior draws (used for both warmup and
-        sampling), defaults to 500
+    :param num_iter: Number of posterior sample draws, defaults to 500
     :type num_iter: int
+
+    :param num_warmup: Number of posterior draws used for warmup, defaults to
+        num_iter
+    :type num_warmup: int
 
     :param chains: Number of chains to use in MCMC, defaults to 4
     :type chains: int
@@ -78,6 +81,7 @@ class NegativeBinomial(Model):
         formula: str,
         metadata: pd.DataFrame,
         num_iter: int = 500,
+        num_warmup: int = None,
         chains: int = 4,
         seed: float = 42,
         beta_prior: float = 5.0,
@@ -85,8 +89,17 @@ class NegativeBinomial(Model):
         parallelize_across: str = "chains",
     ):
         filepath = DEFAULT_MODEL_DICT["negative_binomial"][parallelize_across]
-        super().__init__(table, formula, metadata, filepath, num_iter, chains,
-                         seed, parallelize_across)
+        super().__init__(
+            table=table,
+            formula=formula,
+            metadata=metadata,
+            model_path=filepath,
+            num_iter=num_iter,
+            num_warmup=num_warmup,
+            chains=chains,
+            seed=seed,
+            parallelize_across=parallelize_across
+        )
 
         param_dict = {
             "depth": np.log(table.sum(axis="sample")),  # sampling depths
@@ -178,9 +191,12 @@ class NegativeBinomialLME(Model):
     :param metadata: Metadata for design matrix
     :type metadata: pd.DataFrame
 
-    :param num_iter: Number of posterior draws (used for both warmup and
-        sampling), defaults to 500
+    :param num_iter: Number of posterior sample draws, defaults to 500
     :type num_iter: int
+
+    :param num_warmup: Number of posterior draws used for warmup, defaults to
+        num_iter
+    :type num_warmup: int
 
     :param chains: Number of chains to use in MCMC, defaults to 4
     :type chains: int
@@ -207,6 +223,7 @@ class NegativeBinomialLME(Model):
         group_var: str,
         metadata: pd.DataFrame,
         num_iter: int = 500,
+        num_warmup: int = None,
         chains: int = 4,
         seed: float = 42,
         beta_prior: float = 5.0,
@@ -214,8 +231,17 @@ class NegativeBinomialLME(Model):
         group_var_prior: float = 1.0
     ):
         filepath = DEFAULT_MODEL_DICT["negative_binomial"]["lme"]
-        super().__init__(table, formula, metadata, filepath, num_iter, chains,
-                         seed, parallelize_across="chains")
+        super().__init__(
+            table=table,
+            formula=formula,
+            metadata=metadata,
+            model_path=filepath,
+            num_iter=num_iter,
+            num_warmup=num_warmup,
+            chains=chains,
+            seed=seed,
+            parallelize_across="chains"
+        )
 
         # Encode group IDs starting at 1 because Stan 1-indexes arrays
         group_var_series = metadata[group_var].loc[self.sample_names]
@@ -290,9 +316,12 @@ class Multinomial(Model):
     :param metadata: Metadata for design matrix
     :type metadata: pd.DataFrame
 
-    :param num_iter: Number of posterior draws (used for both warmup and
-        sampling), defaults to 500
+    :param num_iter: Number of posterior sample draws, defaults to 500
     :type num_iter: int
+
+    :param num_warmup: Number of posterior draws used for warmup, defaults to
+        num_iter
+    :type num_warmup: int
 
     :param chains: Number of chains to use in MCMC, defaults to 4
     :type chains: int
@@ -310,13 +339,23 @@ class Multinomial(Model):
         formula: str,
         metadata: pd.DataFrame,
         num_iter: int = 500,
+        num_warmup: int = None,
         chains: int = 4,
         seed: float = 42,
         beta_prior: float = 5.0,
     ):
         filepath = DEFAULT_MODEL_DICT["multinomial"]
-        super().__init__(table, formula, metadata, filepath, num_iter, chains,
-                         seed, parallelize_across="chains")
+        super().__init__(
+            table=table,
+            formula=formula,
+            metadata=metadata,
+            model_path=filepath,
+            num_iter=num_iter,
+            num_warmup=num_warmup,
+            chains=chains,
+            seed=seed,
+            parallelize_across="chains"
+        )
 
         param_dict = {
             "B_p": beta_prior,

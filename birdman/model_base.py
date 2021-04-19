@@ -27,9 +27,12 @@ class Model:
     :param model_path: Filepath to Stan model
     :type model_path: str
 
-    :param num_iter: Number of posterior draws (used for both warmup and
-        sampling), defaults to 500
+    :param num_iter: Number of posterior sample draws, defaults to 500
     :type num_iter: int
+
+    :param num_warmup: Number of posterior draws used for warmup, defaults to
+        num_iter
+    :type num_warmup: int
 
     :param chains: Number of chains to use in MCMC, defaults to 4
     :type chains: int
@@ -48,12 +51,15 @@ class Model:
         metadata: pd.DataFrame,
         model_path: str,
         num_iter: int = 500,
+        num_warmup: int = None,
         chains: int = 4,
         seed: float = 42,
         parallelize_across: str = "chains"
     ):
         self.table = table
         self.num_iter = num_iter
+        if num_warmup is None:
+            self.num_warmup = num_iter
         self.chains = chains
         self.seed = seed
         self.formula = formula
@@ -131,7 +137,7 @@ class Model:
             chains=self.chains,
             parallel_chains=self.chains,  # run all chains in parallel
             data=self.dat,
-            iter_warmup=self.num_iter,    # use same num iter for warmup
+            iter_warmup=self.num_warmup,
             iter_sampling=self.num_iter,
             seed=self.seed,
             **sampler_args
@@ -170,7 +176,7 @@ class Model:
                 chains=self.chains,
                 parallel_chains=1,            # run all chains in serial
                 data=dat,
-                iter_warmup=self.num_iter,    # use same num iter for warmup
+                iter_warmup=self.num_warmup,
                 iter_sampling=self.num_iter,
                 seed=self.seed,
                 **sampler_args
