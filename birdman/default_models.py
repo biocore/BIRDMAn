@@ -7,7 +7,7 @@ import dask_jobqueue
 import numpy as np
 import pandas as pd
 
-from .model_base import Model
+from .model_base import RegressionModel
 
 TEMPLATES = resource_filename("birdman", "templates")
 DEFAULT_MODEL_DICT = {
@@ -16,11 +16,12 @@ DEFAULT_MODEL_DICT = {
         "features": os.path.join(TEMPLATES, "negative_binomial_single.stan"),
         "lme": os.path.join(TEMPLATES, "negative_binomial_lme.stan")
     },
-    "multinomial": os.path.join(TEMPLATES, "multinomial.stan")
+    "multinomial": os.path.join(TEMPLATES, "multinomial.stan"),
+    "pln": os.path.join(TEMPLATES, "poisson_lognormal.stan")
 }
 
 
-class NegativeBinomial(Model):
+class NegativeBinomial(RegressionModel):
     """Fit count data using negative binomial model.
 
     .. math::
@@ -155,7 +156,7 @@ class NegativeBinomial(Model):
         return inf
 
 
-class NegativeBinomialLME(Model):
+class NegativeBinomialLME(RegressionModel):
     """Fit count data using negative binomial model considering subject as
     a random effect.
 
@@ -292,7 +293,7 @@ class NegativeBinomialLME(Model):
         return inf
 
 
-class Multinomial(Model):
+class Multinomial(RegressionModel):
     """Fit count data using serial multinomial model.
 
     .. math::

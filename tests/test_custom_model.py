@@ -2,13 +2,13 @@ from pkg_resources import resource_filename
 
 import numpy as np
 
-from birdman import Model
+from birdman import RegressionModel
 
 
 def test_custom_model(table_biom, metadata):
     # Negative binomial model with separate prior values for intercept &
     # host_common_name effect and constant overdispersion parameter.
-    custom_model = Model(
+    custom_model = RegressionModel(
         table=table_biom,
         formula="host_common_name",
         metadata=metadata,
