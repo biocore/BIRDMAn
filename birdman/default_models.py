@@ -17,7 +17,6 @@ DEFAULT_MODEL_DICT = {
         "lme": os.path.join(TEMPLATES, "negative_binomial_lme.stan")
     },
     "multinomial": os.path.join(TEMPLATES, "multinomial.stan"),
-    "pln": os.path.join(TEMPLATES, "poisson_lognormal.stan")
 }
 
 
