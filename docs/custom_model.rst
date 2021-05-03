@@ -206,13 +206,13 @@ We will save the below file to ``negative_binomial_re.stan`` so we can import an
 Running BIRDMAn
 ---------------
 
-We will now pass this file along with our table, metadata, and formula into BIRDMAn. Note that we are using the base ``Model`` class for our custom model.
+We will now pass this file along with our table, metadata, and formula into BIRDMAn. Note that we are using the base ``RegressionModel`` class for our custom model.
 
 .. code-block:: python
 
     import birdman
 
-    nb_lme = birdman.Model(  # note that we are instantiating a base Model object
+    nb_lme = birdman.RegressionModel(
         table=filt_tbl,
         formula="C(time_point, Treatment('pre-deworm'))",
         metadata=metadata_model.loc[samps_to_keep],

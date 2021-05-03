@@ -12,14 +12,11 @@ from patsy import dmatrix
 from .model_util import single_fit_to_inference, multiple_fits_to_inference
 
 
-class Model:
-    """Base Stan model.
+class BaseModel:
+    """Base BIRDMAn model.
 
     :param table: Feature table (features x samples)
     :type table: biom.table.Table
-
-    :param formula: Design formula to use in model
-    :type formula: str
 
     :param metadata: Metadata for design matrix
     :type metadata: pd.DataFrame
@@ -47,7 +44,6 @@ class Model:
     def __init__(
         self,
         table: biom.table.Table,
-        formula: str,
         metadata: pd.DataFrame,
         model_path: str,
         num_iter: int = 500,
@@ -60,9 +56,10 @@ class Model:
         self.num_iter = num_iter
         if num_warmup is None:
             self.num_warmup = num_iter
+        else:
+            self.num_warmup = num_warmup
         self.chains = chains
         self.seed = seed
-        self.formula = formula
         self.feature_names = table.ids(axis="observation")
         self.sample_names = table.ids(axis="sample")
         self.model_path = model_path
@@ -70,16 +67,10 @@ class Model:
         self.fit = None
         self.parallelize_across = parallelize_across
 
-        self.dmat = dmatrix(formula, metadata.loc[self.sample_names],
-                            return_type="dataframe")
-        self.colnames = self.dmat.columns
-
         self.dat = {
             "y": table.matrix_data.todense().T.astype(int),
-            "D": table.shape[0],
-            "N": table.shape[1],                        # number of samples
-            "p": self.dmat.shape[1],                    # number of covariates
-            "x": self.dmat.values,                      # design matrix
+            "D": table.shape[0],  # number of features
+            "N": table.shape[1],  # number of samples
         }
 
     def compile_model(self) -> None:
@@ -321,3 +312,69 @@ class Model:
             return self.fit.summary()
         if self.parallelize_across == "features":
             return [x.summary() for x in self.fit]
+
+
+class RegressionModel(BaseModel):
+    """Base BIRDMAn regression model.
+
+    :param table: Feature table (features x samples)
+    :type table: biom.table.Table
+
+    :param formula: Design formula to use in model
+    :type formula: str
+
+    :param metadata: Metadata for design matrix
+    :type metadata: pd.DataFrame
+
+    :param model_path: Filepath to Stan model
+    :type model_path: str
+
+    :param num_iter: Number of posterior sample draws, defaults to 500
+    :type num_iter: int
+
+    :param num_warmup: Number of posterior draws used for warmup, defaults to
+        num_iter
+    :type num_warmup: int
+
+    :param chains: Number of chains to use in MCMC, defaults to 4
+    :type chains: int
+
+    :param seed: Random seed to use for sampling, defaults to 42
+    :type seed: float
+
+    :param parallelize_across: Whether to parallelize across features or
+        chains, defaults to 'chains'
+    :type parallelize_across: str
+    """
+    def __init__(
+        self,
+        table: biom.table.Table,
+        formula: str,
+        metadata: pd.DataFrame,
+        model_path: str,
+        num_iter: int = 500,
+        num_warmup: int = None,
+        chains: int = 4,
+        seed: float = 42,
+        parallelize_across: str = "chains"
+    ):
+        super().__init__(
+            table=table,
+            metadata=metadata,
+            model_path=model_path,
+            num_iter=num_iter,
+            num_warmup=num_warmup,
+            chains=chains,
+            seed=seed,
+            parallelize_across=parallelize_across
+        )
+
+        self.dmat = dmatrix(formula, metadata.loc[self.sample_names],
+                            return_type="dataframe")
+        self.colnames = self.dmat.columns
+
+        param_dict = {
+            "p": self.dmat.shape[1],
+            "x": self.dmat.values,
+        }
+        self.add_parameters(param_dict)
