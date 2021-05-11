@@ -159,24 +159,9 @@ class BaseModel:
         if dask_cluster is not None:
             dask_cluster.scale(jobs=jobs)
 
-        @dask.delayed
-        def _fit_single(self, values):
-            dat = self.dat
-            dat["y"] = values.astype(int)
-            _fit = self.sm.sample(
-                chains=self.chains,
-                parallel_chains=1,            # run all chains in serial
-                data=dat,
-                iter_warmup=self.num_warmup,
-                iter_sampling=self.num_iter,
-                seed=self.seed,
-                **sampler_args
-            )
-            return _fit
-
         _fits = []
         for v, i, d in self.table.iter(axis="observation"):
-            _fit = _fit_single(self, v)
+            _fit = dask.delayed(self._fit_single)(v, sampler_args)
             _fits.append(_fit)
 
         futures = dask.persist(*_fits)
@@ -184,6 +169,19 @@ class BaseModel:
         # Set data back to full table
         self.dat["y"] = self.table.matrix_data.todense().T.astype(int)
         return all_fits
+
+    def _fit_single(self, values, sampler_args):
+        dat = self.dat
+        dat["y"] = values.astype(int)
+        _fit = self.sm.sample(
+            chains=self.chains,
+            data=dat,
+            iter_warmup=self.num_warmup,
+            iter_sampling=self.num_iter,
+            seed=self.seed,
+            **sampler_args
+        )
+        return _fit
 
     def to_inference_object(
         self,
