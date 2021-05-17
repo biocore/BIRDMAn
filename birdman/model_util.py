@@ -1,5 +1,5 @@
 import re
-from typing import Sequence
+from typing import List, Sequence, Union
 
 import arviz as az
 from cmdstanpy import CmdStanMCMC
@@ -111,12 +111,13 @@ def multiple_fits_to_inference(
     params: Sequence[str],
     coords: dict,
     dims: dict,
-    concatenation_name: str,
+    concatenate: bool = True,
+    concatenation_name: str = "feature",
     posterior_predictive: str = None,
     log_likelihood: str = None,
     dask_cluster: dask_jobqueue.JobQueueCluster = None,
     jobs: int = 4
-) -> az.InferenceData:
+) -> Union[az.InferenceData, List[az.InferenceData]]:
     """Save fitted parameters to xarray DataSet for multiple fits.
 
     :param fits: Fitted models for each feature
@@ -131,6 +132,10 @@ def multiple_fits_to_inference(
     :param dims: Dimensions of parameters in the model
     :type dims: dict
 
+    :param concatenate: Whether to concatenate all fits together, defaults to
+        True
+    :type concatenate: bool
+
     :param_concatenation_name: Name to aggregate features when combining
         multiple fits, defaults to 'feature'
     :type concatentation_name: str, optional
@@ -143,18 +148,9 @@ def multiple_fits_to_inference(
         to include in ``arviz`` InferenceData object
     :type log_likelihood: str, optional
 
-    :param dask_cluster: Dask jobqueue to run parallel jobs (optional)
-    :type dask_cluster: dask_jobqueue.JobQueueCluster, optional
-
-    :param jobs: Number of jobs to run in parallel, defaults to 4
-    :type jobs: int
-
     :returns: ``arviz`` InferenceData object with selected values
     :rtype: az.InferenceData
     """
-    if dask_cluster is not None:
-        dask_cluster.scale(jobs=jobs)
-
     # Remove the concatenation dimension from each individual fit
     new_dims = {
         k: [dim for dim in v if dim != concatenation_name]
@@ -185,39 +181,11 @@ def multiple_fits_to_inference(
         )
         inf_list.append(single_feat_inf)
 
-    group_list = []
-    group_list.append(dask.persist(*[x.posterior for x in inf_list]))
-    group_list.append(dask.persist(*[x.sample_stats for x in inf_list]))
-    if log_likelihood is not None:
-        group_list.append(dask.persist(*[x.log_likelihood for x in inf_list]))
-    if posterior_predictive is not None:
-        group_list.append(
-            dask.persist(*[x.posterior_predictive for x in inf_list])
-        )
-
-    group_list = dask.compute(*group_list)
-    po_ds = xr.concat(group_list[0], concatenation_name)
-    ss_ds = xr.concat(group_list[1], concatenation_name)
-    group_dict = {"posterior": po_ds, "sample_stats": ss_ds}
-
-    if log_likelihood is not None:
-        ll_ds = xr.concat(group_list[2], concatenation_name)
-        group_dict["log_likelihood"] = ll_ds
-    if posterior_predictive is not None:
-        pp_ds = xr.concat(group_list[3], concatenation_name)
-        group_dict["posterior_predictive"] = pp_ds
-
-    all_group_inferences = []
-    for group in group_dict:
-        # Set concatenation dim coords
-        group_ds = group_dict[group].assign_coords(
-            {concatenation_name: coords[concatenation_name]}
-        )
-
-        group_inf = az.InferenceData(**{group: group_ds})  # hacky
-        all_group_inferences.append(group_inf)
-
-    return az.concat(*all_group_inferences)
+    inf_list = dask.compute(*inf_list)
+    if not concatenate:  # Return list of individual InferenceData objects
+        return inf_list
+    else:
+        return concatenate_inferences(inf_list, coords, concatenation_name)
 
 
 def _single_feature_to_inf(
@@ -238,6 +206,46 @@ def _single_feature_to_inf(
     )
     feat_inf.posterior = _drop_data(feat_inf.posterior, vars_to_drop)
     return feat_inf
+
+
+def concatenate_inferences(
+    inf_list: List[az.InferenceData],
+    coords: dict,
+    concatenation_name: str = "feature"
+) -> az.InferenceData:
+    group_list = []
+    group_list.append(dask.persist(*[x.posterior for x in inf_list]))
+    group_list.append(dask.persist(*[x.sample_stats for x in inf_list]))
+    if "log_likelihood" in inf_list[0].groups():
+        group_list.append(dask.persist(*[x.log_likelihood for x in inf_list]))
+    if "posterior_predictive" in inf_list[0].groups():
+        group_list.append(
+            dask.persist(*[x.posterior_predictive for x in inf_list])
+        )
+
+    group_list = dask.compute(*group_list)
+    po_ds = xr.concat(group_list[0], concatenation_name)
+    ss_ds = xr.concat(group_list[1], concatenation_name)
+    group_dict = {"posterior": po_ds, "sample_stats": ss_ds}
+
+    if "log_likelihood" in inf_list[0].groups():
+        ll_ds = xr.concat(group_list[2], concatenation_name)
+        group_dict["log_likelihood"] = ll_ds
+    if "posterior_predictive" in inf_list[0].groups():
+        pp_ds = xr.concat(group_list[3], concatenation_name)
+        group_dict["posterior_predictive"] = pp_ds
+
+    all_group_inferences = []
+    for group in group_dict:
+        # Set concatenation dim coords
+        group_ds = group_dict[group].assign_coords(
+            {concatenation_name: coords[concatenation_name]}
+        )
+
+        group_inf = az.InferenceData(**{group: group_ds})  # hacky
+        all_group_inferences.append(group_inf)
+
+    return az.concat(*all_group_inferences)
 
 
 def _drop_data(

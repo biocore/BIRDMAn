@@ -73,9 +73,63 @@ class BaseModel:
             "N": table.shape[1],  # number of samples
         }
 
+        self.specifications = dict()
+
     def compile_model(self) -> None:
         """Compile Stan model."""
         self.sm = CmdStanModel(stan_file=self.model_path)
+
+    def specify_model(
+        self,
+        params: Sequence[str],
+        coords: dict,
+        dims: dict,
+        concatenation_name: str = "feature",
+        alr_params: Sequence[str] = None,
+        include_observed_data: bool = False,
+        posterior_predictive: str = None,
+        log_likelihood: str = None,
+    ) -> None:
+        """Specify coordinates and dimensions of model.
+
+        :param params: Posterior fitted parameters to include
+        :type params: Sequence[str]
+
+        :param coords: Mapping of entries in dims to labels
+        :type coords: dict
+
+        :param dims: Dimensions of parameters in the model
+        :type dims: dict
+
+        :param concatenation_name: Name to aggregate features when combining
+            multiple fits, defaults to 'feature'
+        :type concatentation_name: str
+
+        :param alr_params: Parameters to convert from ALR to CLR (this will
+            be ignored if the model has been parallelized across features)
+        :type alr_params: Sequence[str], optional
+
+        :param include_observed_data: Whether to include the original feature
+            table values into the ``arviz`` InferenceData object, default is
+            False
+        :type include_observed_data: bool
+
+        :param posterior_predictive: Name of posterior predictive values from
+            Stan model to include in ``arviz`` InferenceData object
+        :type posterior_predictive: str, optional
+
+        :param log_likelihood: Name of log likelihood values from Stan model
+            to include in ``arviz`` InferenceData object
+        :type log_likelihood: str, optional
+        """
+        self.specifications["params"] = params
+        self.specifications["coords"] = coords
+        self.specifications["dims"] = dims
+        self.specifications["alr_params"] = alr_params
+        self.specifications["concatenation_name"] = concatenation_name
+        self.specifications["include_observed_data"] = include_observed_data
+        self.specifications["posterior_predictive"] = posterior_predictive
+        self.specifications["log_likelihood"] = log_likelihood
 
     def add_parameters(self, param_dict=None) -> None:
         """Add parameters from dict to be passed to Stan."""
@@ -185,65 +239,14 @@ class BaseModel:
 
     def to_inference_object(
         self,
-        params: Sequence[str],
-        coords: dict,
-        dims: dict,
-        concatenation_name: str = "feature",
-        alr_params: Sequence[str] = None,
-        include_observed_data: bool = False,
-        posterior_predictive: str = None,
-        log_likelihood: str = None,
+        combine_individual_fits: bool = True,
         dask_cluster: dask_jobqueue.JobQueueCluster = None,
         jobs: int = 4
     ) -> az.InferenceData:
         """Convert fitted Stan model into ``arviz`` InferenceData object.
 
-        Example for a simple Negative Binomial model:
-
-        .. code-block:: python
-
-            inf_obj = model.to_inference_object(
-                params=['beta', 'phi'],
-                coords={
-                    'feature': model.feature_names,
-                    'covariate': model.colnames
-                },
-                dims={
-                    'beta': ['covariate', 'feature'],
-                    'phi': ['feature']
-                },
-                alr_params=['beta']
-            )
-
-        :param params: Posterior fitted parameters to include
-        :type params: Sequence[str]
-
-        :param coords: Mapping of entries in dims to labels
-        :type coords: dict
-
-        :param dims: Dimensions of parameters in the model
-        :type dims: dict
-
-        :param concatenation_name: Name to aggregate features when combining
-            multiple fits, defaults to 'feature'
-        :type concatentation_name: str
-
-        :param alr_params: Parameters to convert from ALR to CLR (this will
-            be ignored if the model has been parallelized across features)
-        :type alr_params: Sequence[str], optional
-
-        :param include_observed_data: Whether to include the original feature
-            table values into the ``arviz`` InferenceData object, default is
-            False
-        :type include_observed_data: bool
-
-        :param posterior_predictive: Name of posterior predictive values from
-            Stan model to include in ``arviz`` InferenceData object
-        :type posterior_predictive: str, optional
-
-        :param log_likelihood: Name of log likelihood values from Stan model
-            to include in ``arviz`` InferenceData object
-        :type log_likelihood: str, optional
+        :param combine_invididual_fits: Whether to combine the results of
+            parallelized feature fits, defaults to True
 
         :param dask_cluster: Dask jobqueue to run parallel jobs (optional)
         :type dask_cluster: dask_jobqueue
@@ -258,39 +261,52 @@ class BaseModel:
             raise ValueError("Model has not been fit!")
 
         args = {
-            "params": params,
-            "coords": coords,
-            "dims": dims,
-            "posterior_predictive": posterior_predictive,
-            "log_likelihood": log_likelihood,
+            k: self.specifications.get(k)
+            for k in ["params", "coords", "dims", "posterior_predictive",
+                      "log_likelihood"]
         }
         if isinstance(self.fit, CmdStanMCMC):
             fit_to_inference = single_fit_to_inference
-            args["alr_params"] = alr_params
+            args["alr_params"] = self.specifications["alr_params"]
         elif isinstance(self.fit, Sequence):
             fit_to_inference = multiple_fits_to_inference
-            args["concatenation_name"] = concatenation_name
+            if combine_individual_fits:
+                args["concatenation_name"] = self.specifications.get(
+                    "concatenation_name", "feature"
+                )
+                args["concatenate"] = True
             args["dask_cluster"] = dask_cluster
             args["jobs"] = jobs
             # TODO: Check that dims and concatenation_match
 
-            if alr_params is not None:
+            if self.specifications.get("alr_params") is not None:
                 warnings.warn("ALR to CLR not performed on parallel models.",
                               UserWarning)
         else:
             raise ValueError("Unrecognized fit type!")
 
         inference = fit_to_inference(self.fit, **args)
-        if include_observed_data:
-            obs = az.from_dict(
-                observed_data={"observed": self.dat["y"]},
-                coords={
-                    "tbl_sample": self.sample_names,
-                    "feature": self.feature_names
-                },
-                dims={"observed": ["tbl_sample", "feature"]}
+        if self.specifications["include_observed_data"]:
+            # Can't include observed data in individual fits
+            include_obs_fail = (
+                not combine_individual_fits
+                and self.parallelize_across == "features"
             )
-            inference = az.concat(inference, obs)
+            if include_obs_fail:
+                warnings.warn(
+                    "Cannot include observed data in un-concatenated"
+                    "fits!"
+                )
+            else:
+                obs = az.from_dict(
+                    observed_data={"observed": self.dat["y"]},
+                    coords={
+                        "tbl_sample": self.sample_names,
+                        "feature": self.feature_names
+                    },
+                    dims={"observed": ["tbl_sample", "feature"]}
+                )
+                inference = az.concat(inference, obs)
         return inference
 
     def diagnose(self):

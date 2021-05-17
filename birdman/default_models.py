@@ -3,7 +3,6 @@ from pkg_resources import resource_filename
 
 import arviz as az
 import biom
-import dask_jobqueue
 import numpy as np
 import pandas as pd
 
@@ -108,51 +107,24 @@ class NegativeBinomial(RegressionModel):
         }
         self.add_parameters(param_dict)
 
-    def to_inference_object(
-        self,
-        dask_cluster: dask_jobqueue.JobQueueCluster = None,
-        jobs: int = 4
-    ) -> az.InferenceData:
-        """Convert fitted Stan model into ``arviz`` InferenceData object.
-
-        :param dask_cluster: Dask jobqueue to run parallel jobs (optional)
-        :type dask_cluster: dask_jobqueue.JobQueueCluster, optional
-
-        :param jobs: Number of jobs to run in parallel, defaults to 4
-        :type jobs: int
-
-        :returns: ``arviz`` InferenceData object with selected values
-        :rtype: az.InferenceData
-        """
-        dims = {
+        self.specifications["params"] = ["beta", "phi"]
+        self.specifications["dims"] = {
             "beta": ["covariate", "feature"],
             "phi": ["feature"],
             "log_lhood": ["tbl_sample", "feature"],
             "y_predict": ["tbl_sample", "feature"]
         }
-        coords = {
+        self.specifications["coords"] = {
             "covariate": self.colnames,
             "feature": self.feature_names,
             "tbl_sample": self.sample_names
         }
+        self.specifications["include_observed_data"] = True
+        self.specifications["posterior_predictive"] = "y_predict"
+        self.specifications["log_likelihood"] = "log_lhood"
 
-        # TODO: May want to allow not passing PP/LL/OD in the future
-        args = dict()
         if self.parallelize_across == "chains":
-            args["alr_params"] = ["beta"]
-        else:
-            args["dask_cluster"] = dask_cluster
-            args["jobs"] = jobs
-        inf = super().to_inference_object(
-            params=["beta", "phi"],
-            dims=dims,
-            coords=coords,
-            posterior_predictive="y_predict",
-            log_likelihood="log_lhood",
-            include_observed_data=True,
-            **args
-        )
-        return inf
+            self.specifications["alr_params"] = ["beta"]
 
 
 class NegativeBinomialLME(RegressionModel):
@@ -259,37 +231,26 @@ class NegativeBinomialLME(RegressionModel):
         }
         self.add_parameters(param_dict)
 
-    def to_inference_object(self) -> az.InferenceData:
-        """Convert fitted Stan model into ``arviz`` InferenceData object.
-
-        :returns: ``arviz`` InferenceData object with selected values
-        :rtype: az.InferenceData
-        """
-        dims = {
+        self.specifications["params"] = ["beta", "phi"]
+        self.specifications["dims"] = {
             "beta": ["covariate", "feature"],
             "phi": ["feature"],
             "subj_int": ["group", "feature"],
             "log_lhood": ["tbl_sample", "feature"],
             "y_predict": ["tbl_sample", "feature"]
         }
-        coords = {
+        self.specifications["coords"] = {
             "covariate": self.colnames,
             "feature": self.feature_names,
             "tbl_sample": self.sample_names,
             "group": self.groups
         }
+        self.specifications["include_observed_data"] = True
+        self.specifications["posterior_predictive"] = "y_predict"
+        self.specifications["log_likelihood"] = "log_lhood"
 
-        # TODO: May want to allow not passing PP/LL/OD in the future
-        inf = super().to_inference_object(
-            params=["beta", "phi"],
-            dims=dims,
-            coords=coords,
-            posterior_predictive="y_predict",
-            log_likelihood="log_lhood",
-            alr_params=["beta", "subj_int"],
-            include_observed_data=True,
-        )
-        return inf
+        if self.parallelize_across == "chains":
+            self.specifications["alr_params"] = ["beta", "subj_int"]
 
 
 class Multinomial(RegressionModel):
