@@ -175,7 +175,7 @@ def multiple_fits_to_inference(
 
     inf_list = []
     for fit in fits:
-        single_feat_inf = _single_feature_to_inf(
+        single_feat_inf = dask.delayed(_single_feature_to_inf)(
             fit=fit,
             coords=coords,
             dims=new_dims,
@@ -220,7 +220,6 @@ def multiple_fits_to_inference(
     return az.concat(*all_group_inferences)
 
 
-@dask.delayed
 def _single_feature_to_inf(
     fit: CmdStanMCMC,
     coords: dict,
