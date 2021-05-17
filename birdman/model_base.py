@@ -9,7 +9,8 @@ import dask_jobqueue
 import pandas as pd
 from patsy import dmatrix
 
-from .model_util import single_fit_to_inference, multiple_fits_to_inference
+from .model_util import (single_fit_to_inference, multiple_fits_to_inference,
+                         _single_feature_to_inf)
 
 
 class BaseModel:
@@ -138,6 +139,8 @@ class BaseModel:
     def fit_model(
         self,
         sampler_args: dict = None,
+        auto_convert_to_inference: bool = False,
+        combine_individual_fits: bool = False,
         dask_cluster: dask_jobqueue.JobQueueCluster = None,
         jobs: int = 4,
     ) -> None:
@@ -146,6 +149,15 @@ class BaseModel:
         :param sampler_args: Additional parameters to pass to CmdStanPy
             sampler (optional)
         :type sampler_args: dict
+
+        :param auto_convert_to_inference: Whether to create individual
+            InferenceData objects for individual feature fits, defaults to
+            False
+        :type auto_convert_to_inference: bool
+
+        :param combine_individual_fits: Whether to combine the results of
+            parallelized feature fits, defaults to True
+        :type combine_individual_fits: bool
 
         :param dask_cluster: Dask jobqueue to run parallel jobs if
             parallelizing across features (optional)
@@ -156,15 +168,19 @@ class BaseModel:
         :type jobs: int
         """
         if self.parallelize_across == "features":
-            self.fit = self._fit_parallel(dask_cluster=dask_cluster, jobs=jobs,
-                                          sampler_args=sampler_args)
+            self._fit_parallel(
+                dask_cluster=dask_cluster,
+                jobs=jobs,
+                sampler_args=sampler_args,
+                auto_convert_to_inference=auto_convert_to_inference
+            )
         elif self.parallelize_across == "chains":
             if None not in [dask_cluster, jobs]:
                 warnings.warn(
                     "dask_cluster and jobs ignored when parallelizing"
                     " across chains."
                 )
-            self.fit = self._fit_serial(sampler_args)
+            self._fit_serial(sampler_args=sampler_args)
         else:
             raise ValueError("parallelize_across must be features or chains!")
 
@@ -178,7 +194,7 @@ class BaseModel:
         if sampler_args is None:
             sampler_args = dict()
 
-        fit = self.sm.sample(
+        self.fit = self.sm.sample(
             chains=self.chains,
             parallel_chains=self.chains,  # run all chains in parallel
             data=self.dat,
@@ -187,15 +203,20 @@ class BaseModel:
             seed=self.seed,
             **sampler_args
         )
-        return fit
 
     def _fit_parallel(
         self,
+        auto_convert_to_inference: bool = False,
         dask_cluster: dask_jobqueue.JobQueueCluster = None,
         jobs: int = 4,
         sampler_args: dict = None,
     ) -> List[CmdStanMCMC]:
         """Fit model by parallelizing across features.
+
+        :param auto_convert_to_inference: Whether to create individual
+            InferenceData objects for individual feature fits, defaults to
+            False
+        :type auto_convert_to_inference: bool
 
         :param dask_cluster: Dask jobqueue to run parallel jobs (optional)
         :type dask_cluster: dask_jobqueue
@@ -213,18 +234,48 @@ class BaseModel:
         if dask_cluster is not None:
             dask_cluster.scale(jobs=jobs)
 
+        if auto_convert_to_inference:
+            if not self.specifications:
+                raise ValueError(
+                    "Model parameters, coords, and dims have not been ",
+                    "specified!"
+                )
+            concatenation_name = self.specifications.get("concatenation_name",
+                                                         "feature")
+            new_dims = {
+                k: [dim for dim in v if dim != concatenation_name]
+                for k, v in self.specifications["dims"].items()
+            }
+        else:
+            new_dims = dict()
+
+        _infs = []
         _fits = []
         for v, i, d in self.table.iter(axis="observation"):
-            _fit = dask.delayed(self._fit_single)(v, sampler_args)
-            _fits.append(_fit)
+            _tmp = dask.delayed(self._fit_single)(
+                v,
+                sampler_args,
+                auto_convert_to_inference,
+                new_dims
+            )
+            if auto_convert_to_inference:
+                _fits.append(_tmp[0])
+                _infs.append(_tmp[1])
+            else:
+                _fits.append(_tmp)
 
-        futures = dask.persist(*_fits)
-        all_fits = dask.compute(futures)[0]
+        if auto_convert_to_inference:
+            inf_futures = dask.persist(*_infs)
+            all_infs = dask.compute(inf_futures)[0]
+            self.inf = all_infs
+
+        fit_futures = dask.persist(*_fits)
+        all_fits = dask.compute(fit_futures)[0]
         # Set data back to full table
         self.dat["y"] = self.table.matrix_data.todense().T.astype(int)
-        return all_fits
+        self.fit = all_fits
 
-    def _fit_single(self, values, sampler_args):
+    def _fit_single(self, values, sampler_args, auto_convert, new_dims):
         dat = self.dat
         dat["y"] = values.astype(int)
         _fit = self.sm.sample(
@@ -235,7 +286,22 @@ class BaseModel:
             seed=self.seed,
             **sampler_args
         )
-        return _fit
+        if not auto_convert:
+            return _fit
+        else:
+            _inf = _single_feature_to_inf(
+                fit=_fit,
+                coords=self.specifications["coords"],
+                dims=new_dims,
+                vars_to_drop=[],
+                posterior_predictive=self.specifications.get(
+                    "posterior_predictive"
+                ),
+                log_likelihood=self.specifications.get(
+                    "log_likelihood"
+                )
+            )
+            return _fit, _inf
 
     def to_inference_object(
         self,
@@ -245,8 +311,9 @@ class BaseModel:
     ) -> az.InferenceData:
         """Convert fitted Stan model into ``arviz`` InferenceData object.
 
-        :param combine_invididual_fits: Whether to combine the results of
+        :param combine_individual_fits: Whether to combine the results of
             parallelized feature fits, defaults to True
+        :type combine_individual_fits: bool
 
         :param dask_cluster: Dask jobqueue to run parallel jobs (optional)
         :type dask_cluster: dask_jobqueue
@@ -275,6 +342,8 @@ class BaseModel:
                     "concatenation_name", "feature"
                 )
                 args["concatenate"] = True
+            else:
+                args["concatenate"] = False
             args["dask_cluster"] = dask_cluster
             args["jobs"] = jobs
             # TODO: Check that dims and concatenation_match
