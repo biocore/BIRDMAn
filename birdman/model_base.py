@@ -289,11 +289,22 @@ class BaseModel:
         if not auto_convert:
             return _fit
         else:
+            all_vars = _fit.stan_variables().keys()
+            vars_to_drop = set(all_vars).difference(self.specifications.get(
+                "params"
+            ))
+            ll = self.specifications.get("log_likelihood")
+            pp = self.specifications.get("posterior_predictive")
+            if ll is not None:
+                vars_to_drop.remove(ll)
+            if pp is not None:
+                vars_to_drop.remove(pp)
+
             _inf = _single_feature_to_inf(
                 fit=_fit,
                 coords=self.specifications["coords"],
                 dims=new_dims,
-                vars_to_drop=[],
+                vars_to_drop=vars_to_drop,
                 posterior_predictive=self.specifications.get(
                     "posterior_predictive"
                 ),
