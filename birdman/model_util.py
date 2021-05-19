@@ -58,7 +58,7 @@ def single_fit_to_inference(
         raise KeyError("Must include dimensions for posterior predictive!")
 
     inference = az.from_cmdstanpy(
-        posterior=fit,
+        fit,
         coords=coords,
         log_likelihood=log_likelihood,
         posterior_predictive=posterior_predictive,
@@ -151,15 +151,12 @@ def multiple_fits_to_inference(
     :returns: ``arviz`` InferenceData object with selected values
     :rtype: az.InferenceData
     """
-    # Remove the concatenation dimension from each individual fit
+    # Remove the concatenation dimension from each individual fit if
+    # necessary
     new_dims = {
         k: [dim for dim in v if dim != concatenation_name]
         for k, v in dims.items()
     }
-
-    # If dims are unchanged it means the concatenation_name was not found
-    if new_dims == dims:
-        raise ValueError("concatenation_name must match dimensions in dims")
 
     # Remove the unnecessary posterior dimensions
     all_vars = fits[0].stan_variables().keys()
@@ -196,7 +193,26 @@ def _single_feature_to_inf(
     posterior_predictive: str = None,
     log_likelihood: str = None,
 ) -> az.InferenceData:
-    """Convert single feature fit to InferenceData."""
+    """Convert single feature fit to InferenceData.
+
+    :param fit: Single feature fit with CmdStanPy
+    :type fit: cmdstanpy.CmdStanMCMC
+
+    :param coords: Coordinates to use for annotating Inference dims
+    :type coords: dict
+
+    :param dims: Dimensions of parameters in fitted model
+    :type dims: dict
+
+    :param posterior_predictive: Name of variable holding PP values
+    :type posterior_predictive: str
+
+    :param log_likelihood: Name of variable holding LL values
+    :type log_likelihood: str
+
+    :returns: InferenceData object of single feature
+    :rtype: az.InferenceData
+    """
     feat_inf = az.from_cmdstanpy(
         posterior=fit,
         posterior_predictive=posterior_predictive,
@@ -213,17 +229,29 @@ def concatenate_inferences(
     coords: dict,
     concatenation_name: str = "feature"
 ) -> az.InferenceData:
-    group_list = []
-    group_list.append(dask.persist(*[x.posterior for x in inf_list]))
-    group_list.append(dask.persist(*[x.sample_stats for x in inf_list]))
-    if "log_likelihood" in inf_list[0].groups():
-        group_list.append(dask.persist(*[x.log_likelihood for x in inf_list]))
-    if "posterior_predictive" in inf_list[0].groups():
-        group_list.append(
-            dask.persist(*[x.posterior_predictive for x in inf_list])
-        )
+    """Concatenates multiple single feature fits into one object.
 
-    group_list = dask.compute(*group_list)
+    :param inf_list: List of InferenceData objects for each feature
+    :type inf_list: List[az.InferenceData]
+
+    :param coords: Coordinates containing concatenation name labels
+    :type coords: dict
+
+    :param concatenation_name: Name of feature dimension used when
+        concatenating, defaults to "feature"
+    :type concatenation_name: str
+
+    :returns: Combined InferenceData object
+    :rtype: az.InferenceData
+    """
+    group_list = []
+    group_list.append([x.posterior for x in inf_list])
+    group_list.append([x.sample_stats for x in inf_list])
+    if "log_likelihood" in inf_list[0].groups():
+        group_list.append([x.log_likelihood for x in inf_list])
+    if "posterior_predictive" in inf_list[0].groups():
+        group_list.append([x.posterior_predictive for x in inf_list])
+
     po_ds = xr.concat(group_list[0], concatenation_name)
     ss_ds = xr.concat(group_list[1], concatenation_name)
     group_dict = {"posterior": po_ds, "sample_stats": ss_ds}

@@ -1,6 +1,7 @@
 import os
 from pkg_resources import resource_filename
 
+from arviz import InferenceData
 import numpy as np
 
 from birdman import Multinomial, NegativeBinomial, NegativeBinomialLME
@@ -98,14 +99,13 @@ class TestToInference:
             formula="host_common_name",
             metadata=metadata,
             chains=4,
+            num_iter=100,
             seed=42,
             beta_prior=2.0,
             cauchy_scale=2.0,
             parallelize_across="features"
         )
         nb.compile_model()
-        nb.fit_model(
-            auto_convert_to_inference=True
-        )
-        assert len(nb.inf) == 28
+        nb.fit_model(convert_to_inference=True)
         assert len(nb.fit) == 28
+        assert isinstance(nb.fit[0], InferenceData)

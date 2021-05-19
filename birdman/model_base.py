@@ -1,4 +1,4 @@
-from typing import List, Sequence
+from typing import List, Sequence, Union
 import warnings
 
 import arviz as az
@@ -6,6 +6,7 @@ import biom
 from cmdstanpy import CmdStanModel, CmdStanMCMC
 import dask
 import dask_jobqueue
+import numpy as np
 import pandas as pd
 from patsy import dmatrix
 
@@ -132,15 +133,16 @@ class BaseModel:
         self.specifications["posterior_predictive"] = posterior_predictive
         self.specifications["log_likelihood"] = log_likelihood
 
-    def add_parameters(self, param_dict=None) -> None:
+    def add_parameters(self, param_dict: dict = None) -> None:
         """Add parameters from dict to be passed to Stan."""
+        if param_dict is None:
+            param_dict = dict()
         self.dat.update(param_dict)
 
     def fit_model(
         self,
         sampler_args: dict = None,
-        auto_convert_to_inference: bool = False,
-        combine_individual_fits: bool = False,
+        convert_to_inference: bool = False,
         dask_cluster: dask_jobqueue.JobQueueCluster = None,
         jobs: int = 4,
     ) -> None:
@@ -150,14 +152,7 @@ class BaseModel:
             sampler (optional)
         :type sampler_args: dict
 
-        :param auto_convert_to_inference: Whether to create individual
-            InferenceData objects for individual feature fits, defaults to
-            False
-        :type auto_convert_to_inference: bool
-
-        :param combine_individual_fits: Whether to combine the results of
-            parallelized feature fits, defaults to True
-        :type combine_individual_fits: bool
+        :
 
         :param dask_cluster: Dask jobqueue to run parallel jobs if
             parallelizing across features (optional)
@@ -168,11 +163,17 @@ class BaseModel:
         :type jobs: int
         """
         if self.parallelize_across == "features":
+            cn = self.specifications["concatenation_name"]
+            self.specifications["dims"] = {
+                k: [dim for dim in v if dim != cn]
+                for k, v in self.specifications["dims"].items()
+
+            }
             self._fit_parallel(
                 dask_cluster=dask_cluster,
                 jobs=jobs,
                 sampler_args=sampler_args,
-                auto_convert_to_inference=auto_convert_to_inference
+                convert_to_inference=convert_to_inference
             )
         elif self.parallelize_across == "chains":
             if None not in [dask_cluster, jobs]:
@@ -180,11 +181,18 @@ class BaseModel:
                     "dask_cluster and jobs ignored when parallelizing"
                     " across chains."
                 )
-            self._fit_serial(sampler_args=sampler_args)
+            self._fit_serial(
+                sampler_args=sampler_args,
+                convert_to_inference=convert_to_inference
+            )
         else:
             raise ValueError("parallelize_across must be features or chains!")
 
-    def _fit_serial(self, sampler_args: dict = None) -> CmdStanMCMC:
+    def _fit_serial(
+        self,
+        sampler_args: dict = None,
+        convert_to_inference: bool = False,
+    ) -> CmdStanMCMC:
         """Fit model by parallelizing across chains.
 
         :param sampler_args: Additional parameters to pass to CmdStanPy
@@ -194,7 +202,7 @@ class BaseModel:
         if sampler_args is None:
             sampler_args = dict()
 
-        self.fit = self.sm.sample(
+        _fit = self.sm.sample(
             chains=self.chains,
             parallel_chains=self.chains,  # run all chains in parallel
             data=self.dat,
@@ -203,14 +211,27 @@ class BaseModel:
             seed=self.seed,
             **sampler_args
         )
+        if convert_to_inference:
+            _fit = single_fit_to_inference(
+                fit=_fit,
+                params=self.specifications.get("params"),
+                coords=self.specifications.get("coords"),
+                dims=self.specifications.get("dims"),
+                alr_params=self.specifications.get("alr_params"),
+                posterior_predictive=self.specifications.get(
+                    "posterior_predictive"
+                ),
+                log_likelihood=self.specifications.get("log_likelihood")
+            )
+        self.fit = _fit
 
     def _fit_parallel(
         self,
-        auto_convert_to_inference: bool = False,
+        convert_to_inference: bool = False,
         dask_cluster: dask_jobqueue.JobQueueCluster = None,
         jobs: int = 4,
         sampler_args: dict = None,
-    ) -> List[CmdStanMCMC]:
+    ) -> Union[List[CmdStanMCMC], List[az.InferenceData]]:
         """Fit model by parallelizing across features.
 
         :param auto_convert_to_inference: Whether to create individual
@@ -234,40 +255,14 @@ class BaseModel:
         if dask_cluster is not None:
             dask_cluster.scale(jobs=jobs)
 
-        if auto_convert_to_inference:
-            if not self.specifications:
-                raise ValueError(
-                    "Model parameters, coords, and dims have not been ",
-                    "specified!"
-                )
-            concatenation_name = self.specifications.get("concatenation_name",
-                                                         "feature")
-            new_dims = {
-                k: [dim for dim in v if dim != concatenation_name]
-                for k, v in self.specifications["dims"].items()
-            }
-        else:
-            new_dims = dict()
-
-        _infs = []
         _fits = []
         for v, i, d in self.table.iter(axis="observation"):
-            _tmp = dask.delayed(self._fit_single)(
+            _fit = dask.delayed(self._fit_single)(
                 v,
                 sampler_args,
-                auto_convert_to_inference,
-                new_dims
+                convert_to_inference,
             )
-            if auto_convert_to_inference:
-                _fits.append(_tmp[0])
-                _infs.append(_tmp[1])
-            else:
-                _fits.append(_tmp)
-
-        if auto_convert_to_inference:
-            inf_futures = dask.persist(*_infs)
-            all_infs = dask.compute(inf_futures)[0]
-            self.inf = all_infs
+            _fits.append(_fit)
 
         fit_futures = dask.persist(*_fits)
         all_fits = dask.compute(fit_futures)[0]
@@ -275,7 +270,12 @@ class BaseModel:
         self.dat["y"] = self.table.matrix_data.todense().T.astype(int)
         self.fit = all_fits
 
-    def _fit_single(self, values, sampler_args, auto_convert, new_dims):
+    def _fit_single(
+        self,
+        values: np.ndarray,
+        sampler_args: dict = None,
+        convert_to_inference: bool = False,
+    ) -> Union[CmdStanMCMC, az.InferenceData]:
         dat = self.dat
         dat["y"] = values.astype(int)
         _fit = self.sm.sample(
@@ -286,33 +286,30 @@ class BaseModel:
             seed=self.seed,
             **sampler_args
         )
-        if not auto_convert:
-            return _fit
-        else:
-            all_vars = _fit.stan_variables().keys()
-            vars_to_drop = set(all_vars).difference(self.specifications.get(
-                "params"
-            ))
-            ll = self.specifications.get("log_likelihood")
-            pp = self.specifications.get("posterior_predictive")
-            if ll is not None:
-                vars_to_drop.remove(ll)
-            if pp is not None:
-                vars_to_drop.remove(pp)
 
-            _inf = _single_feature_to_inf(
+        if convert_to_inference:
+            all_vars = _fit.stan_variables().keys()
+            vars_to_drop = set(all_vars).difference(
+                self.specifications["params"]
+            )
+            if self.specifications.get("posterior_predictive") is not None:
+                vars_to_drop.remove(
+                    self.specifications["posterior_predictive"]
+                )
+            if self.specifications.get("log_likelihood") is not None:
+                vars_to_drop.remove(self.specifications["log_likelihood"])
+
+            _fit = _single_feature_to_inf(
                 fit=_fit,
-                coords=self.specifications["coords"],
-                dims=new_dims,
+                coords=self.specifications.get("coords"),
+                dims=self.specifications.get("dims"),
                 vars_to_drop=vars_to_drop,
                 posterior_predictive=self.specifications.get(
                     "posterior_predictive"
                 ),
-                log_likelihood=self.specifications.get(
-                    "log_likelihood"
-                )
+                log_likelihood=self.specifications.get("log_likelihood")
             )
-            return _fit, _inf
+        return _fit
 
     def to_inference_object(
         self,
@@ -337,6 +334,13 @@ class BaseModel:
         """
         if self.fit is None:
             raise ValueError("Model has not been fit!")
+
+        # if already Inference, just return
+        if isinstance(self.fit, az.InferenceData):
+            return self.fit
+        if isinstance(self.fit, list):
+            if isinstance(self.fit[0], az.InferenceData):
+                return self.fit
 
         args = {
             k: self.specifications.get(k)

@@ -97,8 +97,8 @@ class TestToInference:
                 },
                 concatenation_name="mewtwo",
             )
-        assert str(excinfo.value) == ("concatenation_name must match "
-                                      "dimensions in dims")
+        assert str(excinfo.value) == ("different number of dimensions on "
+                                      "data and dims: 3 vs 4")
 
 
 # Posterior predictive & log likelihood
