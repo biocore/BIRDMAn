@@ -4,7 +4,6 @@ from typing import List, Sequence, Union
 import arviz as az
 from cmdstanpy import CmdStanMCMC
 import dask
-import dask_jobqueue
 import numpy as np
 import xarray as xr
 
@@ -115,8 +114,6 @@ def multiple_fits_to_inference(
     concatenation_name: str = "feature",
     posterior_predictive: str = None,
     log_likelihood: str = None,
-    dask_cluster: dask_jobqueue.JobQueueCluster = None,
-    jobs: int = 4
 ) -> Union[az.InferenceData, List[az.InferenceData]]:
     """Save fitted parameters to xarray DataSet for multiple fits.
 

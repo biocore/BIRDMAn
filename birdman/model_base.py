@@ -5,7 +5,6 @@ import arviz as az
 import biom
 from cmdstanpy import CmdStanModel, CmdStanMCMC
 import dask
-import dask_jobqueue
 import numpy as np
 import pandas as pd
 from patsy import dmatrix
@@ -143,24 +142,12 @@ class BaseModel:
         self,
         sampler_args: dict = None,
         convert_to_inference: bool = False,
-        dask_cluster: dask_jobqueue.JobQueueCluster = None,
-        jobs: int = 4,
     ) -> None:
         """Fit model according to parallelization configuration.
 
         :param sampler_args: Additional parameters to pass to CmdStanPy
             sampler (optional)
         :type sampler_args: dict
-
-        :
-
-        :param dask_cluster: Dask jobqueue to run parallel jobs if
-            parallelizing across features (optional)
-        :type dask_cluster: dask_jobqueue
-
-        :param jobs: Number of jobs to run in parallel jobs if parallelizing
-            across features, defaults to 4
-        :type jobs: int
         """
         if self.parallelize_across == "features":
             cn = self.specifications["concatenation_name"]
@@ -170,17 +157,10 @@ class BaseModel:
 
             }
             self._fit_parallel(
-                dask_cluster=dask_cluster,
-                jobs=jobs,
                 sampler_args=sampler_args,
                 convert_to_inference=convert_to_inference
             )
         elif self.parallelize_across == "chains":
-            if None not in [dask_cluster, jobs]:
-                warnings.warn(
-                    "dask_cluster and jobs ignored when parallelizing"
-                    " across chains."
-                )
             self._fit_serial(
                 sampler_args=sampler_args,
                 convert_to_inference=convert_to_inference
@@ -228,22 +208,14 @@ class BaseModel:
     def _fit_parallel(
         self,
         convert_to_inference: bool = False,
-        dask_cluster: dask_jobqueue.JobQueueCluster = None,
-        jobs: int = 4,
         sampler_args: dict = None,
     ) -> Union[List[CmdStanMCMC], List[az.InferenceData]]:
         """Fit model by parallelizing across features.
 
-        :param auto_convert_to_inference: Whether to create individual
+        :param convert_to_inference: Whether to create individual
             InferenceData objects for individual feature fits, defaults to
             False
-        :type auto_convert_to_inference: bool
-
-        :param dask_cluster: Dask jobqueue to run parallel jobs (optional)
-        :type dask_cluster: dask_jobqueue
-
-        :param jobs: Number of jobs to run parallel in parallel, defaults to 4
-        :type jobs: int
+        :type convert_to_inference: bool
 
         :param sampler_args: Additional parameters to pass to CmdStanPy
             sampler (optional)
@@ -251,9 +223,6 @@ class BaseModel:
         """
         if sampler_args is None:
             sampler_args = dict()
-
-        if dask_cluster is not None:
-            dask_cluster.scale(jobs=jobs)
 
         _fits = []
         for v, i, d in self.table.iter(axis="observation"):
@@ -314,20 +283,12 @@ class BaseModel:
     def to_inference_object(
         self,
         combine_individual_fits: bool = True,
-        dask_cluster: dask_jobqueue.JobQueueCluster = None,
-        jobs: int = 4
     ) -> az.InferenceData:
         """Convert fitted Stan model into ``arviz`` InferenceData object.
 
         :param combine_individual_fits: Whether to combine the results of
             parallelized feature fits, defaults to True
         :type combine_individual_fits: bool
-
-        :param dask_cluster: Dask jobqueue to run parallel jobs (optional)
-        :type dask_cluster: dask_jobqueue
-
-        :param jobs: Number of jobs to run in parallel, defaults to 4
-        :type jobs: int
 
         :returns: ``arviz`` InferenceData object with selected values
         :rtype: az.InferenceData
@@ -359,8 +320,6 @@ class BaseModel:
                 args["concatenate"] = True
             else:
                 args["concatenate"] = False
-            args["dask_cluster"] = dask_cluster
-            args["jobs"] = jobs
             # TODO: Check that dims and concatenation_match
 
             if self.specifications.get("alr_params") is not None:
