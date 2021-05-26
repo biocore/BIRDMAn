@@ -10,7 +10,7 @@ import pandas as pd
 from patsy import dmatrix
 
 from .model_util import (single_fit_to_inference, multiple_fits_to_inference,
-                         _single_feature_to_inf)
+                         _single_feature_to_inf, concatenate_inferences)
 
 
 class BaseModel:
@@ -299,9 +299,18 @@ class BaseModel:
         # if already Inference, just return
         if isinstance(self.fit, az.InferenceData):
             return self.fit
-        if isinstance(self.fit, list):
+        # if sequence of Inferences, concatenate if specified
+        if isinstance(self.fit, list) or isinstance(self.fit, tuple):
             if isinstance(self.fit[0], az.InferenceData):
-                return self.fit
+                if combine_individual_fits:
+                    cat_name = self.specifications["concatenation_name"]
+                    return concatenate_inferences(
+                        self.fit,
+                        coords=self.specifications["coords"],
+                        concatenation_name=cat_name
+                    )
+                else:
+                    return self.fit
 
         args = {
             k: self.specifications.get(k)
