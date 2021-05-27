@@ -1,7 +1,7 @@
 # Inspired by the EMPress setup.py file
 from setuptools import find_packages, setup
 
-__version__ = "0.0.3dev"
+__version__ = "0.0.3"
 
 classifiers = """
     Development Status :: 3 - Alpha
@@ -39,7 +39,6 @@ setup(
         "numpy",
         "cmdstanpy",
         "dask[complete]",
-        "dask-jobqueue",
         "biom-format",
         "patsy",
         "xarray",
