@@ -148,7 +148,14 @@ class BaseModel:
         :param sampler_args: Additional parameters to pass to CmdStanPy
             sampler (optional)
         :type sampler_args: dict
+
+        :param convert_to_inference: Whether to automatically convert the
+            fitted model to an az.InferenceData object (defaults to False)
+        :type convert_to_inference: bool
         """
+        if self.sm is None:
+            raise ValueError("Model must be compiled first!")
+
         if self.parallelize_across == "features":
             cn = self.specifications["concatenation_name"]
             self.specifications["dims"] = {
