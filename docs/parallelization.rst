@@ -16,6 +16,7 @@ In this example we will assume that we have access to a SLURM cluster on which w
     import biom
     from birdman import NegativeBinomial
     from dask_jobqueue import SLURMCluster
+    from dask.distributed import Client
     import pandas as pd
 
     table = biom.load_table("example.biom")
@@ -28,6 +29,9 @@ In this example we will assume that we have access to a SLURM cluster on which w
         walltime='01:00:00',
         local_directory='/scratch'
     )
+    cluster.scale(jobs=8)  # 8 microbes at a time
+
+    client = Client(cluster)
 
     nb = NegativeBinomial(
         table=table,
@@ -38,12 +42,12 @@ In this example we will assume that we have access to a SLURM cluster on which w
         parallelize_across="features"  # note this argument!
     )
     nb.compile_model()
-    nb.fit_model(dask_cluster=cluster, jobs=8)  # run 8 microbes at a time
+    nb.fit_model()
 
-This code will run 8 microbes in parallel which will be faster than running the 4 chains in parallel. You can scale this up further depending on your computational resources by increasing the ``jobs`` argument.
+This code will run 8 microbes in parallel which will be faster than running the 4 chains in parallel.
 
-When fitting in parallel, CmdStanPy fits a model for each feature in your table. Converting to an ``InferenceData`` object is then just a matter of combining all the individual fits. We can also parallelize this process to speed-up runtime.
+When fitting in parallel, CmdStanPy fits a model for each feature in your table. Converting to an ``InferenceData`` object is then just a matter of combining all the individual fits.
 
 .. code-block:: python
 
-    nb.to_inference_object(dask_cluster=cluster, jobs=8)
+    nb.to_inference_object(combine_individual_fits=True)
