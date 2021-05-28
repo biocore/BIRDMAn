@@ -1,6 +1,7 @@
 import os
 from pkg_resources import resource_filename
 
+from arviz import InferenceData
 import numpy as np
 
 from birdman import Multinomial, NegativeBinomial, NegativeBinomialLME
@@ -85,3 +86,26 @@ class TestToInference:
         target_groups = {"posterior", "sample_stats", "log_likelihood",
                          "posterior_predictive", "observed_data"}
         assert set(inference_data.groups()) == target_groups
+
+    def test_parallel_to_inference_no_concat(self, example_parallel_model):
+        inf = example_parallel_model.to_inference_object(
+            combine_individual_fits=False
+        )
+        assert len(inf) == 28
+
+    def test_parallel_auto_inf(self, table_biom, metadata):
+        nb = NegativeBinomial(
+            table=table_biom,
+            formula="host_common_name",
+            metadata=metadata,
+            chains=4,
+            num_iter=100,
+            seed=42,
+            beta_prior=2.0,
+            cauchy_scale=2.0,
+            parallelize_across="features"
+        )
+        nb.compile_model()
+        nb.fit_model(convert_to_inference=True)
+        assert len(nb.fit) == 28
+        assert isinstance(nb.fit[0], InferenceData)

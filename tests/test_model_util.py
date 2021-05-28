@@ -61,6 +61,27 @@ class TestToInference:
         )
         self.dataset_comparison(example_parallel_model, inf.posterior)
 
+    def test_parallel_to_inference_no_concat(self, example_parallel_model):
+        inf = mu.multiple_fits_to_inference(
+            fits=example_parallel_model.fit,
+            params=["beta", "phi"],
+            coords={
+                "feature": example_parallel_model.feature_names,
+                "covariate": example_parallel_model.colnames
+            },
+            dims={
+                "beta": ["covariate", "feature"],
+                "phi": ["feature"]
+            },
+            concatenate=False,
+            log_likelihood="log_lhood",
+            posterior_predictive="y_predict",
+        )
+        assert len(inf) == 28
+        exp_groups = {"sample_stats", "posterior", "log_likelihood",
+                      "posterior_predictive"}
+        assert set(inf[0].groups()) == exp_groups
+
     def test_parallel_to_inference_wrong_concat(self, example_parallel_model):
         with pytest.raises(ValueError) as excinfo:
             mu.multiple_fits_to_inference(
@@ -76,8 +97,8 @@ class TestToInference:
                 },
                 concatenation_name="mewtwo",
             )
-        assert str(excinfo.value) == ("concatenation_name must match "
-                                      "dimensions in dims")
+        assert str(excinfo.value) == ("different number of dimensions on "
+                                      "data and dims: 3 vs 4")
 
 
 # Posterior predictive & log likelihood

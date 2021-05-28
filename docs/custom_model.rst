@@ -14,8 +14,8 @@ First we will download the BIOM table and metadata from Qiita.
 
 .. code-block:: bash
 
-    wget -O data.zip "https://qiita.ucsd.edu/public_artifact_download/?artifact_id=44773"
-    wget -O metadata.zip "https://qiita.ucsd.edu/public_download/?data=sample_information&study_id=107"
+    wget -O data.zip "https://qiita.ucsd.edu/public_artifact_download/?artifact_id=94270"
+    wget -O metadata.zip "https://qiita.ucsd.edu/public_download/?data=sample_information&study_id=11913"
     unzip data.zip
     unzip metadata.zip
 
@@ -265,20 +265,6 @@ Now we can add all the necessary parameters to BIRDMAn with the ``add_parameters
     }
     nb_lme.add_parameters(param_dict)
 
-Finally, we compile and fit the model.
-
-.. note::
-
-    Fitting this model took approximately 6 minutes on my laptop.
-
-.. code-block:: python
-
-    nb_lme.compile_model()
-    nb_lme.fit_model()
-
-Converting to ``InferenceData``
--------------------------------
-
 With a custom model there is a bit more legwork involved in converting to the ``arviz.InferenceData`` data structure. We will step through each of the parameters in this example.
 
 * ``params``: List of parameters you want to include in the posterior draws (must match Stan code).
@@ -289,9 +275,11 @@ With a custom model there is a bit more legwork involved in converting to the ``
 * ``log_likelihood``: Name of variable holding log likelihood values (optional).
 * ``include_observed_data``: Whether to include the original feature table as a group. This is useful for certain diagnostics.
 
+We pass all these arguments into the ``specify_model`` method of the ``Model`` object.
+
 .. code-block:: python
 
-    inference = nb_lme.to_inference_object(
+    nb_lme.specify_model(
         params=["beta", "phi", "subj_int"],
         dims={
             "beta": ["covariate", "feature"],
@@ -311,5 +299,25 @@ With a custom model there is a bit more legwork involved in converting to the ``
         log_likelihood="log_lik",
         include_observed_data=True
     )
+
+Finally, we compile and fit the model.
+
+.. note::
+
+    Fitting this model took approximately 6 minutes on my laptop.
+
+.. code-block:: python
+
+    nb_lme.compile_model()
+    nb_lme.fit_model()
+
+Converting to ``InferenceData``
+-------------------------------
+
+When the model has finished fitting, you can convert to an inference data assuming you have specified your model previously.
+
+.. code-block:: python
+
+    inference = nb_lme.to_inference_object()
 
 With this you can use the rest of the BIRDMAn suite as usual or directly interact with the ``arviz`` library!

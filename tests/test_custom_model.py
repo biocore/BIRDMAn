@@ -26,10 +26,7 @@ def test_custom_model(table_biom, metadata):
             "depth": np.log(custom_model.table.sum(axis="sample")),
         }
     )
-    custom_model.compile_model()
-    custom_model.fit_model()
-
-    inference = custom_model.to_inference_object(
+    custom_model.specify_model(
         params=["beta_var"],
         coords={
             "feature": custom_model.feature_names,
@@ -41,6 +38,9 @@ def test_custom_model(table_biom, metadata):
         },
         alr_params=["beta_var"]
     )
+    custom_model.compile_model()
+    custom_model.fit_model()
+    inference = custom_model.to_inference_object()
 
     assert set(inference.groups()) == {"posterior", "sample_stats"}
     ds = inference.posterior

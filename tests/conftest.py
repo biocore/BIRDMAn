@@ -10,7 +10,6 @@ from birdman import NegativeBinomial
 TEST_DATA = resource_filename("tests", "data")
 TBL_FILE = os.path.join(TEST_DATA, "macaque_tbl.biom")
 MD_FILE = os.path.join(TEST_DATA, "macaque_metadata.tsv")
-print(TBL_FILE)
 
 
 def example_biom():
@@ -91,5 +90,5 @@ def example_inf():
 @pytest.fixture(scope="session")
 def example_parallel_inf():
     nb = parallel_model()
-    inference = nb.to_inference_object()
+    inference = nb.to_inference_object(combine_individual_fits=True)
     return inference
