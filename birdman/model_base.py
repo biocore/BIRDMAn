@@ -251,8 +251,8 @@ class BaseModel:
         batches = []
 
         for i in range(0, len(self.table.ids(axis='observation')), chunksize):
-
-            result_batch = dask.delayed(batch_f)(range(i, i + chunksize))
+            end = min(len(self.table.ids(axis='observation')), i + chunksize)
+            result_batch = dask.delayed(batch_f)(range(i, end))
             batches.append(result_batch)
 
         fit_futures = dask.persist(*batches)
