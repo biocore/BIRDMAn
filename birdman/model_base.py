@@ -9,7 +9,7 @@ import dask.array as da
 import numpy as np
 import pandas as pd
 from patsy import dmatrix
-
+from functools import reduce
 from .model_util import (single_fit_to_inference, multiple_fits_to_inference,
                          _single_feature_to_inf, concatenate_inferences)
 
@@ -143,7 +143,7 @@ class BaseModel:
         self,
         sampler_args: dict = None,
         convert_to_inference: bool = False,
-        chunks=100
+        chunksize=10
     ) -> None:
         """Fit model according to parallelization configuration.
 
@@ -168,7 +168,7 @@ class BaseModel:
             self._fit_parallel(
                 sampler_args=sampler_args,
                 convert_to_inference=convert_to_inference,
-                chunks=chunks
+                chunksize=chunksize
             )
         elif self.parallelize_across == "chains":
             self._fit_serial(
@@ -219,7 +219,7 @@ class BaseModel:
         self,
         convert_to_inference: bool = False,
         sampler_args: dict = None,
-        chunks=10
+        chunksize=10
     ) -> Union[List[CmdStanMCMC], List[az.InferenceData]]:
         """Fit model by parallelizing across features.
 
@@ -235,20 +235,31 @@ class BaseModel:
         if sampler_args is None:
             sampler_args = dict()
 
-        _fits = []
-        d_ids = da.from_array(self.table.ids(axis='observation'),
-                              chunks=(chunks))
-        for i in range(len(d_ids)):
-            v = self.table.data(id=d_ids[i])
-            _fit = dask.delayed(self._fit_single)(
-                v,
-                sampler_args,
-                convert_to_inference,
-            )
-            _fits.append(_fit)
+        # see the Avoid too many tasks section at
+        # https://docs.dask.org/en/latest/delayed-best-practices.html
+        def batch_f(seq):
+            sub_results = []
+            for x in seq:
+                i = self.table.ids(axis='observation')[x]
+                _fit = self._fit_single(
+                    self.table.data(i, axis='observation'),
+                    sampler_args,
+                    convert_to_inference,
+                )
+                sub_results.append(_fit)
+            return sub_results
 
-        fit_futures = dask.persist(*_fits)
+        batches = []
+
+        for i in range(0, len(self.table.ids(axis='observation')), chunksize):
+
+            result_batch = dask.delayed(batch_f)(range(i, i + chunksize))
+            batches.append(result_batch)
+
+        fit_futures = dask.persist(*batches)
         all_fits = dask.compute(fit_futures)[0]
+        # collapse batches
+        all_fits = reduce(lambda x, y: x + y, all_fits)
         # Set data back to full table
         self.dat["y"] = self.table.matrix_data.todense().T.astype(int)
         self.fit = all_fits
