@@ -5,6 +5,7 @@ import arviz as az
 import biom
 from cmdstanpy import CmdStanModel, CmdStanMCMC
 import dask
+import dask.array as da
 import numpy as np
 import pandas as pd
 from patsy import dmatrix
@@ -216,6 +217,7 @@ class BaseModel:
         self,
         convert_to_inference: bool = False,
         sampler_args: dict = None,
+        chunk_size=10
     ) -> Union[List[CmdStanMCMC], List[az.InferenceData]]:
         """Fit model by parallelizing across features.
 
@@ -232,7 +234,9 @@ class BaseModel:
             sampler_args = dict()
 
         _fits = []
-        for v, i, d in self.table.iter(axis="observation"):
+        d_ids = da.from_array(self.table.ids(axis='observation'), chunks=(chunk_size))
+        for i in range(len(d_ids)):
+            v = self.table.data(id=d_ids[i])
             _fit = dask.delayed(self._fit_single)(
                 v,
                 sampler_args,
