@@ -143,6 +143,7 @@ class BaseModel:
         self,
         sampler_args: dict = None,
         convert_to_inference: bool = False,
+        chunksize=10
     ) -> None:
         """Fit model according to parallelization configuration.
 
@@ -166,7 +167,8 @@ class BaseModel:
             }
             self._fit_parallel(
                 sampler_args=sampler_args,
-                convert_to_inference=convert_to_inference
+                convert_to_inference=convert_to_inference,
+                chunk_size=chunk_size
             )
         elif self.parallelize_across == "chains":
             self._fit_serial(
@@ -234,7 +236,8 @@ class BaseModel:
             sampler_args = dict()
 
         _fits = []
-        d_ids = da.from_array(self.table.ids(axis='observation'), chunks=(chunk_size))
+        d_ids = da.from_array(self.table.ids(axis='observation'),
+                              chunks=(chunk_size))
         for i in range(len(d_ids)):
             v = self.table.data(id=d_ids[i])
             _fit = dask.delayed(self._fit_single)(
