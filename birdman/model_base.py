@@ -236,15 +236,13 @@ class BaseModel:
 
         # see the Avoid too many tasks section at
         # https://docs.dask.org/en/latest/delayed-best-practices.html
-        def batch_f(seq):
+        def batch_f(f, seq, table, sampler_args, convert_to_inference):
             sub_results = []
             for x in seq:
-                i = self.table.ids(axis='observation')[x]
-                _fit = self._fit_single(
-                    self.table.data(i, axis='observation'),
-                    sampler_args,
-                    convert_to_inference,
-                )
+                i = table.ids(axis='observation')[x]
+                _fit = f(table.data(i, axis='observation'),
+                         sampler_args,
+                         convert_to_inference)
                 sub_results.append(_fit)
             return sub_results
 
@@ -252,7 +250,8 @@ class BaseModel:
 
         for i in range(0, len(self.table.ids(axis='observation')), chunksize):
             end = min(len(self.table.ids(axis='observation')), i + chunksize)
-            result_batch = dask.delayed(batch_f)(range(i, end))
+            result_batch = dask.delayed(batch_f)(self._fit_single, range(i, end),
+                                                 self.table, sampler_args, convert_to_inference)
             batches.append(result_batch)
 
         fit_futures = dask.persist(*batches)
