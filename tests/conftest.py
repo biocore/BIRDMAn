@@ -58,37 +58,8 @@ def example_model():
     return model()
 
 
-def parallel_model():
-    tbl = example_biom()
-    md = example_metadata()
-
-    nb = NegativeBinomial(
-        table=tbl,
-        formula="host_common_name",
-        metadata=md,
-        num_iter=100,
-        chains=4,
-        parallelize_across="features"
-    )
-    nb.compile_model()
-    nb.fit_model()
-    return nb
-
-
-@pytest.fixture(scope="session")
-def example_parallel_model():
-    return parallel_model()
-
-
 @pytest.fixture(scope="session")
 def example_inf():
     nb = model()
     inference = nb.to_inference_object()
-    return inference
-
-
-@pytest.fixture(scope="session")
-def example_parallel_inf():
-    nb = parallel_model()
-    inference = nb.to_inference_object(combine_individual_fits=True)
     return inference

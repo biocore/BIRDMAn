@@ -32,8 +32,7 @@ def single_fit_to_inference(
     :param dims: Dimensions of parameters in the model
     :type dims: dict
 
-    :param alr_params: Parameters to convert from ALR to CLR (this will
-        be ignored if the model has been parallelized across features)
+    :param alr_params: Parameters to convert from ALR to CLR
     :type alr_params: Sequence[str], optional
 
     :param posterior_predictive: Name of posterior predictive values from

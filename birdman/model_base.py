@@ -127,7 +127,7 @@ class BaseModel:
         sampler_args: dict = None,
         convert_to_inference: bool = False,
     ) -> None:
-        """Fit model according to parallelization configuration.
+        """Perform MCMC sampling.
 
         :param sampler_args: Additional parameters to pass to CmdStanPy
             sampler (optional)
