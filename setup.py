@@ -38,7 +38,6 @@ setup(
     install_requires=[
         "numpy",
         "cmdstanpy",
-        "dask[complete]",
         "biom-format",
         "patsy",
         "xarray",

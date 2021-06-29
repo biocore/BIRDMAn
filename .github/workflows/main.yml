@@ -34,7 +34,7 @@ jobs:
 
       - name: Install conda packages
         shell: bash -l {0}
-        run: conda install -c conda-forge dask biom-format patsy pytest xarray scikit-bio flake8
+        run: conda install -c conda-forge biom-format patsy pytest xarray scikit-bio flake8
 
       - name: Install master branch of arviz
         shell: bash -l {0}
