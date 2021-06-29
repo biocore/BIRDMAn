@@ -1,9 +1,8 @@
 import re
-from typing import List, Sequence, Union
+from typing import List, Sequence
 
 import arviz as az
 from cmdstanpy import CmdStanMCMC
-import dask
 import numpy as np
 import xarray as xr
 
@@ -103,83 +102,6 @@ def single_fit_to_inference(
                 dims_to_drop.append(dim)
         inference.posterior = inference.posterior.drop_dims(dims_to_drop)
     return inference
-
-
-def multiple_fits_to_inference(
-    fits: Sequence[CmdStanMCMC],
-    params: Sequence[str],
-    coords: dict,
-    dims: dict,
-    concatenate: bool = True,
-    concatenation_name: str = "feature",
-    posterior_predictive: str = None,
-    log_likelihood: str = None,
-) -> Union[az.InferenceData, List[az.InferenceData]]:
-    """Save fitted parameters to xarray DataSet for multiple fits.
-
-    :param fits: Fitted models for each feature
-    :type params: Sequence[CmdStanMCMC]
-
-    :param params: Posterior fitted parameters to include
-    :type params: Sequence[str]
-
-    :param coords: Mapping of entries in dims to labels
-    :type coords: dict
-
-    :param dims: Dimensions of parameters in the model
-    :type dims: dict
-
-    :param concatenate: Whether to concatenate all fits together, defaults to
-        True
-    :type concatenate: bool
-
-    :param_concatenation_name: Name to aggregate features when combining
-        multiple fits, defaults to 'feature'
-    :type concatentation_name: str, optional
-
-    :param posterior_predictive: Name of posterior predictive values from
-        Stan model to include in ``arviz`` InferenceData object
-    :type posterior_predictive: str, optional
-
-    :param log_likelihood: Name of log likelihood values from Stan model
-        to include in ``arviz`` InferenceData object
-    :type log_likelihood: str, optional
-
-    :returns: ``arviz`` InferenceData object with selected values
-    :rtype: az.InferenceData
-    """
-    # Remove the concatenation dimension from each individual fit if
-    # necessary
-    new_dims = {
-        k: [dim for dim in v if dim != concatenation_name]
-        for k, v in dims.items()
-    }
-
-    # Remove the unnecessary posterior dimensions
-    all_vars = fits[0].stan_variables().keys()
-    vars_to_drop = set(all_vars).difference(params)
-    if log_likelihood is not None:
-        vars_to_drop.remove(log_likelihood)
-    if posterior_predictive is not None:
-        vars_to_drop.remove(posterior_predictive)
-
-    inf_list = []
-    for fit in fits:
-        single_feat_inf = dask.delayed(_single_feature_to_inf)(
-            fit=fit,
-            coords=coords,
-            dims=new_dims,
-            posterior_predictive=posterior_predictive,
-            log_likelihood=log_likelihood,
-            vars_to_drop=vars_to_drop
-        )
-        inf_list.append(single_feat_inf)
-
-    inf_list = dask.compute(*inf_list)
-    if not concatenate:  # Return list of individual InferenceData objects
-        return inf_list
-    else:
-        return concatenate_inferences(inf_list, coords, concatenation_name)
 
 
 def _single_feature_to_inf(
