@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from patsy import dmatrix
 
-from .model_util import single_fit_to_inference, _single_feature_to_inf
+from .model_util import single_fit_to_inference, single_feature_to_inf
 
 
 class BaseModel:
@@ -34,6 +34,10 @@ class BaseModel:
 
     :param seed: Random seed to use for sampling, defaults to 42
     :type seed: float
+
+    :param single_feature: Whether this model is for a single feature or a
+        full count table, defaults to False
+    :type single_feature: bool
     """
     def __init__(
         self,
@@ -44,6 +48,7 @@ class BaseModel:
         num_warmup: int = None,
         chains: int = 4,
         seed: float = 42,
+        single_feature: bool = False
     ):
         self.table = table
         self.num_iter = num_iter
@@ -58,6 +63,7 @@ class BaseModel:
         self.model_path = model_path
         self.sm = None
         self.fit = None
+        self.single_feature = single_feature
 
         self.dat = {
             "y": table.matrix_data.todense().T.astype(int),
@@ -124,10 +130,14 @@ class BaseModel:
 
     def fit_model(
         self,
+        feature_id: str = None,
         sampler_args: dict = None,
         convert_to_inference: bool = False,
     ) -> None:
         """Perform MCMC sampling.
+
+        :param feature_number: ID of table feature to fit
+        :type feature_number: str
 
         :param sampler_args: Additional parameters to pass to CmdStanPy
             sampler (optional)
@@ -140,21 +150,34 @@ class BaseModel:
         if self.sm is None:
             raise ValueError("Model must be compiled first!")
 
-        self._fit_serial(
-            sampler_args=sampler_args,
-            convert_to_inference=convert_to_inference
-        )
+        args = {
+            "sampler_args": sampler_args,
+            "convert_to_inference": convert_to_inference
+        }
+
+        if not self.single_feature:
+            fit_function = self._fit_serial
+        else:
+            fit_function = self._fit_single
+            values = self.table.data(id=feature_id, axis="observation")
+            args["values"] = values
+
+        fit_function(**args)
 
     def _fit_serial(
         self,
         sampler_args: dict = None,
         convert_to_inference: bool = False,
-    ) -> CmdStanMCMC:
+    ) -> Union[CmdStanMCMC, az.InferenceData]:
         """Fit model by parallelizing across chains.
 
         :param sampler_args: Additional parameters to pass to CmdStanPy
             sampler (optional)
         :type sampler_args: dict
+
+        :param convert_to_inference: Whether to automatically convert to
+            inference given model specifications, defaults to False
+        :type convert_to_inference: bool
         """
         if sampler_args is None:
             sampler_args = dict()
@@ -188,6 +211,19 @@ class BaseModel:
         sampler_args: dict = None,
         convert_to_inference: bool = False,
     ) -> Union[CmdStanMCMC, az.InferenceData]:
+        """Fit single feature model.
+
+        :param values: Counts in order of sample order
+        :type values: np.ndarray
+
+        :param sampler_args: Additional parameters to pass to CmdStanPy
+            sampler (optional)
+        :type sampler_args: dict
+
+        :param convert_to_inference: Whether to automatically convert to
+            inference given model specifications, defaults to False
+        :type convert_to_inference: bool
+        """
         dat = self.dat
         dat["y"] = values.astype(int)
         _fit = self.sm.sample(
@@ -211,7 +247,7 @@ class BaseModel:
             if self.specifications.get("log_likelihood") is not None:
                 vars_to_drop.remove(self.specifications["log_likelihood"])
 
-            _fit = _single_feature_to_inf(
+            _fit = single_feature_to_inf(
                 fit=_fit,
                 coords=self.specifications.get("coords"),
                 dims=self.specifications.get("dims"),
@@ -241,19 +277,23 @@ class BaseModel:
             for k in ["params", "coords", "dims", "posterior_predictive",
                       "log_likelihood"]
         }
-        if isinstance(self.fit, CmdStanMCMC):
+        if not self.single_feature:
             fit_to_inference = single_fit_to_inference
             args["alr_params"] = self.specifications["alr_params"]
+        else:
+            fit_to_inference = single_feature_to_inf
 
         inference = fit_to_inference(self.fit, **args)
         if self.specifications["include_observed_data"]:
+            coords = {"tbl_sample": self.sample_names}
+            dims = {"observed": ["tbl_sample"]}
+            if not self.single_feature:
+                coords["feature"] = self.feature_names
+                dims["observed"].append("feature")
             obs = az.from_dict(
                 observed_data={"observed": self.dat["y"]},
-                coords={
-                    "tbl_sample": self.sample_names,
-                    "feature": self.feature_names
-                },
-                dims={"observed": ["tbl_sample", "feature"]}
+                coords=coords,
+                dims=dims
             )
             inference = az.concat(inference, obs)
         return inference

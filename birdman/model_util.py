@@ -103,7 +103,7 @@ def single_fit_to_inference(
     return inference
 
 
-def _single_feature_to_inf(
+def single_feature_to_inf(
     fit: CmdStanMCMC,
     coords: dict,
     dims: dict,
