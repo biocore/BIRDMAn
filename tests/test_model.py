@@ -71,6 +71,24 @@ class TestModelFit:
         mult.compile_model()
         mult.fit_model()
 
+    def test_single_feat_fit(self, example_single_feat_model):
+        inf = example_single_feat_model.to_inference_object()
+        post = inf.posterior
+        assert set(post.coords) == {"chain", "covariate", "draw"}
+        assert post.dims == {"chain": 4, "covariate": 2, "draw": 100}
+        assert (post.coords["chain"] == [0, 1, 2, 3]).all()
+        assert (post.coords["covariate"] == [
+            "Intercept",
+            "host_common_name[T.long-tailed macaque]"
+        ]).all()
+        assert (post.coords["draw"] == np.arange(100)).all()
+
+        ppc = inf.posterior_predictive
+        ll = inf.log_likelihood
+        sample_names = example_single_feat_model.sample_names
+        assert (ppc.coords["tbl_sample"] == sample_names).all()
+        assert (ll.coords["tbl_sample"] == sample_names).all()
+
 
 class TestToInference:
     def test_serial_to_inference(self, example_model):

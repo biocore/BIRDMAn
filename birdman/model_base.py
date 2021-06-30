@@ -136,8 +136,8 @@ class BaseModel:
     ) -> None:
         """Perform MCMC sampling.
 
-        :param feature_number: ID of table feature to fit
-        :type feature_number: str
+        :param feature_id: ID of table feature to fit
+        :type feature_id: str
 
         :param sampler_args: Additional parameters to pass to CmdStanPy
             sampler (optional)
@@ -224,6 +224,9 @@ class BaseModel:
             inference given model specifications, defaults to False
         :type convert_to_inference: bool
         """
+        if sampler_args is None:
+            sampler_args = dict()
+
         dat = self.dat
         dat["y"] = values.astype(int)
         _fit = self.sm.sample(
@@ -257,7 +260,7 @@ class BaseModel:
                 ),
                 log_likelihood=self.specifications.get("log_likelihood")
             )
-        return _fit
+        self.fit = _fit
 
     def to_inference_object(self) -> az.InferenceData:
         """Convert fitted Stan model into ``arviz`` InferenceData object.
@@ -338,6 +341,10 @@ class RegressionModel(BaseModel):
 
     :param seed: Random seed to use for sampling, defaults to 42
     :type seed: float
+
+    :param single_feature: Whether this model is for a single feature or a
+        full count table, defaults to False
+    :type single_feature: bool
     """
     def __init__(
         self,
@@ -349,6 +356,7 @@ class RegressionModel(BaseModel):
         num_warmup: int = None,
         chains: int = 4,
         seed: float = 42,
+        single_feature: bool = False
     ):
         super().__init__(
             table=table,
@@ -358,6 +366,7 @@ class RegressionModel(BaseModel):
             num_warmup=num_warmup,
             chains=chains,
             seed=seed,
+            single_feature=single_feature
         )
 
         self.dmat = dmatrix(formula, metadata.loc[self.sample_names],

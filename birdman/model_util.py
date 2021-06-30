@@ -105,9 +105,9 @@ def single_fit_to_inference(
 
 def single_feature_to_inf(
     fit: CmdStanMCMC,
+    params: Sequence[str],
     coords: dict,
     dims: dict,
-    vars_to_drop: Sequence[str],
     posterior_predictive: str = None,
     log_likelihood: str = None,
 ) -> az.InferenceData:
@@ -115,6 +115,9 @@ def single_feature_to_inf(
 
     :param fit: Single feature fit with CmdStanPy
     :type fit: cmdstanpy.CmdStanMCMC
+
+    :param params: Posterior fitted parameters to include
+    :type params: Sequence[str]
 
     :param coords: Coordinates to use for annotating Inference dims
     :type coords: dict
@@ -131,13 +134,22 @@ def single_feature_to_inf(
     :returns: InferenceData object of single feature
     :rtype: az.InferenceData
     """
+    _coords = coords.copy()
+    _coords.pop("feature")
+
+    _dims = dims.copy()
+    for k, v in _dims.items():
+        if "feature" in v:
+            v.remove("feature")
+
     feat_inf = az.from_cmdstanpy(
         posterior=fit,
         posterior_predictive=posterior_predictive,
         log_likelihood=log_likelihood,
-        coords=coords,
-        dims=dims
+        coords=_coords,
+        dims=_dims
     )
+    vars_to_drop = set(feat_inf.posterior.data_vars).difference(params)
     feat_inf.posterior = _drop_data(feat_inf.posterior, vars_to_drop)
     return feat_inf
 

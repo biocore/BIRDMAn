@@ -63,3 +63,28 @@ def example_inf():
     nb = model()
     inference = nb.to_inference_object()
     return inference
+
+
+def single_feat_model():
+    tbl = example_biom()
+    md = example_metadata()
+
+    nb = NegativeBinomial(
+        table=tbl,
+        formula="host_common_name",
+        metadata=md,
+        single_feature=True,
+        num_iter=100,
+        chains=4,
+    )
+
+    nb.compile_model()
+    id0 = tbl.ids(axis="observation")[0]
+    nb.fit_model(feature_id=id0)
+
+    return nb
+
+
+@pytest.fixture(scope="session")
+def example_single_feat_model():
+    return single_feat_model()
