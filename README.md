@@ -11,7 +11,7 @@
 Currently BIRDMAn requires Python 3.7 or higher.
 
 ```bash
-conda install -c conda-forge dask biom-format patsy xarray
+conda install -c conda-forge biom-format patsy xarray
 pip install cmdstanpy
 pip install git+git://github.com/arviz-devs/arviz.git
 pip install birdman
