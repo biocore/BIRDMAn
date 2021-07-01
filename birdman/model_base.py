@@ -175,11 +175,12 @@ class BaseModel(ABC):
             try:
                 self.fit = self.to_inference_object()
             except Exception as e:
-                print(
-                    "Auto conversion to InferenceData has failed! "
-                    "self.fit has been saved as CmdStanMCMC instead."
+                warnings.warn(
+                    "Auto conversion to InferenceData has failed! fit has "
+                    "been saved as CmdStanMCMC instead. See error message"
+                    f": \n{type(e).__name__}: {e}",
+                    category=UserWarning
                 )
-                print(str(e))
 
     @abstractmethod
     def to_inference_object(self):
@@ -205,6 +206,9 @@ class TableModel(BaseModel):
         # if already Inference, just return
         if isinstance(self.fit, az.InferenceData):
             return self.fit
+
+        if not self.specifications:
+            raise ValueError("Specification dictionary is empty!")
 
         args = {
             k: self.specifications.get(k)

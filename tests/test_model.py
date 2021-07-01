@@ -2,6 +2,7 @@ import os
 from pkg_resources import resource_filename
 
 import numpy as np
+import pytest
 
 from birdman import (Multinomial, NegativeBinomial, NegativeBinomialLME,
                      NegativeBinomialSingle)
@@ -84,6 +85,26 @@ class TestModelFit:
             )
             nb.compile_model()
             nb.fit_model(convert_to_inference=True)
+
+    def test_fail_auto_conversion(self, table_biom, metadata):
+        nb = NegativeBinomial(
+            table=table_biom,
+            metadata=metadata,
+            formula="host_common_name",
+            num_iter=100,
+        )
+        nb.compile_model()
+        nb.specifications = dict()
+        with pytest.warns(UserWarning) as r:
+            nb.fit_model(convert_to_inference=True)
+
+        e = "Specification dictionary is empty!"
+        expected_warning = (
+            "Auto conversion to InferenceData has failed! fit has "
+            "been saved as CmdStanMCMC instead. See error message"
+            f": \nValueError: {e}"
+        )
+        assert r[0].message.args[0] == expected_warning
 
 
 class TestToInference:
