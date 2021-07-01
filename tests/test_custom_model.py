@@ -16,7 +16,6 @@ def test_custom_model(table_biom, metadata):
         num_iter=100,
         chains=4,
         seed=42,
-        parallelize_across="chains"
     )
     custom_model.add_parameters(
         {

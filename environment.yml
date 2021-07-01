@@ -10,7 +10,6 @@ dependencies:
   - python-language-server
   - xarray
   - patsy
-  - dask
   - biom-format
   - arviz
   - docutils==0.16

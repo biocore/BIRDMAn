@@ -1,7 +1,6 @@
 import os
 from pkg_resources import resource_filename
 
-from arviz import InferenceData
 import numpy as np
 
 from birdman import Multinomial, NegativeBinomial, NegativeBinomialLME
@@ -19,7 +18,6 @@ class TestModelInheritance:
             seed=42,
             beta_prior=2.0,
             cauchy_scale=2.0,
-            parallelize_across="chains"
         )
 
         assert nb.dat["B_p"] == 2.0
@@ -73,6 +71,20 @@ class TestModelFit:
         mult.compile_model()
         mult.fit_model()
 
+    def test_single_feat(self, table_biom, metadata):
+        md = metadata.copy()
+        nb = NegativeBinomial(
+            table=table_biom,
+            formula="host_common_name",
+            single_feature=True,
+            metadata=md,
+            num_iter=100,
+        )
+        nb.compile_model()
+
+        for fid in table_biom.ids(axis="observation"):
+            nb.fit_model(feature_id=fid)
+
 
 class TestToInference:
     def test_serial_to_inference(self, example_model):
@@ -81,31 +93,20 @@ class TestToInference:
                          "posterior_predictive", "observed_data"}
         assert set(inference_data.groups()) == target_groups
 
-    def test_parallel_to_inference(self, example_parallel_model):
-        inference_data = example_parallel_model.to_inference_object()
-        target_groups = {"posterior", "sample_stats", "log_likelihood",
-                         "posterior_predictive", "observed_data"}
-        assert set(inference_data.groups()) == target_groups
+    def test_single_feat_fit(self, example_single_feat_model):
+        inf = example_single_feat_model.to_inference_object()
+        post = inf.posterior
+        assert set(post.coords) == {"chain", "covariate", "draw"}
+        assert post.dims == {"chain": 4, "covariate": 2, "draw": 100}
+        assert (post.coords["chain"] == [0, 1, 2, 3]).all()
+        assert (post.coords["covariate"] == [
+            "Intercept",
+            "host_common_name[T.long-tailed macaque]"
+        ]).all()
+        assert (post.coords["draw"] == np.arange(100)).all()
 
-    def test_parallel_to_inference_no_concat(self, example_parallel_model):
-        inf = example_parallel_model.to_inference_object(
-            combine_individual_fits=False
-        )
-        assert len(inf) == 28
-
-    def test_parallel_auto_inf(self, table_biom, metadata):
-        nb = NegativeBinomial(
-            table=table_biom,
-            formula="host_common_name",
-            metadata=metadata,
-            chains=4,
-            num_iter=100,
-            seed=42,
-            beta_prior=2.0,
-            cauchy_scale=2.0,
-            parallelize_across="features"
-        )
-        nb.compile_model()
-        nb.fit_model(convert_to_inference=True)
-        assert len(nb.fit) == 28
-        assert isinstance(nb.fit[0], InferenceData)
+        ppc = inf.posterior_predictive
+        ll = inf.log_likelihood
+        sample_names = example_single_feat_model.sample_names
+        assert (ppc.coords["tbl_sample"] == sample_names).all()
+        assert (ll.coords["tbl_sample"] == sample_names).all()

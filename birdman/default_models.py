@@ -10,8 +10,8 @@ from .model_base import RegressionModel
 TEMPLATES = resource_filename("birdman", "templates")
 DEFAULT_MODEL_DICT = {
     "negative_binomial": {
-        "chains": os.path.join(TEMPLATES, "negative_binomial.stan"),
-        "features": os.path.join(TEMPLATES, "negative_binomial_single.stan"),
+        "standard": os.path.join(TEMPLATES, "negative_binomial.stan"),
+        "single": os.path.join(TEMPLATES, "negative_binomial_single.stan"),
         "lme": os.path.join(TEMPLATES, "negative_binomial_lme.stan")
     },
     "multinomial": os.path.join(TEMPLATES, "multinomial.stan"),
@@ -48,6 +48,10 @@ class NegativeBinomial(RegressionModel):
     :param metadata: Metadata for design matrix
     :type metadata: pd.DataFrame
 
+    :param single_feature: Whether this model is for a single feature or a
+        full count table, defaults to False
+    :type single_feature: bool
+
     :param num_iter: Number of posterior sample draws, defaults to 500
     :type num_iter: int
 
@@ -68,35 +72,35 @@ class NegativeBinomial(RegressionModel):
     :param cauchy_scale: Scale parameter for half-Cauchy distributed prior
         values of phi, defaults to 5.0
     :type cauchy_scale: float
-
-    :param parallelize_across: Whether to parallelize across features or
-        chains, defaults to 'chains'
-    :type parallelize_across: str
     """
     def __init__(
         self,
         table: biom.table.Table,
         formula: str,
         metadata: pd.DataFrame,
+        single_feature: bool = False,
         num_iter: int = 500,
         num_warmup: int = None,
         chains: int = 4,
         seed: float = 42,
         beta_prior: float = 5.0,
         cauchy_scale: float = 5.0,
-        parallelize_across: str = "chains",
     ):
-        filepath = DEFAULT_MODEL_DICT["negative_binomial"][parallelize_across]
+        if single_feature:
+            filepath = DEFAULT_MODEL_DICT["negative_binomial"]["single"]
+        else:
+            filepath = DEFAULT_MODEL_DICT["negative_binomial"]["standard"]
+
         super().__init__(
             table=table,
             formula=formula,
             metadata=metadata,
+            single_feature=single_feature,
             model_path=filepath,
             num_iter=num_iter,
             num_warmup=num_warmup,
             chains=chains,
             seed=seed,
-            parallelize_across=parallelize_across
         )
 
         param_dict = {
@@ -124,8 +128,7 @@ class NegativeBinomial(RegressionModel):
             log_likelihood="log_lhood"
         )
 
-        if self.parallelize_across == "chains":
-            self.specifications["alr_params"] = ["beta"]
+        self.specifications["alr_params"] = ["beta"]
 
 
 class NegativeBinomialLME(RegressionModel):
@@ -213,7 +216,6 @@ class NegativeBinomialLME(RegressionModel):
             num_warmup=num_warmup,
             chains=chains,
             seed=seed,
-            parallelize_across="chains"
         )
 
         # Encode group IDs starting at 1 because Stan 1-indexes arrays
@@ -252,8 +254,7 @@ class NegativeBinomialLME(RegressionModel):
             log_likelihood="log_lhood"
         )
 
-        if self.parallelize_across == "chains":
-            self.specifications["alr_params"] = ["beta", "subj_int"]
+        self.specifications["alr_params"] = ["beta", "subj_int"]
 
 
 class Multinomial(RegressionModel):
@@ -318,7 +319,6 @@ class Multinomial(RegressionModel):
             num_warmup=num_warmup,
             chains=chains,
             seed=seed,
-            parallelize_across="chains"
         )
 
         param_dict = {

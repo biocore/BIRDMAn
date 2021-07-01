@@ -1,16 +1,13 @@
-from typing import List, Sequence, Union
-import warnings
+from typing import Sequence, Union
 
 import arviz as az
 import biom
 from cmdstanpy import CmdStanModel, CmdStanMCMC
-import dask
 import numpy as np
 import pandas as pd
 from patsy import dmatrix
 
-from .model_util import (single_fit_to_inference, multiple_fits_to_inference,
-                         _single_feature_to_inf, concatenate_inferences)
+from .model_util import single_fit_to_inference, single_feature_to_inf
 
 
 class BaseModel:
@@ -38,9 +35,9 @@ class BaseModel:
     :param seed: Random seed to use for sampling, defaults to 42
     :type seed: float
 
-    :param parallelize_across: Whether to parallelize across features or
-        chains, defaults to 'chains'
-    :type parallelize_across: str
+    :param single_feature: Whether this model is for a single feature or a
+        full count table, defaults to False
+    :type single_feature: bool
     """
     def __init__(
         self,
@@ -51,7 +48,7 @@ class BaseModel:
         num_warmup: int = None,
         chains: int = 4,
         seed: float = 42,
-        parallelize_across: str = "chains"
+        single_feature: bool = False
     ):
         self.table = table
         self.num_iter = num_iter
@@ -66,7 +63,7 @@ class BaseModel:
         self.model_path = model_path
         self.sm = None
         self.fit = None
-        self.parallelize_across = parallelize_across
+        self.single_feature = single_feature
 
         self.dat = {
             "y": table.matrix_data.todense().T.astype(int),
@@ -85,7 +82,6 @@ class BaseModel:
         params: Sequence[str],
         coords: dict,
         dims: dict,
-        concatenation_name: str = "feature",
         alr_params: Sequence[str] = None,
         include_observed_data: bool = False,
         posterior_predictive: str = None,
@@ -102,12 +98,7 @@ class BaseModel:
         :param dims: Dimensions of parameters in the model
         :type dims: dict
 
-        :param concatenation_name: Name to aggregate features when combining
-            multiple fits, defaults to 'feature'
-        :type concatentation_name: str
-
-        :param alr_params: Parameters to convert from ALR to CLR (this will
-            be ignored if the model has been parallelized across features)
+        :param alr_params: Parameters to convert from ALR to CLR
         :type alr_params: Sequence[str], optional
 
         :param include_observed_data: Whether to include the original feature
@@ -127,7 +118,6 @@ class BaseModel:
         self.specifications["coords"] = coords
         self.specifications["dims"] = dims
         self.specifications["alr_params"] = alr_params
-        self.specifications["concatenation_name"] = concatenation_name
         self.specifications["include_observed_data"] = include_observed_data
         self.specifications["posterior_predictive"] = posterior_predictive
         self.specifications["log_likelihood"] = log_likelihood
@@ -140,10 +130,14 @@ class BaseModel:
 
     def fit_model(
         self,
+        feature_id: str = None,
         sampler_args: dict = None,
         convert_to_inference: bool = False,
     ) -> None:
-        """Fit model according to parallelization configuration.
+        """Perform MCMC sampling.
+
+        :param feature_id: ID of table feature to fit
+        :type feature_id: str
 
         :param sampler_args: Additional parameters to pass to CmdStanPy
             sampler (optional)
@@ -156,35 +150,36 @@ class BaseModel:
         if self.sm is None:
             raise ValueError("Model must be compiled first!")
 
-        if self.parallelize_across == "features":
-            cn = self.specifications["concatenation_name"]
-            self.specifications["dims"] = {
-                k: [dim for dim in v if dim != cn]
-                for k, v in self.specifications["dims"].items()
+        args = {
+            "sampler_args": sampler_args,
+            "convert_to_inference": convert_to_inference
+        }
 
-            }
-            self._fit_parallel(
-                sampler_args=sampler_args,
-                convert_to_inference=convert_to_inference
-            )
-        elif self.parallelize_across == "chains":
-            self._fit_serial(
-                sampler_args=sampler_args,
-                convert_to_inference=convert_to_inference
-            )
+        if not self.single_feature:
+            fit_function = self._fit_serial
         else:
-            raise ValueError("parallelize_across must be features or chains!")
+            if feature_id is None:
+                raise ValueError("Must pass feature ID!")
+            fit_function = self._fit_single
+            values = self.table.data(id=feature_id, axis="observation")
+            args["values"] = values
+
+        fit_function(**args)
 
     def _fit_serial(
         self,
         sampler_args: dict = None,
         convert_to_inference: bool = False,
-    ) -> CmdStanMCMC:
+    ) -> Union[CmdStanMCMC, az.InferenceData]:
         """Fit model by parallelizing across chains.
 
         :param sampler_args: Additional parameters to pass to CmdStanPy
             sampler (optional)
         :type sampler_args: dict
+
+        :param convert_to_inference: Whether to automatically convert to
+            inference given model specifications, defaults to False
+        :type convert_to_inference: bool
         """
         if sampler_args is None:
             sampler_args = dict()
@@ -212,46 +207,28 @@ class BaseModel:
             )
         self.fit = _fit
 
-    def _fit_parallel(
-        self,
-        convert_to_inference: bool = False,
-        sampler_args: dict = None,
-    ) -> Union[List[CmdStanMCMC], List[az.InferenceData]]:
-        """Fit model by parallelizing across features.
-
-        :param convert_to_inference: Whether to create individual
-            InferenceData objects for individual feature fits, defaults to
-            False
-        :type convert_to_inference: bool
-
-        :param sampler_args: Additional parameters to pass to CmdStanPy
-            sampler (optional)
-        :type sampler_args: dict
-        """
-        if sampler_args is None:
-            sampler_args = dict()
-
-        _fits = []
-        for v, i, d in self.table.iter(axis="observation"):
-            _fit = dask.delayed(self._fit_single)(
-                v,
-                sampler_args,
-                convert_to_inference,
-            )
-            _fits.append(_fit)
-
-        fit_futures = dask.persist(*_fits)
-        all_fits = dask.compute(fit_futures)[0]
-        # Set data back to full table
-        self.dat["y"] = self.table.matrix_data.todense().T.astype(int)
-        self.fit = all_fits
-
     def _fit_single(
         self,
         values: np.ndarray,
         sampler_args: dict = None,
         convert_to_inference: bool = False,
     ) -> Union[CmdStanMCMC, az.InferenceData]:
+        """Fit single feature model.
+
+        :param values: Counts in order of sample order
+        :type values: np.ndarray
+
+        :param sampler_args: Additional parameters to pass to CmdStanPy
+            sampler (optional)
+        :type sampler_args: dict
+
+        :param convert_to_inference: Whether to automatically convert to
+            inference given model specifications, defaults to False
+        :type convert_to_inference: bool
+        """
+        if sampler_args is None:
+            sampler_args = dict()
+
         dat = self.dat
         dat["y"] = values.astype(int)
         _fit = self.sm.sample(
@@ -275,7 +252,7 @@ class BaseModel:
             if self.specifications.get("log_likelihood") is not None:
                 vars_to_drop.remove(self.specifications["log_likelihood"])
 
-            _fit = _single_feature_to_inf(
+            _fit = single_feature_to_inf(
                 fit=_fit,
                 coords=self.specifications.get("coords"),
                 dims=self.specifications.get("dims"),
@@ -285,17 +262,10 @@ class BaseModel:
                 ),
                 log_likelihood=self.specifications.get("log_likelihood")
             )
-        return _fit
+        self.fit = _fit
 
-    def to_inference_object(
-        self,
-        combine_individual_fits: bool = True,
-    ) -> az.InferenceData:
+    def to_inference_object(self) -> az.InferenceData:
         """Convert fitted Stan model into ``arviz`` InferenceData object.
-
-        :param combine_individual_fits: Whether to combine the results of
-            parallelized feature fits, defaults to True
-        :type combine_individual_fits: bool
 
         :returns: ``arviz`` InferenceData object with selected values
         :rtype: az.InferenceData
@@ -306,85 +276,44 @@ class BaseModel:
         # if already Inference, just return
         if isinstance(self.fit, az.InferenceData):
             return self.fit
-        # if sequence of Inferences, concatenate if specified
-        if isinstance(self.fit, list) or isinstance(self.fit, tuple):
-            if isinstance(self.fit[0], az.InferenceData):
-                if combine_individual_fits:
-                    cat_name = self.specifications["concatenation_name"]
-                    return concatenate_inferences(
-                        self.fit,
-                        coords=self.specifications["coords"],
-                        concatenation_name=cat_name
-                    )
-                else:
-                    return self.fit
 
         args = {
             k: self.specifications.get(k)
             for k in ["params", "coords", "dims", "posterior_predictive",
                       "log_likelihood"]
         }
-        if isinstance(self.fit, CmdStanMCMC):
+        if not self.single_feature:
             fit_to_inference = single_fit_to_inference
             args["alr_params"] = self.specifications["alr_params"]
-        elif isinstance(self.fit, Sequence):
-            fit_to_inference = multiple_fits_to_inference
-            if combine_individual_fits:
-                args["concatenation_name"] = self.specifications.get(
-                    "concatenation_name", "feature"
-                )
-                args["concatenate"] = True
-            else:
-                args["concatenate"] = False
-            # TODO: Check that dims and concatenation_match
-
-            if self.specifications.get("alr_params") is not None:
-                warnings.warn("ALR to CLR not performed on parallel models.",
-                              UserWarning)
         else:
-            raise ValueError("Unrecognized fit type!")
+            fit_to_inference = single_feature_to_inf
 
         inference = fit_to_inference(self.fit, **args)
         if self.specifications["include_observed_data"]:
-            # Can't include observed data in individual fits
-            include_obs_fail = (
-                not combine_individual_fits
-                and self.parallelize_across == "features"
+            coords = {"tbl_sample": self.sample_names}
+            dims = {"observed": ["tbl_sample"]}
+            if not self.single_feature:
+                coords["feature"] = self.feature_names
+                dims["observed"].append("feature")
+            obs = az.from_dict(
+                observed_data={"observed": self.dat["y"]},
+                coords=coords,
+                dims=dims
             )
-            if include_obs_fail:
-                warnings.warn(
-                    "Cannot include observed data in un-concatenated"
-                    "fits!"
-                )
-            else:
-                obs = az.from_dict(
-                    observed_data={"observed": self.dat["y"]},
-                    coords={
-                        "tbl_sample": self.sample_names,
-                        "feature": self.feature_names
-                    },
-                    dims={"observed": ["tbl_sample", "feature"]}
-                )
-                inference = az.concat(inference, obs)
+            inference = az.concat(inference, obs)
         return inference
 
     def diagnose(self):
         """Use built-in diagnosis function of ``cmdstanpy``."""
         if self.fit is None:
             raise ValueError("Model has not been fit!")
-        if self.parallelize_across == "chains":
-            return self.fit.diagnose()
-        if self.parallelize_across == "features":
-            return [x.diagnose() for x in self.fit]
+        return self.fit.diagnose()
 
     def summary(self):
         """Use built-in summary function of ``cmdstanpy``."""
         if self.fit is None:
             raise ValueError("Model has not been fit!")
-        if self.parallelize_across == "chains":
-            return self.fit.summary()
-        if self.parallelize_across == "features":
-            return [x.summary() for x in self.fit]
+        return self.fit.summary()
 
 
 class RegressionModel(BaseModel):
@@ -415,9 +344,9 @@ class RegressionModel(BaseModel):
     :param seed: Random seed to use for sampling, defaults to 42
     :type seed: float
 
-    :param parallelize_across: Whether to parallelize across features or
-        chains, defaults to 'chains'
-    :type parallelize_across: str
+    :param single_feature: Whether this model is for a single feature or a
+        full count table, defaults to False
+    :type single_feature: bool
     """
     def __init__(
         self,
@@ -429,7 +358,7 @@ class RegressionModel(BaseModel):
         num_warmup: int = None,
         chains: int = 4,
         seed: float = 42,
-        parallelize_across: str = "chains"
+        single_feature: bool = False
     ):
         super().__init__(
             table=table,
@@ -439,7 +368,7 @@ class RegressionModel(BaseModel):
             num_warmup=num_warmup,
             chains=chains,
             seed=seed,
-            parallelize_across=parallelize_across
+            single_feature=single_feature
         )
 
         self.dmat = dmatrix(formula, metadata.loc[self.sample_names],
