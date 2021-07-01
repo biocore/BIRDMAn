@@ -135,7 +135,8 @@ def single_feature_fit_to_inference(
     :rtype: az.InferenceData
     """
     _coords = coords.copy()
-    _coords.pop("feature")
+    if "feature" in coords:
+        _coords.pop("feature")
 
     _dims = dims.copy()
     for k, v in _dims.items():

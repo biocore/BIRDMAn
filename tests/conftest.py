@@ -5,7 +5,7 @@ import biom
 import pandas as pd
 import pytest
 
-from birdman import NegativeBinomial
+from birdman import NegativeBinomial, NegativeBinomialSingle
 
 TEST_DATA = resource_filename("tests", "data")
 TBL_FILE = os.path.join(TEST_DATA, "macaque_tbl.biom")
@@ -69,18 +69,18 @@ def single_feat_model():
     tbl = example_biom()
     md = example_metadata()
 
-    nb = NegativeBinomial(
+    id0 = tbl.ids(axis="observation")[0]
+    nb = NegativeBinomialSingle(
         table=tbl,
         formula="host_common_name",
         metadata=md,
-        single_feature=True,
+        feature_id=id0,
         num_iter=100,
         chains=4,
     )
 
     nb.compile_model()
-    id0 = tbl.ids(axis="observation")[0]
-    nb.fit_model(feature_id=id0)
+    nb.fit_model()
 
     return nb
 

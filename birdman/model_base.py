@@ -66,6 +66,25 @@ class BaseModel(ABC):
 
         self.specifications = dict()
 
+    def create_regression(self, formula: str, metadata: pd.DataFrame):
+        """Generate design matrix for count regression modeling.
+
+        :param formula: Design formula to use in model
+        :type formula: str
+
+        :param metadata: Metadata for design matrix
+        :type metadata: pd.DataFrame
+        """
+        self.dmat = dmatrix(formula, metadata.loc[self.sample_names],
+                            return_type="dataframe")
+        self.colnames = self.dmat.columns
+
+        param_dict = {
+            "p": self.dmat.shape[1],
+            "x": self.dmat.values,
+        }
+        self.add_parameters(param_dict)
+
     def compile_model(self) -> None:
         """Compile Stan model."""
         self.sm = CmdStanModel(stan_file=self.model_path)
@@ -166,70 +185,6 @@ class BaseModel(ABC):
         """Convert fitted model to az.InferenceData."""
 
 
-class RegressionModel(BaseModel):
-    """Base BIRDMAn regression model.
-
-    :param table: Feature table (features x samples)
-    :type table: biom.table.Table
-
-    :param formula: Design formula to use in model
-    :type formula: str
-
-    :param metadata: Metadata for design matrix
-    :type metadata: pd.DataFrame
-
-    :param model_path: Filepath to Stan model
-    :type model_path: str
-
-    :param num_iter: Number of posterior sample draws, defaults to 500
-    :type num_iter: int
-
-    :param num_warmup: Number of posterior draws used for warmup, defaults to
-        num_iter
-    :type num_warmup: int
-
-    :param chains: Number of chains to use in MCMC, defaults to 4
-    :type chains: int
-
-    :param seed: Random seed to use for sampling, defaults to 42
-    :type seed: float
-    """
-    def __init__(
-        self,
-        table: biom.table.Table,
-        formula: str,
-        metadata: pd.DataFrame,
-        model_path: str,
-        num_iter: int = 500,
-        num_warmup: int = None,
-        chains: int = 4,
-        seed: float = 42,
-    ):
-        super().__init__(
-            table=table,
-            metadata=metadata,
-            model_path=model_path,
-            num_iter=num_iter,
-            num_warmup=num_warmup,
-            chains=chains,
-            seed=seed,
-        )
-
-        self.dmat = dmatrix(formula, metadata.loc[self.sample_names],
-                            return_type="dataframe")
-        self.colnames = self.dmat.columns
-
-        param_dict = {
-            "p": self.dmat.shape[1],
-            "x": self.dmat.values,
-        }
-        self.add_parameters(param_dict)
-
-    @abstractmethod
-    def to_inference_object(self):
-        """Convert fitted model to az.InferenceData."""
-
-
 class TableModel(BaseModel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -274,7 +229,7 @@ class TableModel(BaseModel):
 
 
 class SingleFeatureModel(BaseModel):
-    def __init__(self, feature_id: str = None, **kwargs):
+    def __init__(self, feature_id: str, **kwargs):
         if feature_id is None:
             raise ValueError("Must provide feature ID!")
 
@@ -314,7 +269,7 @@ class SingleFeatureModel(BaseModel):
         if self.specifications["include_observed_data"]:
             obs = az.from_dict(
                 observed_data={"observed": self.dat["y"]},
-                coords={"tbl_sample": self.samples_names},
+                coords={"tbl_sample": self.sample_names},
                 dims={"observed": ["tbl_sample"]}
             )
             inference = az.concat(inference, obs)

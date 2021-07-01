@@ -3,7 +3,8 @@ from pkg_resources import resource_filename
 
 import numpy as np
 
-from birdman import Multinomial, NegativeBinomial, NegativeBinomialLME
+from birdman import (Multinomial, NegativeBinomial, NegativeBinomialLME,
+                     NegativeBinomialSingle)
 
 TEMPLATES = resource_filename("birdman", "templates")
 
@@ -73,17 +74,16 @@ class TestModelFit:
 
     def test_single_feat(self, table_biom, metadata):
         md = metadata.copy()
-        nb = NegativeBinomial(
-            table=table_biom,
-            formula="host_common_name",
-            single_feature=True,
-            metadata=md,
-            num_iter=100,
-        )
-        nb.compile_model()
-
         for fid in table_biom.ids(axis="observation"):
-            nb.fit_model(feature_id=fid)
+            nb = NegativeBinomialSingle(
+                table=table_biom,
+                feature_id=fid,
+                formula="host_common_name",
+                metadata=md,
+                num_iter=100,
+            )
+            nb.compile_model()
+            nb.fit_model()
 
 
 class TestToInference:
