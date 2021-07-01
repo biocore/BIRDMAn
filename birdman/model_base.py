@@ -158,6 +158,8 @@ class BaseModel:
         if not self.single_feature:
             fit_function = self._fit_serial
         else:
+            if feature_id is None:
+                raise ValueError("Must pass feature ID!")
             fit_function = self._fit_single
             values = self.table.data(id=feature_id, axis="observation")
             args["values"] = values

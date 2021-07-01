@@ -71,6 +71,28 @@ class TestModelFit:
         mult.compile_model()
         mult.fit_model()
 
+    def test_single_feat(self, table_biom, metadata):
+        md = metadata.copy()
+        nb = NegativeBinomial(
+            table=table_biom,
+            formula="host_common_name",
+            single_feature=True,
+            metadata=md,
+            num_iter=100,
+        )
+        nb.compile_model()
+
+        for fid in table_biom.ids(axis="observation"):
+            nb.fit_model(feature_id=fid)
+
+
+class TestToInference:
+    def test_serial_to_inference(self, example_model):
+        inference_data = example_model.to_inference_object()
+        target_groups = {"posterior", "sample_stats", "log_likelihood",
+                         "posterior_predictive", "observed_data"}
+        assert set(inference_data.groups()) == target_groups
+
     def test_single_feat_fit(self, example_single_feat_model):
         inf = example_single_feat_model.to_inference_object()
         post = inf.posterior
@@ -88,11 +110,3 @@ class TestModelFit:
         sample_names = example_single_feat_model.sample_names
         assert (ppc.coords["tbl_sample"] == sample_names).all()
         assert (ll.coords["tbl_sample"] == sample_names).all()
-
-
-class TestToInference:
-    def test_serial_to_inference(self, example_model):
-        inference_data = example_model.to_inference_object()
-        target_groups = {"posterior", "sample_stats", "log_likelihood",
-                         "posterior_predictive", "observed_data"}
-        assert set(inference_data.groups()) == target_groups
