@@ -21,7 +21,7 @@ The easiest way to install the required dependencies is through ``conda``.
 
 .. code:: bash
 
-    conda install -c conda-forge dask biom-format patsy xarray
+    conda install -c conda-forge biom-format patsy xarray
     pip install cmdstanpy
     pip install git+git://github.com/arviz-devs/arviz.git
     pip install birdman
@@ -51,7 +51,6 @@ In Python:
 
     default_model_example
     custom_model
-    parallelization
     diagnosing_model
     writing_stan_code
     working_with_arviz
