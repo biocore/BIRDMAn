@@ -1,16 +1,17 @@
-from typing import Sequence, Union
+from abc import ABC, abstractmethod
+from typing import Sequence
+import warnings
 
 import arviz as az
 import biom
-from cmdstanpy import CmdStanModel, CmdStanMCMC
-import numpy as np
+from cmdstanpy import CmdStanModel
 import pandas as pd
 from patsy import dmatrix
 
-from .model_util import single_fit_to_inference, single_feature_to_inf
+from .model_util import full_fit_to_inference, single_feature_fit_to_inference
 
 
-class BaseModel:
+class BaseModel(ABC):
     """Base BIRDMAn model.
 
     :param table: Feature table (features x samples)
@@ -34,21 +35,15 @@ class BaseModel:
 
     :param seed: Random seed to use for sampling, defaults to 42
     :type seed: float
-
-    :param single_feature: Whether this model is for a single feature or a
-        full count table, defaults to False
-    :type single_feature: bool
     """
     def __init__(
         self,
         table: biom.table.Table,
-        metadata: pd.DataFrame,
         model_path: str,
         num_iter: int = 500,
         num_warmup: int = None,
         chains: int = 4,
         seed: float = 42,
-        single_feature: bool = False
     ):
         self.table = table
         self.num_iter = num_iter
@@ -63,10 +58,8 @@ class BaseModel:
         self.model_path = model_path
         self.sm = None
         self.fit = None
-        self.single_feature = single_feature
 
         self.dat = {
-            "y": table.matrix_data.todense().T.astype(int),
             "D": table.shape[0],  # number of features
             "N": table.shape[1],  # number of samples
         }
@@ -130,48 +123,10 @@ class BaseModel:
 
     def fit_model(
         self,
-        feature_id: str = None,
         sampler_args: dict = None,
-        convert_to_inference: bool = False,
-    ) -> None:
-        """Perform MCMC sampling.
-
-        :param feature_id: ID of table feature to fit
-        :type feature_id: str
-
-        :param sampler_args: Additional parameters to pass to CmdStanPy
-            sampler (optional)
-        :type sampler_args: dict
-
-        :param convert_to_inference: Whether to automatically convert the
-            fitted model to an az.InferenceData object (defaults to False)
-        :type convert_to_inference: bool
-        """
-        if self.sm is None:
-            raise ValueError("Model must be compiled first!")
-
-        args = {
-            "sampler_args": sampler_args,
-            "convert_to_inference": convert_to_inference
-        }
-
-        if not self.single_feature:
-            fit_function = self._fit_serial
-        else:
-            if feature_id is None:
-                raise ValueError("Must pass feature ID!")
-            fit_function = self._fit_single
-            values = self.table.data(id=feature_id, axis="observation")
-            args["values"] = values
-
-        fit_function(**args)
-
-    def _fit_serial(
-        self,
-        sampler_args: dict = None,
-        convert_to_inference: bool = False,
-    ) -> Union[CmdStanMCMC, az.InferenceData]:
-        """Fit model by parallelizing across chains.
+        convert_to_inference: bool = False
+    ):
+        """Fit Stan model.
 
         :param sampler_args: Additional parameters to pass to CmdStanPy
             sampler (optional)
@@ -186,134 +141,29 @@ class BaseModel:
 
         _fit = self.sm.sample(
             chains=self.chains,
-            parallel_chains=self.chains,  # run all chains in parallel
+            parallel_chains=self.chains,
             data=self.dat,
             iter_warmup=self.num_warmup,
             iter_sampling=self.num_iter,
             seed=self.seed,
             **sampler_args
         )
+
+        # If auto-conversion fails, fit will be of type CmdStanMCMC
         if convert_to_inference:
-            _fit = single_fit_to_inference(
-                fit=_fit,
-                params=self.specifications.get("params"),
-                coords=self.specifications.get("coords"),
-                dims=self.specifications.get("dims"),
-                alr_params=self.specifications.get("alr_params"),
-                posterior_predictive=self.specifications.get(
-                    "posterior_predictive"
-                ),
-                log_likelihood=self.specifications.get("log_likelihood")
-            )
-        self.fit = _fit
-
-    def _fit_single(
-        self,
-        values: np.ndarray,
-        sampler_args: dict = None,
-        convert_to_inference: bool = False,
-    ) -> Union[CmdStanMCMC, az.InferenceData]:
-        """Fit single feature model.
-
-        :param values: Counts in order of sample order
-        :type values: np.ndarray
-
-        :param sampler_args: Additional parameters to pass to CmdStanPy
-            sampler (optional)
-        :type sampler_args: dict
-
-        :param convert_to_inference: Whether to automatically convert to
-            inference given model specifications, defaults to False
-        :type convert_to_inference: bool
-        """
-        if sampler_args is None:
-            sampler_args = dict()
-
-        dat = self.dat
-        dat["y"] = values.astype(int)
-        _fit = self.sm.sample(
-            chains=self.chains,
-            data=dat,
-            iter_warmup=self.num_warmup,
-            iter_sampling=self.num_iter,
-            seed=self.seed,
-            **sampler_args
-        )
-
-        if convert_to_inference:
-            all_vars = _fit.stan_variables().keys()
-            vars_to_drop = set(all_vars).difference(
-                self.specifications["params"]
-            )
-            if self.specifications.get("posterior_predictive") is not None:
-                vars_to_drop.remove(
-                    self.specifications["posterior_predictive"]
+            try:
+                _fit = self.to_inference_object()
+            except Exception as e:
+                print(
+                    "Auto conversion to InferenceData has failed! "
+                    "self.fit has been saved as CmdStanMCMC instead."
                 )
-            if self.specifications.get("log_likelihood") is not None:
-                vars_to_drop.remove(self.specifications["log_likelihood"])
-
-            _fit = single_feature_to_inf(
-                fit=_fit,
-                coords=self.specifications.get("coords"),
-                dims=self.specifications.get("dims"),
-                vars_to_drop=vars_to_drop,
-                posterior_predictive=self.specifications.get(
-                    "posterior_predictive"
-                ),
-                log_likelihood=self.specifications.get("log_likelihood")
-            )
+                print(str(e))
         self.fit = _fit
 
-    def to_inference_object(self) -> az.InferenceData:
-        """Convert fitted Stan model into ``arviz`` InferenceData object.
-
-        :returns: ``arviz`` InferenceData object with selected values
-        :rtype: az.InferenceData
-        """
-        if self.fit is None:
-            raise ValueError("Model has not been fit!")
-
-        # if already Inference, just return
-        if isinstance(self.fit, az.InferenceData):
-            return self.fit
-
-        args = {
-            k: self.specifications.get(k)
-            for k in ["params", "coords", "dims", "posterior_predictive",
-                      "log_likelihood"]
-        }
-        if not self.single_feature:
-            fit_to_inference = single_fit_to_inference
-            args["alr_params"] = self.specifications["alr_params"]
-        else:
-            fit_to_inference = single_feature_to_inf
-
-        inference = fit_to_inference(self.fit, **args)
-        if self.specifications["include_observed_data"]:
-            coords = {"tbl_sample": self.sample_names}
-            dims = {"observed": ["tbl_sample"]}
-            if not self.single_feature:
-                coords["feature"] = self.feature_names
-                dims["observed"].append("feature")
-            obs = az.from_dict(
-                observed_data={"observed": self.dat["y"]},
-                coords=coords,
-                dims=dims
-            )
-            inference = az.concat(inference, obs)
-        return inference
-
-    def diagnose(self):
-        """Use built-in diagnosis function of ``cmdstanpy``."""
-        if self.fit is None:
-            raise ValueError("Model has not been fit!")
-        return self.fit.diagnose()
-
-    def summary(self):
-        """Use built-in summary function of ``cmdstanpy``."""
-        if self.fit is None:
-            raise ValueError("Model has not been fit!")
-        return self.fit.summary()
+    @abstractmethod
+    def to_inference_object(self):
+        """Convert fitted model to az.InferenceData."""
 
 
 class RegressionModel(BaseModel):
@@ -343,10 +193,6 @@ class RegressionModel(BaseModel):
 
     :param seed: Random seed to use for sampling, defaults to 42
     :type seed: float
-
-    :param single_feature: Whether this model is for a single feature or a
-        full count table, defaults to False
-    :type single_feature: bool
     """
     def __init__(
         self,
@@ -358,7 +204,6 @@ class RegressionModel(BaseModel):
         num_warmup: int = None,
         chains: int = 4,
         seed: float = 42,
-        single_feature: bool = False
     ):
         super().__init__(
             table=table,
@@ -368,7 +213,6 @@ class RegressionModel(BaseModel):
             num_warmup=num_warmup,
             chains=chains,
             seed=seed,
-            single_feature=single_feature
         )
 
         self.dmat = dmatrix(formula, metadata.loc[self.sample_names],
@@ -380,3 +224,98 @@ class RegressionModel(BaseModel):
             "x": self.dmat.values,
         }
         self.add_parameters(param_dict)
+
+    @abstractmethod
+    def to_inference_object(self):
+        """Convert fitted model to az.InferenceData."""
+
+
+class TableModel(BaseModel):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.add_parameters(
+            {"y": self.table.matrix_data.todense().T.astype(int)}
+        )
+
+    def to_inference_object(self) -> az.InferenceData:
+        """Convert fitted Stan model into ``arviz`` InferenceData object.
+
+        :returns: ``arviz`` InferenceData object with selected values
+        :rtype: az.InferenceData
+        """
+        if self.fit is None:
+            raise ValueError("Model has not been fit!")
+
+        # if already Inference, just return
+        if isinstance(self.fit, az.InferenceData):
+            return self.fit
+
+        args = {
+            k: self.specifications.get(k)
+            for k in ["params", "coords", "dims", "posterior_predictive",
+                      "log_likelihood", "alr_params"]
+        }
+
+        inference = full_fit_to_inference(self.fit, **args)
+
+        if self.specifications["include_observed_data"]:
+            obs = az.from_dict(
+                observed_data={"observed": self.dat["y"]},
+                coords={
+                    "tbl_sample": self.sample_names,
+                    "feature": self.feature_names
+                },
+                dims={
+                    "observed": ["tbl_sample", "feature"]
+                }
+            )
+            inference = az.concat(inference, obs)
+        return inference
+
+
+class SingleFeatureModel(BaseModel):
+    def __init__(self, feature_id: str = None, **kwargs):
+        if feature_id is None:
+            raise ValueError("Must provide feature ID!")
+
+        super().__init__(**kwargs)
+        self.feature_id = feature_id
+        values = self.table.data(
+            id=feature_id,
+            axis="observation",
+            dense=True
+        ).astype(int)
+        self.add_parameters({"y": values})
+
+    def to_inference_object(self) -> az.InferenceData:
+        """Convert fitted Stan model into ``arviz`` InferenceData object.
+
+        :returns: ``arviz`` InferenceData object with selected values
+        :rtype: az.InferenceData
+        """
+        if self.fit is None:
+            raise ValueError("Model has not been fit!")
+
+        # if already Inference, just return
+        if isinstance(self.fit, az.InferenceData):
+            return self.fit
+
+        if "alr_params" in self.specifications:
+            warnings.warn("alr_params ignored when fitting a single feature")
+
+        args = {
+            k: self.specifications.get(k)
+            for k in ["params", "coords", "dims", "posterior_predictive",
+                      "log_likelihood"]
+        }
+
+        inference = single_feature_fit_to_inference(self.fit, **args)
+
+        if self.specifications["include_observed_data"]:
+            obs = az.from_dict(
+                observed_data={"observed": self.dat["y"]},
+                coords={"tbl_sample": self.samples_names},
+                dims={"observed": ["tbl_sample"]}
+            )
+            inference = az.concat(inference, obs)
+        return inference
