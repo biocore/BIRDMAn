@@ -83,7 +83,7 @@ class TestModelFit:
                 num_iter=100,
             )
             nb.compile_model()
-            nb.fit_model()
+            nb.fit_model(convert_to_inference=True)
 
 
 class TestToInference:

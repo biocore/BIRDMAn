@@ -168,17 +168,18 @@ class BaseModel(ABC):
             **sampler_args
         )
 
+        self.fit = _fit
+
         # If auto-conversion fails, fit will be of type CmdStanMCMC
         if convert_to_inference:
             try:
-                _fit = self.to_inference_object()
+                self.fit = self.to_inference_object()
             except Exception as e:
                 print(
                     "Auto conversion to InferenceData has failed! "
                     "self.fit has been saved as CmdStanMCMC instead."
                 )
                 print(str(e))
-        self.fit = _fit
 
     @abstractmethod
     def to_inference_object(self):
