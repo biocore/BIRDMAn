@@ -261,7 +261,7 @@ class SingleFeatureModel(BaseModel):
         if isinstance(self.fit, az.InferenceData):
             return self.fit
 
-        if "alr_params" in self.specifications:
+        if self.specifications.get("alr_params") is not None:
             warnings.warn("alr_params ignored when fitting a single feature")
 
         args = {
