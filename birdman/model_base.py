@@ -45,7 +45,6 @@ class BaseModel(ABC):
         chains: int = 4,
         seed: float = 42,
     ):
-        self.table = table
         self.num_iter = num_iter
         if num_warmup is None:
             self.num_warmup = num_iter
@@ -53,7 +52,6 @@ class BaseModel(ABC):
             self.num_warmup = num_warmup
         self.chains = chains
         self.seed = seed
-        self.feature_names = table.ids(axis="observation")
         self.sample_names = table.ids(axis="sample")
         self.model_path = model_path
         self.sm = None
@@ -188,10 +186,11 @@ class BaseModel(ABC):
 
 
 class TableModel(BaseModel):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, table: biom.Table, **kwargs):
+        super().__init__(table=table, **kwargs)
+        self.feature_names = table.ids(axis="observation")
         self.add_parameters(
-            {"y": self.table.matrix_data.todense().T.astype(int)}
+            {"y": table.matrix_data.todense().T.astype(int)}
         )
 
     def to_inference_object(self) -> az.InferenceData:
@@ -234,13 +233,13 @@ class TableModel(BaseModel):
 
 
 class SingleFeatureModel(BaseModel):
-    def __init__(self, feature_id: str, **kwargs):
+    def __init__(self, table: biom.Table, feature_id: str, **kwargs):
         if feature_id is None:
             raise ValueError("Must provide feature ID!")
 
-        super().__init__(**kwargs)
+        super().__init__(table=table, **kwargs)
         self.feature_id = feature_id
-        values = self.table.data(
+        values = table.data(
             id=feature_id,
             axis="observation",
             dense=True

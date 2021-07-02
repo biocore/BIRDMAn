@@ -24,7 +24,7 @@ def test_custom_model(table_biom, metadata):
             "B_p_1": 2.0,
             "B_p_2": 5.0,
             "phi_s": 0.2,
-            "depth": np.log(custom_model.table.sum(axis="sample")),
+            "depth": np.log(table_biom.sum(axis="sample")),
         }
     )
     custom_model.specify_model(

@@ -10,7 +10,7 @@ class TestToInference:
         assert set(ds["beta"].shape) == {2, 28, 4, 100}
         assert set(ds["phi"].shape) == {28, 4, 100}
 
-        exp_feature_names = model.table.ids(axis="observation")
+        exp_feature_names = model.feature_names
         ds_feature_names = ds.coords["feature"]
         assert (exp_feature_names == ds_feature_names).all()
 
