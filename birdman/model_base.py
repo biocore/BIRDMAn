@@ -186,6 +186,7 @@ class BaseModel(ABC):
 
 
 class TableModel(BaseModel):
+    """Fit a model on the entire table at once."""
     def __init__(self, table: biom.Table, **kwargs):
         super().__init__(table=table, **kwargs)
         self.feature_names = table.ids(axis="observation")
@@ -233,6 +234,7 @@ class TableModel(BaseModel):
 
 
 class SingleFeatureModel(BaseModel):
+    """Fit a model for a single feature."""
     def __init__(self, table: biom.Table, feature_id: str, **kwargs):
         if feature_id is None:
             raise ValueError("Must provide feature ID!")
@@ -278,3 +280,35 @@ class SingleFeatureModel(BaseModel):
             )
             inference = az.concat(inference, obs)
         return inference
+
+
+class ModelIterator:
+    """Iterate through features in a table.
+
+    This class is intended for those looking to parallelize model fitting
+    across individual features rather than across Markov chains.
+
+    :param table: Feature table (features x samples)
+    :type table: biom.table.Table
+
+    :param model: BIRDMAn model for each individual feature
+    :type model: birdman.model_base.SingleFeatureModel
+
+    :param kwargs: Keyword arguments to pass to each feature model
+    """
+    def __init__(
+        self,
+        table: biom.Table,
+        model: SingleFeatureModel,
+        **kwargs
+    ):
+        self.feature_names = table.ids(axis="observation")
+        self.model_type = model
+        self.models = [
+            model(table, fid, **kwargs)
+            for fid in table.ids(axis="observation")
+        ]
+
+    def __iter__(self):
+        for fid, model in zip(self.feature_names, self.models):
+            yield fid, model
