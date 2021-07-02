@@ -85,7 +85,7 @@ class BaseModel(ABC):
         }
         self.add_parameters(param_dict)
 
-    def compile_model(self) -> None:
+    def compile_model(self):
         """Compile Stan model."""
         self.sm = CmdStanModel(stan_file=self.model_path)
 
@@ -98,7 +98,7 @@ class BaseModel(ABC):
         include_observed_data: bool = False,
         posterior_predictive: str = None,
         log_likelihood: str = None,
-    ) -> None:
+    ):
         """Specify coordinates and dimensions of model.
 
         :param params: Posterior fitted parameters to include
@@ -134,7 +134,7 @@ class BaseModel(ABC):
         self.specifications["posterior_predictive"] = posterior_predictive
         self.specifications["log_likelihood"] = log_likelihood
 
-    def add_parameters(self, param_dict: dict = None) -> None:
+    def add_parameters(self, param_dict: dict = None):
         """Add parameters from dict to be passed to Stan."""
         if param_dict is None:
             param_dict = dict()
