@@ -62,7 +62,7 @@ class BaseModel(ABC):
             "N": table.shape[1],  # number of samples
         }
 
-        self.specifications = dict()
+        self.specified = False
 
     def create_regression(self, formula: str, metadata: pd.DataFrame):
         """Generate design matrix for count regression modeling.
@@ -92,10 +92,10 @@ class BaseModel(ABC):
         params: Sequence[str],
         coords: dict,
         dims: dict,
-        alr_params: Sequence[str] = None,
         include_observed_data: bool = False,
         posterior_predictive: str = None,
         log_likelihood: str = None,
+        **kwargs,
     ):
         """Specify coordinates and dimensions of model.
 
@@ -107,9 +107,6 @@ class BaseModel(ABC):
 
         :param dims: Dimensions of parameters in the model
         :type dims: dict
-
-        :param alr_params: Parameters to convert from ALR to CLR
-        :type alr_params: Sequence[str], optional
 
         :param include_observed_data: Whether to include the original feature
             table values into the ``arviz`` InferenceData object, default is
@@ -123,14 +120,18 @@ class BaseModel(ABC):
         :param log_likelihood: Name of log likelihood values from Stan model
             to include in ``arviz`` InferenceData object
         :type log_likelihood: str, optional
+
+        :param kwargs: Extra keyword arguments to save in specifications dict
         """
-        self.specifications["params"] = params
-        self.specifications["coords"] = coords
-        self.specifications["dims"] = dims
-        self.specifications["alr_params"] = alr_params
-        self.specifications["include_observed_data"] = include_observed_data
-        self.specifications["posterior_predictive"] = posterior_predictive
-        self.specifications["log_likelihood"] = log_likelihood
+        self.params = params
+        self.coords = coords
+        self.dims = dims
+        self.include_observed_data = include_observed_data
+        self.posterior_predictive = posterior_predictive
+        self.log_likelihood = log_likelihood
+        self.specifications = kwargs
+
+        self.specified = True
 
     def add_parameters(self, param_dict: dict = None):
         """Add parameters from dict to be passed to Stan."""
@@ -207,18 +208,20 @@ class TableModel(BaseModel):
         if isinstance(self.fit, az.InferenceData):
             return self.fit
 
-        if not self.specifications:
-            raise ValueError("Specification dictionary is empty!")
+        if not self.specified:
+            raise ValueError("Model has not been specified!")
 
-        args = {
-            k: self.specifications.get(k)
-            for k in ["params", "coords", "dims", "posterior_predictive",
-                      "log_likelihood", "alr_params"]
-        }
+        inference = full_fit_to_inference(
+            fit=self.fit,
+            params=self.params,
+            coords=self.coords,
+            dims=self.dims,
+            posterior_predictive=self.posterior_predictive,
+            log_likelihood=self.log_likelihood,
+            **self.specifications
+        )
 
-        inference = full_fit_to_inference(self.fit, **args)
-
-        if self.specifications["include_observed_data"]:
+        if self.include_observed_data:
             obs = az.from_dict(
                 observed_data={"observed": self.dat["y"]},
                 coords={
@@ -261,18 +264,20 @@ class SingleFeatureModel(BaseModel):
         if isinstance(self.fit, az.InferenceData):
             return self.fit
 
-        if self.specifications.get("alr_params") is not None:
-            warnings.warn("alr_params ignored when fitting a single feature")
+        if not self.specified:
+            raise ValueError("Model has not been specified!")
 
-        args = {
-            k: self.specifications.get(k)
-            for k in ["params", "coords", "dims", "posterior_predictive",
-                      "log_likelihood"]
-        }
+        inference = single_feature_fit_to_inference(
+            fit=self.fit,
+            params=self.params,
+            coords=self.coords,
+            dims=self.dims,
+            posterior_predictive=self.posterior_predictive,
+            log_likelihood=self.log_likelihood,
+            **self.specifications
+        )
 
-        inference = single_feature_fit_to_inference(self.fit, **args)
-
-        if self.specifications["include_observed_data"]:
+        if self.include_observed_data:
             obs = az.from_dict(
                 observed_data={"observed": self.dat["y"]},
                 coords={"tbl_sample": self.sample_names},

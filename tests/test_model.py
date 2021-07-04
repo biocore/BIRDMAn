@@ -94,11 +94,11 @@ class TestModelFit:
             num_iter=100,
         )
         nb.compile_model()
-        nb.specifications = dict()
+        nb.specified = False
         with pytest.warns(UserWarning) as r:
             nb.fit_model(convert_to_inference=True)
 
-        e = "Specification dictionary is empty!"
+        e = "Model has not been specified!"
         expected_warning = (
             "Auto conversion to InferenceData has failed! fit has "
             "been saved as CmdStanMCMC instead. See error message"
