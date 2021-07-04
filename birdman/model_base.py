@@ -310,8 +310,7 @@ class ModelIterator:
         self.feature_names = table.ids(axis="observation")
         self.model_type = model
         self.models = [
-            model(table, fid, **kwargs)
-            for fid in table.ids(axis="observation")
+            model(table, fid, **kwargs) for fid in self.feature_names
         ]
 
     def __iter__(self):
