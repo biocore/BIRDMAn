@@ -31,13 +31,13 @@ def test_custom_model(table_biom, metadata):
         params=["beta_var"],
         coords={
             "feature": custom_model.feature_names,
+            "feature_alr": custom_model.feature_names[1:],
             "covariate": custom_model.colnames
         },
         dims={
-            "beta_var": ["covariate", "feature"],
+            "beta_var": ["covariate", "feature_alr"],
             "phi": ["feature"]
         },
-        alr_params=["beta_var"]
     )
     custom_model.compile_model()
     custom_model.fit_model()
@@ -46,11 +46,11 @@ def test_custom_model(table_biom, metadata):
     assert set(inference.groups()) == {"posterior", "sample_stats"}
     ds = inference.posterior
 
-    assert ds.coords._names == {"chain", "covariate", "draw", "feature"}
-    assert set(ds["beta_var"].shape) == {2, 28, 4, 100}
+    assert ds.coords._names == {"chain", "covariate", "draw", "feature_alr"}
+    assert set(ds["beta_var"].shape) == {2, 27, 4, 100}
 
-    exp_feature_names = table_biom.ids(axis="observation")
-    ds_feature_names = ds.coords["feature"]
+    exp_feature_names = table_biom.ids(axis="observation")[1:]
+    ds_feature_names = ds.coords["feature_alr"]
     assert (exp_feature_names == ds_feature_names).all()
 
     exp_coord_names = [
