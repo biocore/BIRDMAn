@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 
 from .model_base import TableModel, SingleFeatureModel
-from .transform import inference_alr_to_clr
 
 TEMPLATES = resource_filename("birdman", "templates")
 DEFAULT_MODEL_DICT = {
