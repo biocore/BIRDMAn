@@ -2,8 +2,10 @@ import os
 from pkg_resources import resource_filename
 
 import numpy as np
+import pytest
 
-from birdman import Multinomial, NegativeBinomial, NegativeBinomialLME
+from birdman import (Multinomial, NegativeBinomial, NegativeBinomialLME,
+                     NegativeBinomialSingle, ModelIterator)
 
 TEMPLATES = resource_filename("birdman", "templates")
 
@@ -73,17 +75,36 @@ class TestModelFit:
 
     def test_single_feat(self, table_biom, metadata):
         md = metadata.copy()
+        for fid in table_biom.ids(axis="observation"):
+            nb = NegativeBinomialSingle(
+                table=table_biom,
+                feature_id=fid,
+                formula="host_common_name",
+                metadata=md,
+                num_iter=100,
+            )
+            nb.compile_model()
+            nb.fit_model(convert_to_inference=True)
+
+    def test_fail_auto_conversion(self, table_biom, metadata):
         nb = NegativeBinomial(
             table=table_biom,
+            metadata=metadata,
             formula="host_common_name",
-            single_feature=True,
-            metadata=md,
             num_iter=100,
         )
         nb.compile_model()
+        nb.specified = False
+        with pytest.warns(UserWarning) as r:
+            nb.fit_model(convert_to_inference=True)
 
-        for fid in table_biom.ids(axis="observation"):
-            nb.fit_model(feature_id=fid)
+        e = "Model has not been specified!"
+        expected_warning = (
+            "Auto conversion to InferenceData has failed! fit has "
+            "been saved as CmdStanMCMC instead. See error message"
+            f": \nValueError: {e}"
+        )
+        assert r[0].message.args[0] == expected_warning
 
 
 class TestToInference:
@@ -110,3 +131,44 @@ class TestToInference:
         sample_names = example_single_feat_model.sample_names
         assert (ppc.coords["tbl_sample"] == sample_names).all()
         assert (ll.coords["tbl_sample"] == sample_names).all()
+
+
+class TestModelIterator:
+    def test_iteration(self, table_biom, metadata):
+        model_iterator = ModelIterator(
+            table=table_biom,
+            model=NegativeBinomialSingle,
+            formula="host_common_name",
+            metadata=metadata,
+            num_iter=100,
+            chains=4,
+            seed=42
+        )
+
+        iterated_feature_ids = []
+        iterated_values = np.zeros(table_biom.shape)
+        for i, (fid, model) in enumerate(model_iterator):
+            iterated_feature_ids.append(fid)
+            iterated_values[i] = model.dat["y"]
+
+        expected_values = table_biom.to_dataframe(dense=True).values
+        expected_feature_ids = table_biom.ids(axis="observation")
+
+        np.testing.assert_equal(iterated_values, expected_values)
+        assert (iterated_feature_ids == expected_feature_ids).all()
+
+    def test_iteration_fit(self, table_biom, metadata):
+        model_iterator = ModelIterator(
+            table=table_biom,
+            model=NegativeBinomialSingle,
+            formula="host_common_name",
+            metadata=metadata,
+            num_iter=100,
+            chains=4,
+            seed=42
+        )
+
+        for fit, model in model_iterator:
+            model.compile_model()
+            model.fit_model()
+            _ = model.to_inference_object()

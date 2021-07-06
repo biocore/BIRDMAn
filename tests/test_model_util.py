@@ -10,7 +10,7 @@ class TestToInference:
         assert set(ds["beta"].shape) == {2, 28, 4, 100}
         assert set(ds["phi"].shape) == {28, 4, 100}
 
-        exp_feature_names = model.table.ids(axis="observation")
+        exp_feature_names = model.feature_names
         ds_feature_names = ds.coords["feature"]
         assert (exp_feature_names == ds_feature_names).all()
 
@@ -25,7 +25,7 @@ class TestToInference:
         assert (ds.coords["chain"] == [0, 1, 2, 3]).all()
 
     def test_serial_to_inference(self, example_model):
-        inf = mu.single_fit_to_inference(
+        inf = mu.full_fit_to_inference(
             fit=example_model.fit,
             coords={
                 "feature": example_model.feature_names,
@@ -47,7 +47,7 @@ class TestToInference:
 # Posterior predictive & log likelihood
 class TestPPLL:
     def test_serial_ppll(self, example_model):
-        inf = mu.single_fit_to_inference(
+        inf = mu.full_fit_to_inference(
             fit=example_model.fit,
             coords={
                 "feature": example_model.feature_names,

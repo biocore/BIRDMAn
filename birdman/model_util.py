@@ -9,7 +9,7 @@ import xarray as xr
 from .util import convert_beta_coordinates
 
 
-def single_fit_to_inference(
+def full_fit_to_inference(
     fit: CmdStanMCMC,
     params: Sequence[str],
     coords: dict,
@@ -103,7 +103,7 @@ def single_fit_to_inference(
     return inference
 
 
-def single_feature_to_inf(
+def single_feature_fit_to_inference(
     fit: CmdStanMCMC,
     params: Sequence[str],
     coords: dict,
@@ -135,7 +135,8 @@ def single_feature_to_inf(
     :rtype: az.InferenceData
     """
     _coords = coords.copy()
-    _coords.pop("feature")
+    if "feature" in coords:
+        _coords.pop("feature")
 
     _dims = dims.copy()
     for k, v in _dims.items():

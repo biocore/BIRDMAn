@@ -2,27 +2,29 @@ from pkg_resources import resource_filename
 
 import numpy as np
 
-from birdman import RegressionModel
+from birdman import TableModel
 
 
 def test_custom_model(table_biom, metadata):
     # Negative binomial model with separate prior values for intercept &
     # host_common_name effect and constant overdispersion parameter.
-    custom_model = RegressionModel(
+    custom_model = TableModel(
         table=table_biom,
-        formula="host_common_name",
-        metadata=metadata,
         model_path=resource_filename("tests", "custom_model.stan"),
         num_iter=100,
         chains=4,
         seed=42,
+    )
+    custom_model.create_regression(
+        formula="host_common_name",
+        metadata=metadata,
     )
     custom_model.add_parameters(
         {
             "B_p_1": 2.0,
             "B_p_2": 5.0,
             "phi_s": 0.2,
-            "depth": np.log(custom_model.table.sum(axis="sample")),
+            "depth": np.log(table_biom.sum(axis="sample")),
         }
     )
     custom_model.specify_model(
