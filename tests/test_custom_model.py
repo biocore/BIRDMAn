@@ -3,6 +3,7 @@ from pkg_resources import resource_filename
 import numpy as np
 
 from birdman import TableModel
+from birdman.transform import inference_alr_to_clr
 
 
 def test_custom_model(table_biom, metadata):
@@ -62,3 +63,19 @@ def test_custom_model(table_biom, metadata):
 
     assert (ds.coords["draw"] == np.arange(100)).all()
     assert (ds.coords["chain"] == [0, 1, 2, 3]).all()
+
+    inference.posterior = inference_alr_to_clr(
+        posterior=inference.posterior,
+        alr_params=["beta_var"],
+        dim_replacement={"feature_alr": "feature"},
+        new_labels=custom_model.feature_names
+    )
+
+    ds = inference.posterior
+
+    assert ds.coords._names == {"chain", "covariate", "draw", "feature"}
+    assert set(ds["beta_var"].shape) == {2, 28, 4, 100}
+
+    exp_feature_names = table_biom.ids(axis="observation")
+    ds_feature_names = ds.coords["feature"]
+    assert (exp_feature_names == ds_feature_names).all()
