@@ -206,20 +206,22 @@ We will save the below file to ``negative_binomial_re.stan`` so we can import an
 Running BIRDMAn
 ---------------
 
-We will now pass this file along with our table, metadata, and formula into BIRDMAn. Note that we are using the base ``RegressionModel`` class for our custom model.
+We will now pass this file along with our table, metadata, and formula into BIRDMAn. Note that we are using the base ``TableModel`` class for our custom model. We first initialize the model with only the table and then use ``create_regression`` to create the design matrix.
 
 .. code-block:: python
 
     import birdman
 
-    nb_lme = birdman.RegressionModel(
+    nb_lme = birdman.TableModel(
         table=filt_tbl,
-        formula="C(time_point, Treatment('pre-deworm'))",
-        metadata=metadata_model.loc[samps_to_keep],
         model_path="negative_binomial_re.stan",
         num_iter=500,
         chains=4,
         seed=42
+    )
+    nb_lme.create_regression(
+        metadata=metadata_model.loc[samps_to_keep],
+        formula="C(time_point, Treatment('pre-deworm'))",
     )
 
 We then want to update our data dictionary with the new parameters.
@@ -270,7 +272,6 @@ With a custom model there is a bit more legwork involved in converting to the ``
 * ``params``: List of parameters you want to include in the posterior draws (must match Stan code).
 * ``dims``: Dictionary of dimensions of each parameter to include. Note that we also include the names of the variables for log likelihood and posterior predictive values, ``log_lik`` and ``y_predict`` respectively.
 * ``coords``: Mapping of dimensions in ``dims`` to their indices. We internally save ``feature_names``, ``sample_names``, and ``colnames`` (names of covariates in design matrix).
-* ``alr_params``: List of parameters which come out of Stan in ALR coordinates. These will be converted into centered CLR coordinates before being returned.
 * ``posterior_predictive``: Name of variable holding posterior predictive values (optional).
 * ``log_likelihood``: Name of variable holding log likelihood values (optional).
 * ``include_observed_data``: Whether to include the original feature table as a group. This is useful for certain diagnostics.
@@ -282,7 +283,7 @@ We pass all these arguments into the ``specify_model`` method of the ``Model`` o
     nb_lme.specify_model(
         params=["beta", "phi", "subj_int"],
         dims={
-            "beta": ["covariate", "feature"],
+            "beta": ["covariate", "feature_alr"],
             "phi": ["feature"],
             "subj_int": ["subject"],
             "log_lik": ["tbl_sample", "feature"],
@@ -290,11 +291,11 @@ We pass all these arguments into the ``specify_model`` method of the ``Model`` o
         },
         coords={
             "feature": nb_lme.feature_names,
+            "feature_alr": nb_lme.feature_names[1:],
             "covariate": nb_lme.colnames,
             "subject": groups,
             "tbl_sample": nb_lme.sample_names
         },
-        alr_params=["beta"],
         posterior_predictive="y_predict",
         log_likelihood="log_lik",
         include_observed_data=True
@@ -318,6 +319,8 @@ When the model has finished fitting, you can convert to an inference data assumi
 
 .. code-block:: python
 
+    from birdman.transform import inference_alr_to_clr
     inference = nb_lme.to_inference_object()
+    inference.posterior = inference_alr_to_clr(inference.posterior)
 
 With this you can use the rest of the BIRDMAn suite as usual or directly interact with the ``arviz`` library!
