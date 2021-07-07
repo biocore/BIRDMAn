@@ -36,14 +36,12 @@ If you are planning on contributing to BIRDMAn you must also install the followi
 
 When you install BIRDMAn, you must also install the C++ toolchain that allows ``cmdstanpy`` to run ``cmdstan``.
 
-.. note:: At the time of writing there is a bug in version 2.26.0 of ``cmdstan`` so we install the previous version 2.25.0 instead.
-
 In Python:
 
 .. code:: python
 
     import cmdstanpy
-    cmdstanpy.install_cmdstan(version='2.25.0')
+    cmdstanpy.install_cmdstan()
 
 .. toctree::
     :maxdepth: 2
