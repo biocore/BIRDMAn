@@ -63,11 +63,13 @@ We then have to compile and fit our model. This is very straightforward in BIRDM
     nb.compile_model()
     nb.fit_model()
 
-Now we have our parameter estimates which we can use in downstream analyses. Many of BIRDMAn's included analysis & visualization functions take an ``arviz.InferenceData`` object. We provide a simple method to convert your BIRDMAn fit into this data structure.
+Now we have our parameter estimates which we can use in downstream analyses. Many of BIRDMAn's included analysis & visualization functions take an ``arviz.InferenceData`` object. We provide a simple method to convert your BIRDMAn fit into this data structure. Note that the included ``NegativeBinomial`` model performs ALR regression, meaning that the one of the features (the first) is used as a reference. As a result, the resulting inference will have 1 fewer microbe than were in the original table. We can "add the other microbe back" by converting to CLR coordinates. We provide an easy function to do this in the ``transform`` module.
 
 .. code-block:: python
 
+    from birdman.transform import inference_alr_to_clr
     inference = nb.to_inference_object()
+    inference.posterior = inference_alr_to_clr(inference.posterior)
 
 Finally, we'll plot the feature differentials and their standard deviations. We specify that we are interested in the ``diet[T.DIO]`` differentials but you can easily plot whichever parameter you like through the combination of the ``parameter`` and ``coord`` arguments.
 
