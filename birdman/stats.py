@@ -4,7 +4,7 @@ import arviz as az
 import numpy as np
 from scipy.stats import f as f_distrib
 
-from .util import clr_to_alr
+from .transform import _clr_to_alr
 
 
 def hotelling_ttest(
@@ -45,7 +45,7 @@ def _hotelling(x: np.ndarray) -> Tuple[np.float64, np.float64]:
     :returns: :math:`t^2` & p-value
     :rtype: Tuple(float, float)
     """
-    x_alr = clr_to_alr(x)  # Can't use CLR b/c covariance matrix is singular
+    x_alr = _clr_to_alr(x)  # Can't use CLR b/c covariance matrix is singular
     num_feats, num_draws = x_alr.shape
 
     if num_feats > num_draws:

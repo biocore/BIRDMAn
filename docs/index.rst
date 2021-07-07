@@ -69,7 +69,6 @@ In Python:
     diagnostics
     transform
     stats
-    util
     visualization
 
 Indices and tables
