@@ -67,6 +67,7 @@ In Python:
 
     models
     diagnostics
+    transform
     stats
     util
     visualization
