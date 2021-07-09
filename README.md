@@ -7,6 +7,8 @@
 
 **B**ayesian **I**nferential **R**egression for **D**ifferential **M**icrobiome **An**alysis (**BIRDMAn**) is a framework for performing differential abundance analysis through Bayesian inference.
 
+See the [documentation](https://birdman.readthedocs.io/en/stable/?badge=stable) for details on usage.
+
 ## Installation
 
 Currently BIRDMAn requires Python 3.7 or higher.
@@ -19,5 +21,3 @@ pip install birdman
 ```
 
 You have to install `cmdstan` through the `cmdstanpy.install_cmdstan` function first. See the [CmdStanPy documentation](https://mc-stan.org/cmdstanpy/installation.html#install-cmdstan) for details.
-
-See the [documentation](https://birdman.readthedocs.io/en/stable/?badge=stable) for details on usage.
