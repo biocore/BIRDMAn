@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 
 
-def inference_alr_to_clr(
+def posterior_alr_to_clr(
     posterior: xr.Dataset,
     alr_params: list,
     dim_replacement: dict,

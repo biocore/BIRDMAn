@@ -67,9 +67,9 @@ Now we have our parameter estimates which we can use in downstream analyses. Man
 
 .. code-block:: python
 
-    from birdman.transform import inference_alr_to_clr
+    from birdman.transform import posterior_alr_to_clr
     inference = nb.to_inference_object()
-    inference.posterior = inference_alr_to_clr(inference.posterior)
+    inference.posterior = posterior_alr_to_clr(inference.posterior)
 
 Finally, we'll plot the feature differentials and their standard deviations. We specify that we are interested in the ``diet[T.DIO]`` differentials but you can easily plot whichever parameter you like through the combination of the ``parameter`` and ``coord`` arguments.
 
