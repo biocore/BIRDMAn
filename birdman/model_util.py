@@ -3,10 +3,7 @@ from typing import List, Sequence
 
 import arviz as az
 from cmdstanpy import CmdStanMCMC
-import numpy as np
 import xarray as xr
-
-from .util import convert_beta_coordinates
 
 
 def full_fit_to_inference(
@@ -46,9 +43,6 @@ def full_fit_to_inference(
     :returns: ``arviz`` InferenceData object with selected values
     :rtype: az.InferenceData
     """
-    # remove alr params so initial dim fitting works
-    new_dims = {k: v for k, v in dims.items() if k not in alr_params}
-
     if log_likelihood is not None and log_likelihood not in dims:
         raise KeyError("Must include dimensions for log-likelihood!")
     if posterior_predictive is not None and posterior_predictive not in dims:
@@ -59,47 +53,12 @@ def full_fit_to_inference(
         coords=coords,
         log_likelihood=log_likelihood,
         posterior_predictive=posterior_predictive,
-        dims=new_dims
+        dims=dims
     )
 
     vars_to_drop = set(inference.posterior.data_vars).difference(params)
     inference.posterior = _drop_data(inference.posterior, vars_to_drop)
 
-    # Convert each param in ALR coordinates to CLR coordinates
-    for param in alr_params:
-        # Want to run on each chain independently
-        all_chain_clr_coords = []
-        all_chain_alr_coords = np.split(fit.stan_variable(param), fit.chains,
-                                        axis=0)
-        for i, chain_alr_coords in enumerate(all_chain_alr_coords):
-            # arviz 0.11.2 seems to flatten for some reason even though
-            # the PR was specifically supposed to do the opposite.
-            # Not sure what's going on but just going to go through cmdstanpy.
-            chain_clr_coords = convert_beta_coordinates(chain_alr_coords)
-            all_chain_clr_coords.append(chain_clr_coords)
-        all_chain_clr_coords = np.array(all_chain_clr_coords)
-
-        tmp_dims = ["chain", "draw"] + dims[param]
-        mcmc_coords = {
-            "chain": np.arange(fit.chains),
-            "draw": np.arange(fit.num_draws_sampling)
-        }
-        # restrict param DataArray to only required dims/coords
-        tmp_coords = {k: coords[k] for k in dims[param]}
-        param_da = xr.DataArray(
-            all_chain_clr_coords,
-            dims=tmp_dims,
-            coords={**tmp_coords, **mcmc_coords}
-        )
-        inference.posterior[param] = param_da
-
-        # TODO: Clean this up
-        all_dims = list(inference.posterior.dims)
-        dims_to_drop = []
-        for dim in all_dims:
-            if re.match(f"{param}_dim_\\d", dim):
-                dims_to_drop.append(dim)
-        inference.posterior = inference.posterior.drop_dims(dims_to_drop)
     return inference
 
 

@@ -57,8 +57,9 @@ class TestModelFit:
 
         inf = nb_lme.to_inference_object()
         post = inf.posterior
-        assert post["subj_int"].dims == ("chain", "draw", "group", "feature")
-        assert post["subj_int"].shape == (4, 100, 3, 28)
+        assert post["subj_int"].dims == ("chain", "draw", "group",
+                                         "feature_alr")
+        assert post["subj_int"].shape == (4, 100, 3, 27)
         assert (post.coords["group"].values == ["G0", "G1", "G2"]).all()
 
     def test_mult(self, table_biom, metadata):

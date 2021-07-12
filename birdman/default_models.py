@@ -103,7 +103,7 @@ class NegativeBinomial(TableModel):
         self.specify_model(
             params=["beta", "phi"],
             dims={
-                "beta": ["covariate", "feature"],
+                "beta": ["covariate", "feature_alr"],
                 "phi": ["feature"],
                 "log_lhood": ["tbl_sample", "feature"],
                 "y_predict": ["tbl_sample", "feature"]
@@ -111,14 +111,13 @@ class NegativeBinomial(TableModel):
             coords={
                 "covariate": self.colnames,
                 "feature": self.feature_names,
+                "feature_alr": self.feature_names[1:],
                 "tbl_sample": self.sample_names
             },
             include_observed_data=True,
             posterior_predictive="y_predict",
             log_likelihood="log_lhood"
         )
-
-        self.specifications["alr_params"] = ["beta"]
 
 
 class NegativeBinomialSingle(SingleFeatureModel):
@@ -330,15 +329,16 @@ class NegativeBinomialLME(TableModel):
         self.specify_model(
             params=["beta", "phi", "subj_int"],
             dims={
-                "beta": ["covariate", "feature"],
+                "beta": ["covariate", "feature_alr"],
                 "phi": ["feature"],
-                "subj_int": ["group", "feature"],
+                "subj_int": ["group", "feature_alr"],
                 "log_lhood": ["tbl_sample", "feature"],
                 "y_predict": ["tbl_sample", "feature"]
             },
             coords={
                 "covariate": self.colnames,
                 "feature": self.feature_names,
+                "feature_alr": self.feature_names[1:],
                 "tbl_sample": self.sample_names,
                 "group": self.groups
             },
@@ -346,8 +346,6 @@ class NegativeBinomialLME(TableModel):
             posterior_predictive="y_predict",
             log_likelihood="log_lhood"
         )
-
-        self.specifications["alr_params"] = ["beta", "subj_int"]
 
 
 class Multinomial(TableModel):
@@ -422,13 +420,14 @@ class Multinomial(TableModel):
         self.specify_model(
             params=["beta"],
             dims={
-                "beta": ["covariate", "feature"],
+                "beta": ["covariate", "feature_alr"],
                 "log_lhood": ["tbl_sample"],
                 "y_predict": ["tbl_sample", "feature"]
             },
             coords={
                 "covariate": self.colnames,
                 "feature": self.feature_names,
+                "feature_alr": self.feature_names[1:],
                 "tbl_sample": self.sample_names,
             },
             include_observed_data=True,

@@ -6,8 +6,9 @@ from birdman import model_util as mu
 class TestToInference:
     def dataset_comparison(self, model, ds):
         coord_names = ds.coords._names
-        assert {"feature", "draw", "covariate", "chain"}.issubset(coord_names)
-        assert set(ds["beta"].shape) == {2, 28, 4, 100}
+        exp_coords = {"feature", "draw", "covariate", "chain", "feature_alr"}
+        assert exp_coords.issubset(coord_names)
+        assert set(ds["beta"].shape) == {2, 27, 4, 100}
         assert set(ds["phi"].shape) == {28, 4, 100}
 
         exp_feature_names = model.feature_names
@@ -29,11 +30,12 @@ class TestToInference:
             fit=example_model.fit,
             coords={
                 "feature": example_model.feature_names,
+                "feature_alr": example_model.feature_names[1:],
                 "covariate": example_model.colnames,
                 "tbl_sample": example_model.sample_names
             },
             dims={
-                "beta": ["covariate", "feature"],
+                "beta": ["covariate", "feature_alr"],
                 "phi": ["feature"],
                 "log_lhood": ["tbl_sample", "feature"],
                 "y_predict": ["tbl_sample", "feature"]
@@ -51,11 +53,12 @@ class TestPPLL:
             fit=example_model.fit,
             coords={
                 "feature": example_model.feature_names,
+                "feature_alr": example_model.feature_names[1:],
                 "covariate": example_model.colnames,
                 "sample": example_model.sample_names,
             },
             dims={
-                "beta": ["covariate", "feature"],
+                "beta": ["covariate", "feature_alr"],
                 "phi": ["feature"],
                 "log_lhood": ["sample", "feature"],
                 "y_predict": ["sample", "feature"]

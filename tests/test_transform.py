@@ -1,7 +1,28 @@
 import numpy as np
 from skbio.stats.composition import alr, clr
 
-from birdman import util
+from birdman import transform
+
+
+def test_posterior_alr_to_clr(example_model):
+    inf = example_model.to_inference_object()
+    np.testing.assert_equal(
+        inf.posterior["beta"].coords["feature_alr"],
+        example_model.feature_names[1:],
+    )
+
+    new_post = transform.posterior_alr_to_clr(
+        inf.posterior,
+        alr_params=["beta"],
+        dim_replacement={"feature_alr": "feature"},
+        new_labels=example_model.feature_names
+    )
+
+    assert set(new_post.dims) == {"chain", "draw", "feature", "covariate"}
+    np.testing.assert_equal(
+        new_post.coords["feature"],
+        example_model.feature_names
+    )
 
 
 def test_alr_to_clr():
@@ -14,7 +35,7 @@ def test_alr_to_clr():
 
     # skbio alr & clr take rows as compositions, columns as components
     alr_mat = alr(mat.T, 0)                 # 5 x 3
-    clr_mat = util.alr_to_clr(alr_mat.T).T  # 5 x 4
+    clr_mat = transform._alr_to_clr(alr_mat.T).T  # 5 x 4
     exp_clr = clr(mat.T)                    # 5 x 4
 
     np.testing.assert_array_almost_equal(clr_mat, exp_clr)
@@ -30,7 +51,7 @@ def test_clr_to_alr():
 
     # skbio alr & clr take rows as compositions, columns as components
     clr_mat = clr(mat.T)
-    alr_mat = util.clr_to_alr(clr_mat.T).T
+    alr_mat = transform._clr_to_alr(clr_mat.T).T
     exp_alr = alr(mat.T)
 
     np.testing.assert_array_almost_equal(alr_mat, exp_alr)
@@ -52,7 +73,7 @@ def test_convert_beta_coordinates():
         [0.1, 0.1, 0.1, 0.7]
     ])
     alr_coords = np.stack([alr(draw1), alr(draw2)])  # 2 x 4 x 3
-    clr_coords = util.convert_beta_coordinates(alr_coords)  # 2 x 4 x 4
+    clr_coords = transform._beta_alr_to_clr(alr_coords)  # 2 x 4 x 4
     exp_coords = np.stack([clr(draw1), clr(draw2)])
     np.testing.assert_array_almost_equal(clr_coords, exp_coords)
 
