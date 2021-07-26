@@ -25,7 +25,8 @@ transformed parameters {
 model {
   // setting priors ...
   reciprocal_phi ~ cauchy(0., phi_s);
-  for (j in 1:p){
+  beta[1] ~ normal(-5.5, B_p);
+  for (j in 2:p){
     beta[j] ~ normal(0., B_p); // uninformed prior
   }
   // generating counts

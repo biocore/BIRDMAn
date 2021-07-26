@@ -17,9 +17,6 @@ class BaseModel(ABC):
     :param table: Feature table (features x samples)
     :type table: biom.table.Table
 
-    :param metadata: Metadata for design matrix
-    :type metadata: pd.DataFrame
-
     :param model_path: Filepath to Stan model
     :type model_path: str
 
@@ -239,9 +236,6 @@ class TableModel(BaseModel):
 class SingleFeatureModel(BaseModel):
     """Fit a model for a single feature."""
     def __init__(self, table: biom.Table, feature_id: str, **kwargs):
-        if feature_id is None:
-            raise ValueError("Must provide feature ID!")
-
         super().__init__(table=table, **kwargs)
         self.feature_id = feature_id
         values = table.data(
