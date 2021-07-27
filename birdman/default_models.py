@@ -127,17 +127,25 @@ class NegativeBinomialSingle(SingleFeatureModel):
 
         y_{ij} &\\sim \\textrm{NB}(\\mu_{ij},\\phi_j)
 
-        \\mu_{ij} &= n_i p_{ij}
-
-        \\textrm{alr}(p_i) &= x_i \\beta
+        \\log(\\mu_{ij}) &= \\log(\\textrm{Depth}_i) + x_i \\beta
 
     Priors:
 
     .. math::
 
-        \\beta_j &\\sim \\textrm{Normal}(0, B_p), B_p \\in \\mathbb{R}_{>0}
+        \\begin{cases}
+        \\beta_j \\sim \\textrm{Normal}(-5.5, B_p), & j = 0
 
-        \\frac{1}{\\phi_j} &\\sim \\textrm{Cauchy}(0, C_s), C_s \\in
+        \\beta_j \\sim \\textrm{Normal}(0, B_p), & j > 0
+        \\end{cases}
+
+    .. math::
+
+        B_p \\in \\mathbb{R}_{>0}
+
+    .. math::
+
+        \\frac{1}{\\phi_j} \\sim \\textrm{Cauchy}(0, C_s), C_s \\in
             \\mathbb{R}_{>0}
 
 
