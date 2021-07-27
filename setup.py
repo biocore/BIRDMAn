@@ -1,7 +1,7 @@
 # Inspired by the EMPress setup.py file
 from setuptools import find_packages, setup
 
-__version__ = "0.0.4dev"
+__version__ = "0.0.4"
 
 classifiers = """
     Development Status :: 3 - Alpha
