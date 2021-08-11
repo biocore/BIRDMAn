@@ -10,9 +10,9 @@ dependencies:
   - python-language-server
   - xarray
   - patsy
+  - cmdstanpy
   - biom-format
   - arviz
   - docutils==0.16
   - pip:
     - sphinx-rtd-theme==0.5.1
-prefix: /Users/gibs/miniconda3/envs/birdman
