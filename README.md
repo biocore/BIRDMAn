@@ -14,8 +14,7 @@ See the [documentation](https://birdman.readthedocs.io/en/stable/?badge=stable) 
 Currently BIRDMAn requires Python 3.7 or higher.
 
 ```bash
-conda install -c conda-forge biom-format patsy xarray
-pip install cmdstanpy
+conda install -c conda-forge biom-format patsy xarray cmdstanpy
 pip install git+git://github.com/arviz-devs/arviz.git
 pip install birdman
 ```
