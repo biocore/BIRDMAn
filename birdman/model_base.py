@@ -80,9 +80,12 @@ class BaseModel(ABC):
         }
         self.add_parameters(param_dict)
 
-    def compile_model(self):
-        """Compile Stan model."""
-        self.sm = CmdStanModel(stan_file=self.model_path)
+    def compile_model(self, **kwargs):
+        """Compile Stan model.
+
+        :param kwargs: Extra keyword arguments to pass to CmdStanModel
+        """
+        self.sm = CmdStanModel(stan_file=self.model_path, **kwargs)
 
     def specify_model(
         self,
