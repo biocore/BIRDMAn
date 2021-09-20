@@ -5,9 +5,11 @@ on:
   pull_request:
     branches:
       - main
+      - develop
   push:
     branches:
       - main
+      - develop
 
 jobs:
   build:
@@ -34,7 +36,7 @@ jobs:
 
       - name: Install conda packages
         shell: bash -l {0}
-        run: conda install -c conda-forge biom-format patsy pytest xarray scikit-bio flake8
+        run: conda install -c conda-forge biom-format patsy pytest xarray scikit-bio flake8 cmdstanpy
 
       - name: Install master branch of arviz
         shell: bash -l {0}
@@ -43,10 +45,6 @@ jobs:
       - name: Install BIRDMAn
         shell: bash -l {0}
         run: pip install -e .[dev]
-
-      - name: Install cmdstan
-        shell: bash -l {0}
-        run: python -c "import cmdstanpy; cmdstanpy.install_cmdstan(version='2.25.0')"
 
       - name: Check style
         shell: bash -l {0}
