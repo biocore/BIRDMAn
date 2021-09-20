@@ -21,3 +21,5 @@ pip install birdman
 ```
 
 You have to install `cmdstan` through the `cmdstanpy.install_cmdstan` function first. See the [CmdStanPy documentation](https://mc-stan.org/cmdstanpy/installation.html#install-cmdstan) for details.
+
+## Citation
