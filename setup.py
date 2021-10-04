@@ -42,7 +42,7 @@ setup(
         "patsy",
         "xarray",
         "pandas",
-        "arviz"
+        "arviz>=0.11.2"
     ],
     extras_require={"dev": ["pytest", "scikit-bio", "sphinx"]},
     classifiers=[s.strip() for s in classifiers.split('\n') if s]
