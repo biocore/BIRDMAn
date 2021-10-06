@@ -69,7 +69,12 @@ Now we have our parameter estimates which we can use in downstream analyses. Man
 
     from birdman.transform import posterior_alr_to_clr
     inference = nb.to_inference_object()
-    inference.posterior = posterior_alr_to_clr(inference.posterior)
+    inference.posterior = posterior_alr_to_clr(
+        inference.posterior,
+        alr_params=["beta"],  # the default NB model has only beta in ALR coordinates
+        dim_replacement={"feature_alr": "feature"},  # the default NB model assigns 'feature_alr' as the dimension name
+        new_labels=nb.feature_names  # replace the old labels (all the feature names except the first) with all the feature names
+    )
 
 Finally, we'll plot the feature differentials and their standard deviations. We specify that we are interested in the ``diet[T.DIO]`` differentials but you can easily plot whichever parameter you like through the combination of the ``parameter`` and ``coord`` arguments.
 
