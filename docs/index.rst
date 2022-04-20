@@ -32,17 +32,6 @@ If you are planning on contributing to BIRDMAn you must also install the followi
 * `scikit-bio <http://scikit-bio.org/>`_
 * `sphinx <https://www.sphinx-doc.org/en/master/>`_
 
-**Installing cmdstan**
-
-When you install BIRDMAn, you must also install the C++ toolchain that allows ``cmdstanpy`` to run ``cmdstan``.
-
-In Python:
-
-.. code:: python
-
-    import cmdstanpy
-    cmdstanpy.install_cmdstan()
-
 .. toctree::
     :maxdepth: 2
     :caption: User Guide
