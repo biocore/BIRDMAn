@@ -26,27 +26,18 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: birdman
+          mamba-version: "*"
+          channels: conda-forge,defaults
+          channel-priority: true
           python-version: ${{ matrix.python-version }}
-
-      - name: Test conda installation
-        shell: bash -l {0}
-        run: conda info
 
       - name: Install conda packages
         shell: bash -l {0}
-        run: conda install -c conda-forge biom-format patsy pytest xarray scikit-bio flake8
-
-      - name: Install master branch of arviz
-        shell: bash -l {0}
-        run: pip install git+git://github.com/arviz-devs/arviz.git
+        run: mamba install -c conda-forge biom-format patsy pytest xarray scikit-bio flake8 arviz cmdstanpy
 
       - name: Install BIRDMAn
         shell: bash -l {0}
         run: pip install -e .[dev]
-
-      - name: Install cmdstan
-        shell: bash -l {0}
-        run: python -c "import cmdstanpy; cmdstanpy.install_cmdstan(version='2.25.0')"
 
       - name: Check style
         shell: bash -l {0}
