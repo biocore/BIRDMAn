@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from math import ceil
 from typing import Sequence
 import warnings
 
@@ -299,14 +300,31 @@ class ModelIterator:
         self,
         table: biom.Table,
         model: SingleFeatureModel,
+        num_chunks: int = None,
         **kwargs
     ):
         self.feature_names = table.ids(axis="observation")
+        self.size = table.shape[0]
         self.model_type = model
-        self.models = [
-            model(table, fid, **kwargs) for fid in self.feature_names
-        ]
+        self.num_chunks = num_chunks
+        models = [model(table, fid, **kwargs) for fid in self.feature_names]
+
+        if num_chunks is None:
+            self.chunks = list(zip(self.feature_names, models))
+        else:
+            chunk_size = ceil(self.size / num_chunks)
+            self.chunks = []
+            for i in range(0, self.size, step=chunk_size):
+                self.chunks.append(
+                    (
+                        self.feature_names[i: i+chunk_size],
+                        models[i: i+chunk_size])
+                    )
+                )
 
     def __iter__(self):
-        for fid, model in zip(self.feature_names, self.models):
-            yield fid, model
+        for fids, models in chunks:
+            yield fids, models
+
+    def __getitem__(self, chunk_idx: int):
+        return self.chunks[chunk_dix]
