@@ -5,7 +5,7 @@ There are two ways you can implement a model in BIRDMAn: as a **Table Model** or
 
 In the **Table Model** method, we initialized one model fitting the entirety of our data. For an example of implementation with the ``TableModel`` class, see our documentation `implementing a custom model <https://github.com/gibsramen/BIRDMAn/blob/main/docs/custom_model.rst>`_.
 
-In the **Single Feature** method, we break down the fitting for each microbe with the ``SingleFeatureModel`` class. Each microbe has its own model fit, the **Single Feature** method allows for computational parallelization. Instead of running the model for each microbe serially as in the **Table Model** method, this process can be optimized to run the model for multiple microbes simultaneously, speeding up uour BIRDMAn workflow.
+In the **Single Feature** method, we break down the fitting for each microbe with the ``SingleFeatureModel`` class. Each microbe has its own model fit, the **Single Feature** method allows for computational parallelization. Instead of running the model for each microbe serially as in the **Table Model** method, this process can be optimized to run the model for multiple microbes simultaneously, speeding up your BIRDMAn workflow.
 
 Check out the Stan manual if you'd like more information on `parallelization in Stan <https://mc-stan.org/docs/2_24/cmdstan-guide/parallelization.html>`_.
 
@@ -101,6 +101,7 @@ Import the following libraries. If you already have ``birdman`` installed, impor
 
 Define ``SingleFeatureModel`` class
 -----------------------------------
+We will now pass this file along with our table, metadata, and formula into BIRDMAn. Note that we are using the base ``SingleTableModel`` class for our model. ``--start-num`` and ``--end-num`` denote how many microbes we want to parallelize by.
 
 .. code-block:: python
 
@@ -205,7 +206,7 @@ Running BIRDMAn
       for h in cmdstanpy_logger.handlers:
           h.setFormatter(formatter)
 
-      for feature_num in range(int(start_num), int(end_num)):
+      for feature_num in range(int(start_num), int(end_num)):           # fit model in paralleled chunks
           feature_num_str = str(feature_num).zfill(4)
           feature_id = FIDS[feature_num]
           birdman_logger.info(f"Feature num: {feature_num_str}")
@@ -226,7 +227,7 @@ Running BIRDMAn
                   num_iter=num_iter,
                   num_warmup=num_warmup,
               )
-              model.compile_model()
+              model.compile_model()                                    
               model.fit_model(sampler_args={"output_dir": t})
 
               inf = model.to_inference_object()
