@@ -101,7 +101,7 @@ Import the following libraries. If you already have ``birdman`` installed, impor
 
 Define ``SingleFeatureModel`` class
 -----------------------------------
-We will now pass this file along with our table, metadata, and formula into BIRDMAn. Note that we are using the base ``SingleTableModel`` class for our model. ``--start-num`` and ``--end-num`` denote how many microbes we want to parallelize by.
+We will now pass this file along with our table, metadata, and formula into BIRDMAn. Note that we are using the base ``SingleTableModel`` class for our model. 
 
 .. code-block:: python
 
@@ -174,6 +174,7 @@ We will now pass this file along with our table, metadata, and formula into BIRD
   
 Running BIRDMAn
 ---------------
+We first initialize our model for each microbe before compiling and fitting. ``start-num`` and ``end-num`` denote how many microbes we want to parallelize by.
 
 .. code-block:: python
 
@@ -206,7 +207,7 @@ Running BIRDMAn
       for h in cmdstanpy_logger.handlers:
           h.setFormatter(formatter)
 
-      for feature_num in range(int(start_num), int(end_num)):           # fit model in paralleled chunks
+      for feature_num in range(int(start_num), int(end_num)):           # to fit model in paralleled chunks
           feature_num_str = str(feature_num).zfill(4)
           feature_id = FIDS[feature_num]
           birdman_logger.info(f"Feature num: {feature_num_str}")
@@ -227,8 +228,8 @@ Running BIRDMAn
                   num_iter=num_iter,
                   num_warmup=num_warmup,
               )
-              model.compile_model()                                    
-              model.fit_model(sampler_args={"output_dir": t})
+              model.compile_model()                                    # compile model
+              model.fit_model(sampler_args={"output_dir": t})          # fit model
 
               inf = model.to_inference_object()
               birdman_logger.info(inf.posterior)
