@@ -294,6 +294,10 @@ class ModelIterator:
     :param model: BIRDMAn model for each individual feature
     :type model: birdman.model_base.SingleFeatureModel
 
+    :param num_chunks: Number of chunks to split table features. By default
+        does not do any chunking.
+    :type num_chunks: int
+
     :param kwargs: Keyword arguments to pass to each feature model
     """
     def __init__(
@@ -303,7 +307,7 @@ class ModelIterator:
         num_chunks: int = None,
         **kwargs
     ):
-        self.feature_names = table.ids(axis="observation")
+        self.feature_names = list(table.ids(axis="observation"))
         self.size = table.shape[0]
         self.model_type = model
         self.num_chunks = num_chunks
@@ -314,17 +318,21 @@ class ModelIterator:
         else:
             chunk_size = ceil(self.size / num_chunks)
             self.chunks = []
-            for i in range(0, self.size, step=chunk_size):
-                self.chunks.append(
-                    (
-                        self.feature_names[i: i+chunk_size],
-                        models[i: i+chunk_size])
-                    )
-                )
+            for i in range(0, self.size, chunk_size):
+                chunk_feature_names = self.feature_names[i: i+chunk_size]
+                chunk_models = models[i: i+chunk_size]
+
+                chunk = [
+                    (fid, _model) for fid, _model
+                    in zip(chunk_feature_names, chunk_models)
+                ]
+                self.chunks.append(chunk)
 
     def __iter__(self):
-        for fids, models in chunks:
-            yield fids, models
+        return (chunk for chunk in self.chunks)
 
     def __getitem__(self, chunk_idx: int):
-        return self.chunks[chunk_dix]
+        return self.chunks[chunk_idx]
+
+    def __len__(self):
+        return self.num_chunks
