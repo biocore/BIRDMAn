@@ -158,8 +158,7 @@ class TestModelIterator:
         np.testing.assert_equal(iterated_values, expected_values)
         assert (iterated_feature_ids == expected_feature_ids).all()
 
-    def test_iteration(self, table_biom, metadata):
-        num_chunks = 3
+    def test_chunks(self, table_biom, metadata):
         chunk_size = 10
 
         model_iterator = ModelIterator(
