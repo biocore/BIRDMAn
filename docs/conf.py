@@ -11,8 +11,22 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+from unittest import mock
 import sys
 sys.path.insert(0, os.path.abspath('..'))
+
+# https://blog.rtwilson.com/how-to-make-your-sphinx-documentation-compile-with-readthedocs-when-youre-using-numpy-and-scipy/
+MOCK_MODULES = [
+    "numpy",
+    "scipy",
+    "scipy.stats",
+    "matplotlib",
+    "matplotlib.pyplot",
+    "cmdstanpy",
+    "arviz"
+]
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = mock.Mock()
 
 
 # -- Project information -----------------------------------------------------

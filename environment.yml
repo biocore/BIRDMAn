@@ -11,6 +11,7 @@ dependencies:
   - xarray
   - patsy
   - biom-format
+  - cmdstanpy
   - arviz
   - docutils==0.16
   - pip:

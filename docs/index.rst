@@ -21,9 +21,7 @@ The easiest way to install the required dependencies is through ``conda``.
 
 .. code:: bash
 
-    conda install -c conda-forge biom-format patsy xarray
-    pip install cmdstanpy
-    pip install git+git://github.com/arviz-devs/arviz.git
+    conda install -c conda-forge biom-format patsy xarray arviz cmdstanpy
     pip install birdman
 
 If you are planning on contributing to BIRDMAn you must also install the following packages:
@@ -31,17 +29,6 @@ If you are planning on contributing to BIRDMAn you must also install the followi
 * `pytest <https://docs.pytest.org/en/stable/>`_
 * `scikit-bio <http://scikit-bio.org/>`_
 * `sphinx <https://www.sphinx-doc.org/en/master/>`_
-
-**Installing cmdstan**
-
-When you install BIRDMAn, you must also install the C++ toolchain that allows ``cmdstanpy`` to run ``cmdstan``.
-
-In Python:
-
-.. code:: python
-
-    import cmdstanpy
-    cmdstanpy.install_cmdstan()
 
 .. toctree::
     :maxdepth: 2
