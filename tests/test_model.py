@@ -158,6 +158,40 @@ class TestModelIterator:
         np.testing.assert_equal(iterated_values, expected_values)
         assert (iterated_feature_ids == expected_feature_ids).all()
 
+    def test_chunks(self, table_biom, metadata):
+        chunk_size = 10
+
+        model_iterator = ModelIterator(
+            table=table_biom,
+            model=NegativeBinomialSingle,
+            formula="host_common_name",
+            num_chunks=3,
+            metadata=metadata,
+            num_iter=100,
+            chains=4,
+            seed=42
+        )
+
+        tbl_fids = list(table_biom.ids("observation"))
+        exp_chunk_fids = [
+            tbl_fids[i: i+chunk_size]
+            for i in range(0, table_biom.shape[0], chunk_size)
+        ]
+
+        chunk_sizes = []
+        chunk_fids = []
+        for i, chunk in enumerate(model_iterator):
+            chunk_sizes.append(len(chunk))
+            chunk_fids.append([x[0] for x in chunk])
+
+        chunk_2 = model_iterator[1]
+
+        assert chunk_sizes == [10, 10, 8]
+        assert chunk_fids == exp_chunk_fids
+
+        for (fid, _), exp_fid in zip(chunk_2, exp_chunk_fids[1]):
+            assert fid == exp_fid
+
     def test_iteration_fit(self, table_biom, metadata):
         model_iterator = ModelIterator(
             table=table_biom,
