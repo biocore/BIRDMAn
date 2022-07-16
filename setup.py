@@ -37,7 +37,7 @@ setup(
     package_data={"": ["*.stan"]},
     install_requires=[
         "numpy",
-        "cmdstanpy>=1.01",
+        "cmdstanpy>=1.0.1",
         "cmdstan>=2.27.0",
         "biom-format",
         "patsy",
