@@ -38,12 +38,11 @@ setup(
     install_requires=[
         "numpy",
         "cmdstanpy>=1.0.1",
-        "cmdstan>=2.27.0",
         "biom-format",
         "patsy",
         "xarray",
         "pandas",
-        "arviz",
+        "arviz>=0.11.3",
         "matplotlib"
     ],
     extras_require={"dev": ["pytest", "scikit-bio", "sphinx"]},
