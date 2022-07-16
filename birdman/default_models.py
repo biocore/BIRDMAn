@@ -346,10 +346,10 @@ class NegativeBinomialLME(TableModel):
         self.add_parameters(param_dict)
 
         self.specify_model(
-            params=["beta_var", "inv_disp_sd", "subj_int"],
+            params=["beta_var", "inv_disp", "subj_int"],
             dims={
                 "beta_var": ["covariate", "feature_alr"],
-                "phi": ["feature"],
+                "inv_disp": ["feature"],
                 "subj_int": ["group", "feature_alr"],
                 "log_lhood": ["tbl_sample", "feature"],
                 "y_predict": ["tbl_sample", "feature"]
