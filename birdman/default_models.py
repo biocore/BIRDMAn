@@ -22,7 +22,7 @@ class NegativeBinomial(TableModel):
 
     .. math::
 
-        y_{ij} &\\sim \\textrm{NB}(\\mu_{ij},\\phi_j)
+        y_{ij} &\\sim \\textrm{NB}(\\mu_{ij}, \\phi_j)
 
         \\mu_{ij} &= n_i p_{ij}
 
@@ -39,11 +39,11 @@ class NegativeBinomial(TableModel):
             \\textrm{Normal}(0, B_p), & j > 0
         \\end{cases}
 
-    .. math:: A = \\ln{\\frac{1}{D}},\ D = \\textrm{Number of features}
+    .. math:: A = \\ln{\\frac{1}{D}}, \\ D = \\textrm{Number of features}
 
     .. math::
 
-        \\frac{1}{\\phi_j} \\sim \\textrm{Lognormal}(0, s),\ s \\in
+        \\frac{1}{\\phi_j} \\sim \\textrm{Lognormal}(0, s), \\ s \\in
             \\mathbb{R}_{>0}
 
 
@@ -137,7 +137,7 @@ class NegativeBinomialSingle(SingleFeatureModel):
 
     .. math::
 
-        y_{ij} &\\sim \\textrm{NB}(\\mu_{ij},\\phi_j)
+        y_{ij} &\\sim \\textrm{NB}(\\mu_{ij}, \\phi_j)
 
         \\log(\\mu_{ij}) &= \\log(\\textrm{Depth}_i) + x_i \\beta
 
@@ -151,11 +151,11 @@ class NegativeBinomialSingle(SingleFeatureModel):
             \\textrm{Normal}(0, B_p), & j > 0
         \\end{cases}
 
-    .. math:: A = \\ln{\\frac{1}{D}},\ D = \\textrm{Number of features}
+    .. math:: A = \\ln{\\frac{1}{D}},\\ D = \\textrm{Number of features}
 
     .. math::
 
-        \\frac{1}{\\phi_j} \\sim \\textrm{Lognormal}(0, s),\ s \\in
+        \\frac{1}{\\phi_j} \\sim \\textrm{Lognormal}(0, s),\\ s \\in
             \\mathbb{R}_{>0}
 
 
@@ -252,7 +252,7 @@ class NegativeBinomialLME(TableModel):
 
     .. math::
 
-        y_{ij} &\\sim \\textrm{NB}(\\mu_{ij},\\phi_j)
+        y_{ij} &\\sim \\textrm{NB}(\\mu_{ij}, \\phi_j)
 
         \\mu_{ij} &= n_i p_{ij}
 
@@ -268,14 +268,14 @@ class NegativeBinomialLME(TableModel):
             \\textrm{Normal}(0, B_p), & j > 0
         \\end{cases}
 
-    .. math:: A = \\ln{\\frac{1}{D}},\ D = \\textrm{Number of features}
+    .. math:: A = \\ln{\\frac{1}{D}},\\ D = \\textrm{Number of features}
 
     .. math::
 
-        \\frac{1}{\\phi_j} &\\sim \\textrm{Lognormal}(0, s),\ s \\in
+        \\frac{1}{\\phi_j} &\\sim \\textrm{Lognormal}(0, s),\\ s \\in
             \\mathbb{R}_{>0}
 
-        u_j &\\sim \\textrm{Normal}(0, u_p),\ u_p \\in \\mathbb{R}_{>0}
+        u_j &\\sim \\textrm{Normal}(0, u_p),\\ u_p \\in \\mathbb{R}_{>0}
 
 
     :param table: Feature table (features x samples)
