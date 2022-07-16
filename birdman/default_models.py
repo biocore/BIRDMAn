@@ -32,10 +32,16 @@ class NegativeBinomial(TableModel):
 
     .. math::
 
-        \\beta_j &\\sim \\textrm{Normal}(0, B_p), B_p \\in \\mathbb{R}_{>0}
+        \\begin{cases}
+        \\beta_j \\sim \\textrm{Normal}(A, B_p), & j = 0
+
+        \\beta_j \\sim \\textrm{Normal}(0, B_p), & j > 0
+        \\end{cases}
 
         \\frac{1}{\\phi_j} &\\sim \\textrm{Lognormal}(0, s), s \\in
             \\mathbb{R}_{>0}
+
+        A = \ln{\\frac{1}{D}}, D = \\textrm{Number of features}
 
 
     :param table: Feature table (features x samples)
@@ -146,6 +152,8 @@ class NegativeBinomialSingle(SingleFeatureModel):
 
         B_p \\in \\mathbb{R}_{>0}
 
+        A = \ln{\\frac{1}{D}}, D = \\textrm{Number of features}
+
     .. math::
 
         \\frac{1}{\\phi_j} \\sim \\textrm{Lognormal}(0, s), s \\in
@@ -255,7 +263,13 @@ class NegativeBinomialLME(TableModel):
 
     .. math::
 
-        \\beta_j &\\sim \\textrm{Normal}(0, B_p), B_p \\in \\mathbb{R}_{>0}
+        \\begin{cases}
+        \\beta_j \\sim \\textrm{Normal}(A, B_p), & j = 0
+
+        \\beta_j \\sim \\textrm{Normal}(0, B_p), & j > 0
+        \\end{cases}
+
+        A = \ln{\\frac{1}{D}}, D = \\textrm{Number of features}
 
         \\frac{1}{\\phi_j} &\\sim \\textrm{Lognormal}(0, s), s \\in
             \\mathbb{R}_{>0}
