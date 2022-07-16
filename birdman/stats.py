@@ -10,7 +10,7 @@ from .transform import _clr_to_alr
 def hotelling_ttest(
     inference_object: az.InferenceData,
     coord: dict,
-    parameter: str = "beta",
+    parameter: str = "beta_var",
 ) -> Tuple[np.float64, np.float64]:
     """Test if covariate-draws centered around zero.
 
@@ -25,7 +25,7 @@ def hotelling_ttest(
     :param coord: Coordinates to test
     :type coord: dict
 
-    :param parameter: Name of parameter to test, defaults to 'beta'
+    :param parameter: Name of parameter to test, defaults to 'beta_var'
     :type parameter: str, optional
 
     :returns: :math:`t^2` & p-value
