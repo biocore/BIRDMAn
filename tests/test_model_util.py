@@ -8,8 +8,8 @@ class TestToInference:
         coord_names = ds.coords._names
         exp_coords = {"feature", "draw", "covariate", "chain", "feature_alr"}
         assert exp_coords.issubset(coord_names)
-        assert set(ds["beta"].shape) == {2, 27, 4, 100}
-        assert set(ds["phi"].shape) == {28, 4, 100}
+        assert set(ds["beta_var"].shape) == {2, 27, 4, 100}
+        assert set(ds["inv_disp"].shape) == {28, 4, 100}
 
         exp_feature_names = model.feature_names
         ds_feature_names = ds.coords["feature"]
@@ -35,13 +35,13 @@ class TestToInference:
                 "tbl_sample": example_model.sample_names
             },
             dims={
-                "beta": ["covariate", "feature_alr"],
-                "phi": ["feature"],
+                "beta_var": ["covariate", "feature_alr"],
+                "inv_disp": ["feature"],
                 "log_lhood": ["tbl_sample", "feature"],
                 "y_predict": ["tbl_sample", "feature"]
             },
-            params=["beta", "phi"],
-            alr_params=["beta"]
+            params=["beta_var", "inv_disp"],
+            alr_params=["beta_var"]
         )
         self.dataset_comparison(example_model, inf.posterior)
 
@@ -58,13 +58,13 @@ class TestPPLL:
                 "sample": example_model.sample_names,
             },
             dims={
-                "beta": ["covariate", "feature_alr"],
-                "phi": ["feature"],
+                "beta_var": ["covariate", "feature_alr"],
+                "inv_disp": ["feature"],
                 "log_lhood": ["sample", "feature"],
                 "y_predict": ["sample", "feature"]
             },
-            params=["beta", "phi"],
-            alr_params=["beta"],
+            params=["beta_var", "inv_disp"],
+            alr_params=["beta_var"],
             posterior_predictive="y_predict",
             log_likelihood="log_lhood",
         )

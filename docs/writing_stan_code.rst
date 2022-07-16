@@ -13,7 +13,7 @@ Stan programs are made up of several "blocks". The main ones we use in BIRDMAn a
 * ``data``: This block defines the types and dimensions of the data used in the program. Every variable present in this block must be passed into the Stan program from Python.
 * ``parameters``: This block defines the types and dimensions of the parameters you are interested in fitting.
 * ``transformed parameters``: This block defines any transformations to perform on the data. For example we use this block to multiply the design matrix by the feature-covariate coefficient matrix.
-* ``model``: This block defines the setting of any priors and the fitting of your target distribution (negative binomial, multinomial, etc.).
+* ``model``: This block defines the setting of any priors and the fitting of your target distribution (e.g. negative binomial).
 * ``generated quantities``: This block is for generating any other results such as posterior predictive values and log likelihood values.
 
 Data

@@ -14,8 +14,6 @@ These are the default models that are included in BIRDMAn. They should be usable
     :members:
 .. autoclass:: birdman.default_models.NegativeBinomialLME
     :members:
-.. autoclass:: birdman.default_models.Multinomial
-    :members:
 
 Table Model
 -----------
