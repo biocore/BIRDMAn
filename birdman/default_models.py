@@ -28,20 +28,23 @@ class NegativeBinomial(TableModel):
 
         \\textrm{alr}(p_i) &= x_i \\beta
 
+
     Priors:
 
     .. math::
 
-        \\begin{cases}
-        \\beta_j \\sim \\textrm{Normal}(A, B_p), & j = 0
+        \\beta_j \\sim \\begin{cases}
+            \\textrm{Normal}(A, B_p), & j = 0
 
-        \\beta_j \\sim \\textrm{Normal}(0, B_p), & j > 0
+            \\textrm{Normal}(0, B_p), & j > 0
         \\end{cases}
 
-        \\frac{1}{\\phi_j} &\\sim \\textrm{Lognormal}(0, s), s \\in
-            \\mathbb{R}_{>0}
+    .. math:: A = \\ln{\\frac{1}{D}},\ D = \\textrm{Number of features}
 
-        A = \ln{\\frac{1}{D}}, D = \\textrm{Number of features}
+    .. math::
+
+        \\frac{1}{\\phi_j} \\sim \\textrm{Lognormal}(0, s),\ s \\in
+            \\mathbb{R}_{>0}
 
 
     :param table: Feature table (features x samples)
@@ -142,21 +145,17 @@ class NegativeBinomialSingle(SingleFeatureModel):
 
     .. math::
 
-        \\begin{cases}
-        \\beta_j \\sim \\textrm{Normal}(A, B_p), & j = 0
+        \\beta_j \\sim \\begin{cases}
+            \\textrm{Normal}(A, B_p), & j = 0
 
-        \\beta_j \\sim \\textrm{Normal}(0, B_p), & j > 0
+            \\textrm{Normal}(0, B_p), & j > 0
         \\end{cases}
 
-    .. math::
-
-        B_p \\in \\mathbb{R}_{>0}
-
-        A = \ln{\\frac{1}{D}}, D = \\textrm{Number of features}
+    .. math:: A = \\ln{\\frac{1}{D}},\ D = \\textrm{Number of features}
 
     .. math::
 
-        \\frac{1}{\\phi_j} \\sim \\textrm{Lognormal}(0, s), s \\in
+        \\frac{1}{\\phi_j} \\sim \\textrm{Lognormal}(0, s),\ s \\in
             \\mathbb{R}_{>0}
 
 
@@ -263,18 +262,20 @@ class NegativeBinomialLME(TableModel):
 
     .. math::
 
-        \\begin{cases}
-        \\beta_j \\sim \\textrm{Normal}(A, B_p), & j = 0
+        \\beta_j \\sim \\begin{cases}
+            \\textrm{Normal}(A, B_p), & j = 0
 
-        \\beta_j \\sim \\textrm{Normal}(0, B_p), & j > 0
+            \\textrm{Normal}(0, B_p), & j > 0
         \\end{cases}
 
-        A = \ln{\\frac{1}{D}}, D = \\textrm{Number of features}
+    .. math:: A = \\ln{\\frac{1}{D}},\ D = \\textrm{Number of features}
 
-        \\frac{1}{\\phi_j} &\\sim \\textrm{Lognormal}(0, s), s \\in
+    .. math::
+
+        \\frac{1}{\\phi_j} &\\sim \\textrm{Lognormal}(0, s),\ s \\in
             \\mathbb{R}_{>0}
 
-        u_j &\\sim \\textrm{Normal}(0, u_p), u_p \\in \\mathbb{R}_{>0}
+        u_j &\\sim \\textrm{Normal}(0, u_p),\ u_p \\in \\mathbb{R}_{>0}
 
 
     :param table: Feature table (features x samples)
