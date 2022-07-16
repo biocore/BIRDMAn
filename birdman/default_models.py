@@ -13,8 +13,7 @@ DEFAULT_MODEL_DICT = {
         "standard": os.path.join(TEMPLATES, "negative_binomial.stan"),
         "single": os.path.join(TEMPLATES, "negative_binomial_single.stan"),
         "lme": os.path.join(TEMPLATES, "negative_binomial_lme.stan")
-    },
-    "multinomial": os.path.join(TEMPLATES, "multinomial.stan"),
+    }
 }
 
 
@@ -35,7 +34,7 @@ class NegativeBinomial(TableModel):
 
         \\beta_j &\\sim \\textrm{Normal}(0, B_p), B_p \\in \\mathbb{R}_{>0}
 
-        \\frac{1}{\\phi_j} &\\sim \\textrm{Cauchy}(0, C_s), C_s \\in
+        \\frac{1}{\\phi_j} &\\sim \\textrm{Lognormal}(0, s), s \\in
             \\mathbb{R}_{>0}
 
 
@@ -65,9 +64,9 @@ class NegativeBinomial(TableModel):
         of beta, defaults to 5.0
     :type beta_prior: float
 
-    :param cauchy_scale: Scale parameter for half-Cauchy distributed prior
-        values of phi, defaults to 5.0
-    :type cauchy_scale: float
+    :param inv_disp_sd: Standard deviation for lognormally distributed prior
+        values of 1/phi, defaults to 0.5
+    :type inv_disp_sd: float
     """
     def __init__(
         self,
@@ -79,7 +78,7 @@ class NegativeBinomial(TableModel):
         chains: int = 4,
         seed: float = 42,
         beta_prior: float = 5.0,
-        cauchy_scale: float = 5.0,
+        inv_disp_sd: float = 0.5,
     ):
         filepath = DEFAULT_MODEL_DICT["negative_binomial"]["standard"]
 
@@ -93,18 +92,22 @@ class NegativeBinomial(TableModel):
         )
         self.create_regression(formula=formula, metadata=metadata)
 
+        D = table.shape[0]
+        A = np.log(1 / D)
+
         param_dict = {
             "depth": np.log(table.sum(axis="sample")),  # sampling depths
             "B_p": beta_prior,
-            "phi_s": cauchy_scale
+            "inv_disp_sd": inv_disp_sd,
+            "A": A
         }
         self.add_parameters(param_dict)
 
         self.specify_model(
-            params=["beta", "phi"],
+            params=["beta_var", "inv_disp"],
             dims={
-                "beta": ["covariate", "feature_alr"],
-                "phi": ["feature"],
+                "beta_var": ["covariate", "feature_alr"],
+                "inv_disp": ["feature"],
                 "log_lhood": ["tbl_sample", "feature"],
                 "y_predict": ["tbl_sample", "feature"]
             },
@@ -134,7 +137,7 @@ class NegativeBinomialSingle(SingleFeatureModel):
     .. math::
 
         \\begin{cases}
-        \\beta_j \\sim \\textrm{Normal}(-5.5, B_p), & j = 0
+        \\beta_j \\sim \\textrm{Normal}(A, B_p), & j = 0
 
         \\beta_j \\sim \\textrm{Normal}(0, B_p), & j > 0
         \\end{cases}
@@ -145,7 +148,7 @@ class NegativeBinomialSingle(SingleFeatureModel):
 
     .. math::
 
-        \\frac{1}{\\phi_j} \\sim \\textrm{Cauchy}(0, C_s), C_s \\in
+        \\frac{1}{\\phi_j} \\sim \\textrm{Lognormal}(0, s), s \\in
             \\mathbb{R}_{>0}
 
 
@@ -178,9 +181,9 @@ class NegativeBinomialSingle(SingleFeatureModel):
         of beta, defaults to 5.0
     :type beta_prior: float
 
-    :param cauchy_scale: Scale parameter for half-Cauchy distributed prior
-        values of phi, defaults to 5.0
-    :type cauchy_scale: float
+    :param inv_disp_sd: Standard deviation for lognormally distributed prior
+        values of 1/phi, defaults to 0.5
+    :type inv_disp_sd: float
     """
     def __init__(
         self,
@@ -193,7 +196,7 @@ class NegativeBinomialSingle(SingleFeatureModel):
         chains: int = 4,
         seed: float = 42,
         beta_prior: float = 5.0,
-        cauchy_scale: float = 5.0,
+        inv_disp_sd: float = 0.5,
     ):
         filepath = DEFAULT_MODEL_DICT["negative_binomial"]["single"]
 
@@ -208,17 +211,21 @@ class NegativeBinomialSingle(SingleFeatureModel):
         )
         self.create_regression(formula=formula, metadata=metadata)
 
+        D = table.shape[0]
+        A = np.log(1 / D)
+
         param_dict = {
             "depth": np.log(table.sum(axis="sample")),
             "B_p": beta_prior,
-            "phi_s": cauchy_scale
+            "inv_disp_sd": inv_disp_sd,
+            "A": A
         }
         self.add_parameters(param_dict)
 
         self.specify_model(
-            params=["beta", "phi"],
+            params=["beta_var", "inv_disp"],
             dims={
-                "beta": ["covariate"],
+                "beta_var": ["covariate"],
                 "log_lhood": ["tbl_sample"],
                 "y_predict": ["tbl_sample"]
             },
@@ -250,7 +257,7 @@ class NegativeBinomialLME(TableModel):
 
         \\beta_j &\\sim \\textrm{Normal}(0, B_p), B_p \\in \\mathbb{R}_{>0}
 
-        \\frac{1}{\\phi_j} &\\sim \\textrm{Cauchy}(0, C_s), C_s \\in
+        \\frac{1}{\\phi_j} &\\sim \\textrm{Lognormal}(0, s), s \\in
             \\mathbb{R}_{>0}
 
         u_j &\\sim \\textrm{Normal}(0, u_p), u_p \\in \\mathbb{R}_{>0}
@@ -285,9 +292,9 @@ class NegativeBinomialLME(TableModel):
         of beta, defaults to 5.0
     :type beta_prior: float
 
-    :param cauchy_scale: Scale parameter for half-Cauchy distributed prior
-        values of phi, defaults to 5.0
-    :type cauchy_scale: float
+    :param inv_disp_sd: Standard deviation for lognormally distributed prior
+        values of 1/phi, defaults to 0.5
+    :type inv_disp_sd: float
 
     :param group_var_prior: Standard deviation for normally distributed prior
         values of group_var, defaults to 1.0
@@ -304,7 +311,7 @@ class NegativeBinomialLME(TableModel):
         chains: int = 4,
         seed: float = 42,
         beta_prior: float = 5.0,
-        cauchy_scale: float = 5.0,
+        inv_disp_sd: float = 0.5,
         group_var_prior: float = 1.0
     ):
         filepath = DEFAULT_MODEL_DICT["negative_binomial"]["lme"]
@@ -318,6 +325,9 @@ class NegativeBinomialLME(TableModel):
         )
         self.create_regression(formula=formula, metadata=metadata)
 
+        D = table.shape[0]
+        A = np.log(1 / D)
+
         # Encode group IDs starting at 1 because Stan 1-indexes arrays
         group_var_series = metadata[group_var].loc[self.sample_names]
         samp_subj_map = group_var_series.astype("category").cat.codes + 1
@@ -327,17 +337,18 @@ class NegativeBinomialLME(TableModel):
         param_dict = {
             "depth": np.log(table.sum(axis="sample")),  # sampling depths
             "B_p": beta_prior,
-            "phi_s": cauchy_scale,
+            "inv_disp_sd": inv_disp_sd,
             "S": len(group_var_series.unique()),
             "subj_ids": samp_subj_map.values,
-            "u_p": group_var_prior
+            "u_p": group_var_prior,
+            "A": A
         }
         self.add_parameters(param_dict)
 
         self.specify_model(
-            params=["beta", "phi", "subj_int"],
+            params=["beta_var", "inv_disp_sd", "subj_int"],
             dims={
-                "beta": ["covariate", "feature_alr"],
+                "beta_var": ["covariate", "feature_alr"],
                 "phi": ["feature"],
                 "subj_int": ["group", "feature_alr"],
                 "log_lhood": ["tbl_sample", "feature"],
@@ -349,94 +360,6 @@ class NegativeBinomialLME(TableModel):
                 "feature_alr": self.feature_names[1:],
                 "tbl_sample": self.sample_names,
                 "group": self.groups
-            },
-            include_observed_data=True,
-            posterior_predictive="y_predict",
-            log_likelihood="log_lhood"
-        )
-
-
-class Multinomial(TableModel):
-    """Fit count data using serial multinomial model.
-
-    .. math::
-
-        y_i &\\sim \\textrm{Multinomial}(\\eta_i)
-
-        \\eta_i &= \\textrm{alr}(x_i \\beta)
-
-    Priors:
-
-    .. math::
-
-        \\beta_j \\sim \\textrm{Normal}(0, B_p), B_p \\in \\mathbb{R}_{>0}
-
-    :param table: Feature table (features x samples)
-    :type table: biom.table.Table
-
-    :param formula: Design formula to use in model
-    :type formula: str
-
-    :param metadata: Metadata for design matrix
-    :type metadata: pd.DataFrame
-
-    :param num_iter: Number of posterior sample draws, defaults to 500
-    :type num_iter: int
-
-    :param num_warmup: Number of posterior draws used for warmup, defaults to
-        num_iter
-    :type num_warmup: int
-
-    :param chains: Number of chains to use in MCMC, defaults to 4
-    :type chains: int
-
-    :param seed: Random seed to use for sampling, defaults to 42
-    :type seed: float
-
-    :param beta_prior: Standard deviation for normally distributed prior values
-        of beta, defaults to 5.0
-    :type beta_prior: float
-    """
-    def __init__(
-        self,
-        table: biom.table.Table,
-        formula: str,
-        metadata: pd.DataFrame,
-        num_iter: int = 500,
-        num_warmup: int = None,
-        chains: int = 4,
-        seed: float = 42,
-        beta_prior: float = 5.0,
-    ):
-        filepath = DEFAULT_MODEL_DICT["multinomial"]
-        super().__init__(
-            table=table,
-            model_path=filepath,
-            num_iter=num_iter,
-            num_warmup=num_warmup,
-            chains=chains,
-            seed=seed,
-        )
-        self.create_regression(formula=formula, metadata=metadata)
-
-        param_dict = {
-            "B_p": beta_prior,
-            "depth": table.sum(axis="sample").astype(int)
-        }
-        self.add_parameters(param_dict)
-
-        self.specify_model(
-            params=["beta"],
-            dims={
-                "beta": ["covariate", "feature_alr"],
-                "log_lhood": ["tbl_sample"],
-                "y_predict": ["tbl_sample", "feature"]
-            },
-            coords={
-                "covariate": self.colnames,
-                "feature": self.feature_names,
-                "feature_alr": self.feature_names[1:],
-                "tbl_sample": self.sample_names,
             },
             include_observed_data=True,
             posterior_predictive="y_predict",

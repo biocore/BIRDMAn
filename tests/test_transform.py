@@ -7,13 +7,13 @@ from birdman import transform
 def test_posterior_alr_to_clr(example_model):
     inf = example_model.to_inference_object()
     np.testing.assert_equal(
-        inf.posterior["beta"].coords["feature_alr"],
+        inf.posterior["beta_var"].coords["feature_alr"],
         example_model.feature_names[1:],
     )
 
     new_post = transform.posterior_alr_to_clr(
         inf.posterior,
-        alr_params=["beta"],
+        alr_params=["beta_var"],
         dim_replacement={"feature_alr": "feature"},
         new_labels=example_model.feature_names
     )

@@ -4,7 +4,7 @@ from pkg_resources import resource_filename
 import numpy as np
 import pytest
 
-from birdman import (Multinomial, NegativeBinomial, NegativeBinomialLME,
+from birdman import (NegativeBinomial, NegativeBinomialLME,
                      NegativeBinomialSingle, ModelIterator)
 
 TEMPLATES = resource_filename("birdman", "templates")
@@ -19,26 +19,26 @@ class TestModelInheritance:
             chains=4,
             seed=42,
             beta_prior=2.0,
-            cauchy_scale=2.0,
+            inv_disp_sd=0.5,
         )
 
         assert nb.dat["B_p"] == 2.0
-        assert nb.dat["phi_s"] == 2.0
+        assert nb.dat["inv_disp_sd"] == 0.5
         target_filepath = os.path.join(TEMPLATES, "negative_binomial.stan")
         assert nb.model_path == target_filepath
 
 
 class TestModelFit:
     def test_nb_fit(self, table_biom, example_model):
-        beta = example_model.fit.stan_variable("beta")
-        phi = example_model.fit.stan_variable("phi")
+        beta = example_model.fit.stan_variable("beta_var")
+        inv_disp = example_model.fit.stan_variable("inv_disp")
         num_cov = 2
         num_chains = 4
         num_table_feats = 28
         num_iter = 100
         num_draws = num_chains*num_iter
         assert beta.shape == (num_draws, num_cov, num_table_feats - 1)
-        assert phi.shape == (num_draws, num_table_feats)
+        assert inv_disp.shape == (num_draws, num_table_feats)
 
     def test_nb_lme(self, table_biom, metadata):
         md = metadata.copy()
@@ -61,18 +61,6 @@ class TestModelFit:
                                          "feature_alr")
         assert post["subj_int"].shape == (4, 100, 3, 27)
         assert (post.coords["group"].values == ["G0", "G1", "G2"]).all()
-
-    def test_mult(self, table_biom, metadata):
-        md = metadata.copy()
-        np.random.seed(42)
-        mult = Multinomial(
-            table=table_biom,
-            formula="host_common_name",
-            metadata=md,
-            num_iter=100,
-        )
-        mult.compile_model()
-        mult.fit_model()
 
     def test_single_feat(self, table_biom, metadata):
         md = metadata.copy()
