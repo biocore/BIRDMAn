@@ -37,12 +37,13 @@ setup(
     package_data={"": ["*.stan"]},
     install_requires=[
         "numpy",
-        "cmdstanpy",
+        "cmdstanpy>=2.27.0",
         "biom-format",
         "patsy",
         "xarray",
         "pandas",
-        "arviz"
+        "arviz",
+        "matplotlib"
     ],
     extras_require={"dev": ["pytest", "scikit-bio", "sphinx"]},
     classifiers=[s.strip() for s in classifiers.split('\n') if s]
