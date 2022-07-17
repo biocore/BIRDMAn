@@ -329,7 +329,7 @@ When the model has finished fitting, you can convert to an inference data assumi
 .. code-block:: python
 
     from birdman.transform import posterior_alr_to_clr
-    inference = nb_lme.to_inference_object()
+    inference = nb_lme.to_inference()
     inference.posterior = posterior_alr_to_clr(inference.posterior)
 
 With this you can use the rest of the BIRDMAn suite as usual or directly interact with the ``arviz`` library!

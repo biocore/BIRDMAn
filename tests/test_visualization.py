@@ -37,7 +37,7 @@ class TestPPCPlot:
         viz.plot_posterior_predictive_checks(example_inf)
 
     def test_ppc_no_pp(self, example_model):
-        inference = example_model.to_inference_object().copy()
+        inference = example_model.to_inference().copy()
         delattr(inference, "posterior_predictive")
 
         with pytest.raises(ValueError) as excinfo:
@@ -47,7 +47,7 @@ class TestPPCPlot:
         assert str(excinfo.value) == exp_msg
 
     def test_ppc_no_obs(self, example_model):
-        inference = example_model.to_inference_object().copy()
+        inference = example_model.to_inference().copy()
         delattr(inference, "observed_data")
 
         with pytest.raises(ValueError) as excinfo:

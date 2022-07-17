@@ -61,7 +61,7 @@ def example_model():
 @pytest.fixture(scope="session")
 def example_inf():
     nb = model()
-    inference = nb.to_inference_object()
+    inference = nb.to_inference()
     return inference
 
 

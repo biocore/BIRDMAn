@@ -3,7 +3,7 @@ Diagnosing BIRDMAn models
 
 One of the most important things to do when running BIRDMAn is to diagnose your model to make sure that it is useful for your downstream analysis. There are a lot of ways to do this and a ton of literature/tools about diagnosing Bayesian models.
 
-BIRDMAn wraps many function present in the ``arviz`` package. We recommend reading through their documentation for more information. You can use the ``to_inference_object`` method in any BIRDMAn object to convert your model into a format that is compatible with ``arviz``. We wrap a few of these functions for common diagnostics.
+BIRDMAn wraps many function present in the ``arviz`` package. We recommend reading through their documentation for more information. You can use the ``to_inference`` method in any BIRDMAn object to convert your model into a format that is compatible with ``arviz``. We wrap a few of these functions for common diagnostics.
 
 Rhat
 ----
@@ -18,7 +18,7 @@ The ``Rhat`` (:math:`\hat{R}`) statistic is a measure of chain convergence in MC
 PSIS-LOO-CV
 -----------
 
-Pareto-smoothed importance sampling leave-one-out cross-validation (PSIS-LOO-CV, referred to informally as LOO) estimates the (log) pointwise predictive density. This can be thought of as an estimation of traditional leave-one-out cross validation, which is often very computationally expensive for Bayesian models. To calculate this metric, one must generate posterior predictive values in the Stan code and specify this variable when calling ``to_inference_object``.
+Pareto-smoothed importance sampling leave-one-out cross-validation (PSIS-LOO-CV, referred to informally as LOO) estimates the (log) pointwise predictive density. This can be thought of as an estimation of traditional leave-one-out cross validation, which is often very computationally expensive for Bayesian models. To calculate this metric, one must generate posterior predictive values in the Stan code and specify this variable when calling ``to_inference``.
 
 The expected log pointwise predictive density ``elpd`` is the sum of the posterior draws log likelihood values. The objective is to maximize this value (closer to 0). However, it is important to note that this is more useful as a relative measure. All other things being equal, a model with a higher ``elpd`` better predicts feature counts.
 
