@@ -71,7 +71,7 @@ Now we have our parameter estimates which we can use in downstream analyses. Man
     inference = nb.to_inference()
     inference.posterior = posterior_alr_to_clr(
         inference.posterior,
-        alr_params=["beta"],  # the default NB model has only beta in ALR coordinates
+        alr_params=["beta_var"],  # the default NB model has only beta in ALR coordinates
         dim_replacement={"feature_alr": "feature"},  # the default NB model assigns 'feature_alr' as the dimension name
         new_labels=nb.feature_names  # replace the old labels (all the feature names except the first) with all the feature names
     )
@@ -84,7 +84,7 @@ Finally, we'll plot the feature differentials and their standard deviations. We 
 
     ax = viz.plot_parameter_estimates(
         inference,
-        parameter="beta",
+        parameter="beta_var",
         coord={"covariate": "diet[T.DIO]"},
     )
 

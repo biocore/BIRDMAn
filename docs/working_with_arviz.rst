@@ -41,7 +41,7 @@ The ``Dimensions`` descriptor shows the names and number of entries in each dime
 ``xarray.DataArray``
 ^^^^^^^^^^^^^^^^^^^^
 
-A ``Dataset`` is simply a collection of ``DataArray`` objects. Whereas a ``Dataset`` can contain multiple data variables, a ``DataArray`` contains only one. If you want to access the ``beta`` variable from the above ``Dataset``, you simply index it like you would a dictionary. If you have a ``Dataset``, ``ds``, with a data variable ``beta``, you would access it with ``ds["beta"]`` which returns:
+A ``Dataset`` is simply a collection of ``DataArray`` objects. Whereas a ``Dataset`` can contain multiple data variables, a ``DataArray`` contains only one. If you want to access the ``beta`` variable from the above ``Dataset``, you simply index it like you would a dictionary. If you have a ``Dataset``, ``ds``, with a data variable ``beta``, you would access it with ``ds["beta_var"]`` which returns:
 
 .. code-block::
 
@@ -80,19 +80,19 @@ You can use the ``.sel`` function to select specific slices of data. To extract 
 
 .. code-block:: python
 
-    ds["beta"].sel(chain=0)
+    ds["beta_var"].sel(chain=0)
 
 You can also index across multiple dimensions - if you wanted only values from chain 2 from the diet covariate you would run:
 
 .. code-block:: python
 
-    ds["beta"].sel(chain=2, covariate="diet[T.DIO]")
+    ds["beta_var"].sel(chain=2, covariate="diet[T.DIO]")
 
 This also works with multiple values for a given dimension. As an example if you wanted to get all diet posterior samples from just features 193358 and 4465746 you would run:
 
 .. code-block:: python
 
-    ds["beta"].sel(feature=["193358", "4465746"], covariate="diet[T.DIO]")
+    ds["beta_var"].sel(feature=["193358", "4465746"], covariate="diet[T.DIO]")
 
 See the `documentation <http://xarray.pydata.org/en/stable/indexing.html>`_ for more on indexing and selecting data.
 

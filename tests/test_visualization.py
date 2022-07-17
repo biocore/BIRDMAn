@@ -7,15 +7,15 @@ class TestRankPlot:
     def test_rank_plot_beta(self, example_inf):
         viz.plot_parameter_estimates(
             inference_object=example_inf,
-            parameter="beta",
+            parameter="beta_var",
             coords={"covariate": "host_common_name[T.long-tailed macaque]"},
             num_std=1
         )
 
-    def test_rank_plot_phi(self, example_inf):
+    def test_rank_plot_inv_disp(self, example_inf):
         viz.plot_parameter_estimates(
             inference_object=example_inf,
-            parameter="phi",
+            parameter="inv_disp",
             num_std=1
         )
 
@@ -23,7 +23,7 @@ class TestRankPlot:
         with pytest.raises(ValueError) as excinfo:
             viz.plot_parameter_estimates(
                 inference_object=example_inf,
-                parameter="beta",
+                parameter="beta_var",
                 num_std=1
             )
 

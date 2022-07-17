@@ -117,12 +117,24 @@ We also specify the following priors:
 
 .. math::
 
-    \beta_j &\sim \textrm{Normal}(0, B_p), B_p \in \mathbb{R}_{>0}
+    \beta_j \sim \begin{cases}
+        \textrm{Normal}(A, B_p), & j = 0
 
-    \frac{1}{\phi_j} &\sim \textrm{Cauchy}(0, C_s), C_s \in
+        \textrm{Normal}(0, B_p), & j > 0
+    \end{cases}
+
+.. math:: B_p \in \mathbb{R}_{>0}
+
+.. math::
+
+    A = \ln{\frac{1}{D}},\ D = \textrm{Number of features}
+
+.. math::
+
+    \frac{1}{\phi_j} &\sim \textrm{Lognormal}(0, s),\ s \in
         \mathbb{R}_{>0}
 
-    u_i &\sim \textrm{Normal}(0, u_p), u_p \in \mathbb{R}_{>0}
+    u_i &\sim \textrm{Normal}(0, u_p),\ u_p \in \mathbb{R}_{>0}
 
 
 Stan code
@@ -134,73 +146,70 @@ We will save the below file to ``negative_binomial_re.stan`` so we can import an
 .. code-block:: stan
 
     data {
-        int<lower=0> N;                     // number of sample IDs
-        int<lower=0> S;                     // number of groups (subjects)
-        int<lower=0> D;                     // number of dimensions
-        int<lower=0> p;                     // number of covariates
-        real depth[N];                      // sequencing depths of microbes
-        matrix[N, p] x;                     // covariate matrix
-        int<lower=1, upper=S> subj_ids[N];  // mapping of samples to subject IDs
-        int y[N, D];                        // observed microbe abundances
-        real<lower=0> B_p;                  // stdev for covariate Beta Normal prior
-        real<lower=0> phi_s;                // scale for dispersion Cauchy prior
-        real<lower=0> u_p;                  // stdev for subject intercept Normal prior
+      int<lower=0> N;                           // number of sample IDs
+      int<lower=0> S;                           // number of groups (subjects)
+      int<lower=0> D;                           // number of dimensions
+      real A;                                   // mean intercept
+      int<lower=0> p;                           // number of covariates
+      vector[N] depth;                          // log sequencing depths of microbes
+      matrix[N, p] x;                           // covariate matrix
+      array[N] int<lower=1, upper=S> subj_ids;  // mapping of samples to subject IDs
+      array[N, D] int y;                        // observed microbe abundances
+
+      real<lower=0> B_p;                        // stdev for covariate beta normal prior
+      real<lower=0> inv_disp_sd;                // stdev for inv disp lognormal prior
+      real<lower=0> u_p;                        // stdev for subject intercept normal prior
     }
 
     parameters {
-        matrix[p, D-1] beta;
-        vector<lower=0>[D] reciprocal_phi;
-        vector[S] subj_int;
+      row_vector<offset=A, multiplier=B_p>[D-1] beta_0;
+      matrix<multiplier=B_p>[p-1, D-1] beta_x;
+      vector<lower=0>[D] inv_disp;
+      matrix[S, D-1] subj_int;
     }
 
     transformed parameters {
-        matrix[N, D-1] lam;
-        matrix[N, D] lam_clr;
-        vector<lower=0>[D] phi;
+      matrix[p, D-1] beta_var = append_row(beta_0, beta_x);
+      matrix[N, D-1] lam;
+      matrix[N, D] lam_clr;
 
-        for (i in 1:D){
-            phi[i] = 1. / reciprocal_phi[i];
-        }
-
-        lam = x*beta;  // N x D-1
-        for (n in 1:N){
-            lam[n] += subj_int[subj_ids[n]];
-        }
-        lam_clr = append_col(to_vector(rep_array(0, N)), lam);
+      lam = x*beta_var;
+      for (n in 1:N){
+        lam[n] += subj_int[subj_ids[n]] + depth[n];
+      }
+      lam_clr = append_col(to_vector(rep_array(0, N)), lam);
     }
 
     model {
-        // setting priors ...
-        for (i in 1:D){
-            reciprocal_phi[i] ~ cauchy(0., phi_s);
-        }
-        for (i in 1:D-1){
-            for (j in 1:p){
-                beta[j, i] ~ normal(0., B_p); // uninformed prior
-            }
-        }
-        for (i in 1:S){
-            subj_int[i] ~ normal(0., u_p);
-        }
+      inv_disp ~ lognormal(0, inv_disp_sd);
 
-        // generating counts
-        for (n in 1:N){
-            for (i in 1:D){
-                target += neg_binomial_2_log_lpmf(y[n, i] | depth[n] + lam_clr[n, i], phi[i]);
-            }
+      for (i in 1:D-1){
+        for (j in 1:p){
+          beta_var[j, i] ~ normal(0., B_p); // uninformed prior
         }
+        for (j in 1:S){
+          subj_int[j, i] ~ normal(0., u_p);
+        }
+      }
+
+      // generating counts
+      for (n in 1:N){
+        for (i in 1:D){
+          target += neg_binomial_2_log_lpmf(y[n, i] | lam_clr[n, i], inv_disp[i]);
+        }
+      }
     }
 
     generated quantities {
-        matrix[N, D] y_predict;
-        matrix[N, D] log_lik;
+      array[N, D] int y_predict;
+      array[N, D] real log_lhood;
 
-        for (n in 1:N){
-            for (i in 1:D){
-                y_predict[n, i] = neg_binomial_2_log_rng(depth[n] + lam_clr[n, i], phi[i]);
-                log_lik[n, i] = neg_binomial_2_log_lpmf(y[n, i] | depth[n] + lam_clr[n, i], phi[i]);
-            }
+      for (n in 1:N){
+        for (i in 1:D){
+          y_predict[n, i] = neg_binomial_2_log_rng(lam_clr[n, i], inv_disp[i]);
+          log_lhood[n, i] = neg_binomial_2_log_lpmf(y[n, i] | lam_clr[n, i], inv_disp[i]);
         }
+      }
     }
 
 Running BIRDMAn
@@ -239,7 +248,7 @@ We want to add the necessary variables to be passed to Stan:
 * ``S``: total number of groups (subjects)
 * ``subj_ids``: mapping of samples to subject
 * ``B_p``: stdev prior for normally distributed covariate-feature coefficients
-* ``phi_s``: scale prior for half-Cauchy distributed overdispersion coefficients
+* ``inv_disp_sd``: stdev prior for lognormally distributed inverse dispersion
 * ``depth``: log sampling depths of samples
 * ``u_p``: stdev prior for normally distributed subject intercept shifts
 
@@ -262,7 +271,7 @@ Now we can add all the necessary parameters to BIRDMAn with the ``add_parameters
         "subj_ids": samp_subj_map.values,
         "depth": np.log(filt_tbl.sum(axis="sample")),
         "B_p": 3.0,
-        "phi_s": 3.0,
+        "inv_disp_sd": 3.0,
         "u_p": 1.0
     }
     nb_lme.add_parameters(param_dict)
@@ -281,10 +290,10 @@ We pass all these arguments into the ``specify_model`` method of the ``Model`` o
 .. code-block:: python
 
     nb_lme.specify_model(
-        params=["beta", "phi", "subj_int"],
+        params=["beta_var", "inv_disp", "subj_int"],
         dims={
-            "beta": ["covariate", "feature_alr"],
-            "phi": ["feature"],
+            "beta_var": ["covariate", "feature_alr"],
+            "inv_disp": ["feature"],
             "subj_int": ["subject"],
             "log_lik": ["tbl_sample", "feature"],
             "y_predict": ["tbl_sample", "feature"]
