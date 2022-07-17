@@ -169,7 +169,7 @@ class BaseModel(ABC):
         # If auto-conversion fails, fit will be of type CmdStanMCMC
         if convert_to_inference:
             try:
-                self.fit = self.to_inference_object()
+                self.fit = self.to_inference()
             except Exception as e:
                 warnings.warn(
                     "Auto conversion to InferenceData has failed! fit has "
@@ -179,7 +179,7 @@ class BaseModel(ABC):
                 )
 
     @abstractmethod
-    def to_inference_object(self):
+    def to_inference(self):
         """Convert fitted model to az.InferenceData."""
 
 
@@ -192,7 +192,7 @@ class TableModel(BaseModel):
             {"y": table.matrix_data.todense().T.astype(int)}
         )
 
-    def to_inference_object(self) -> az.InferenceData:
+    def to_inference(self) -> az.InferenceData:
         """Convert fitted Stan model into ``arviz`` InferenceData object.
 
         :returns: ``arviz`` InferenceData object with selected values
@@ -245,7 +245,7 @@ class SingleFeatureModel(BaseModel):
         ).astype(int)
         self.add_parameters({"y": values})
 
-    def to_inference_object(self) -> az.InferenceData:
+    def to_inference(self) -> az.InferenceData:
         """Convert fitted Stan model into ``arviz`` InferenceData object.
 
         :returns: ``arviz`` InferenceData object with selected values

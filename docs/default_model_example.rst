@@ -68,7 +68,7 @@ Now we have our parameter estimates which we can use in downstream analyses. Man
 .. code-block:: python
 
     from birdman.transform import posterior_alr_to_clr
-    inference = nb.to_inference_object()
+    inference = nb.to_inference()
     inference.posterior = posterior_alr_to_clr(
         inference.posterior,
         alr_params=["beta"],  # the default NB model has only beta in ALR coordinates

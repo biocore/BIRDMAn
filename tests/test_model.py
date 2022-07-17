@@ -55,7 +55,7 @@ class TestModelFit:
         nb_lme.compile_model()
         nb_lme.fit_model()
 
-        inf = nb_lme.to_inference_object()
+        inf = nb_lme.to_inference()
         post = inf.posterior
         assert post["subj_int"].dims == ("chain", "draw", "group",
                                          "feature_alr")
@@ -110,13 +110,13 @@ class TestModelFit:
 
 class TestToInference:
     def test_serial_to_inference(self, example_model):
-        inference_data = example_model.to_inference_object()
+        inference_data = example_model.to_inference()
         target_groups = {"posterior", "sample_stats", "log_likelihood",
                          "posterior_predictive", "observed_data"}
         assert set(inference_data.groups()) == target_groups
 
     def test_single_feat_fit(self, example_single_feat_model):
-        inf = example_single_feat_model.to_inference_object()
+        inf = example_single_feat_model.to_inference()
         post = inf.posterior
         assert set(post.coords) == {"chain", "covariate", "draw"}
         assert post.dims == {"chain": 4, "covariate": 2, "draw": 100}
@@ -172,4 +172,4 @@ class TestModelIterator:
         for fit, model in model_iterator:
             model.compile_model()
             model.fit_model()
-            _ = model.to_inference_object()
+            _ = model.to_inference()

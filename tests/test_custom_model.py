@@ -42,7 +42,7 @@ def test_custom_model(table_biom, metadata):
     )
     custom_model.compile_model()
     custom_model.fit_model()
-    inference = custom_model.to_inference_object()
+    inference = custom_model.to_inference()
 
     assert set(inference.groups()) == {"posterior", "sample_stats"}
     ds = inference.posterior

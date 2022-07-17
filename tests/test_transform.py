@@ -5,7 +5,7 @@ from birdman import transform
 
 
 def test_posterior_alr_to_clr(example_model):
-    inf = example_model.to_inference_object()
+    inf = example_model.to_inference()
     np.testing.assert_equal(
         inf.posterior["beta"].coords["feature_alr"],
         example_model.feature_names[1:],
