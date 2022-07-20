@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 import birdman.summary as summ
@@ -14,6 +15,7 @@ def test_summarize_posterior(example_inf, estimator):
     assert len(post_summ) == 27
 
     exp_index = example_inf.posterior["feature_alr"].to_numpy()
+    np.testing.assert_equal(exp_index, post_summ.index)
 
     post_summ = summ.summarize_posterior(
         example_inf.posterior,
@@ -21,3 +23,5 @@ def test_summarize_posterior(example_inf, estimator):
         estimator=estimator
     )
     assert post_summ.shape == (27, 2)
+
+    np.testing.assert_equal(exp_index, post_summ.index)
