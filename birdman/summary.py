@@ -18,6 +18,9 @@ def summarize_posterior(
     :param data_var: Data variable to summarize
     :type data_var: str
 
+    :param coords: Mapping of entries in dims to labels
+    :type coords: dict
+
     :param estimator: How to summarize posterior, one of 'mean', 'median', or
         'std'
     :type estimator: str
