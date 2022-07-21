@@ -17,7 +17,7 @@ Installation
 .. note:: BIRDMAn requires Python >= 3.7
 
 There are several dependencies you must install to use BIRDMAn.
-The easiest way to install the required dependencies is through ``conda``.
+The easiest way to install the required dependencies is through ``conda`` or ``mamba``.
 
 .. code:: bash
 
@@ -52,6 +52,7 @@ If you are planning on contributing to BIRDMAn you must also install the followi
 
     models
     diagnostics
+    summary
     transform
     stats
     visualization

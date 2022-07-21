@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from math import ceil
 from typing import Sequence
 import warnings
 
@@ -169,7 +170,7 @@ class BaseModel(ABC):
         # If auto-conversion fails, fit will be of type CmdStanMCMC
         if convert_to_inference:
             try:
-                self.fit = self.to_inference_object()
+                self.fit = self.to_inference()
             except Exception as e:
                 warnings.warn(
                     "Auto conversion to InferenceData has failed! fit has "
@@ -179,7 +180,7 @@ class BaseModel(ABC):
                 )
 
     @abstractmethod
-    def to_inference_object(self):
+    def to_inference(self):
         """Convert fitted model to az.InferenceData."""
 
 
@@ -192,7 +193,7 @@ class TableModel(BaseModel):
             {"y": table.matrix_data.todense().T.astype(int)}
         )
 
-    def to_inference_object(self) -> az.InferenceData:
+    def to_inference(self) -> az.InferenceData:
         """Convert fitted Stan model into ``arviz`` InferenceData object.
 
         :returns: ``arviz`` InferenceData object with selected values
@@ -245,7 +246,7 @@ class SingleFeatureModel(BaseModel):
         ).astype(int)
         self.add_parameters({"y": values})
 
-    def to_inference_object(self) -> az.InferenceData:
+    def to_inference(self) -> az.InferenceData:
         """Convert fitted Stan model into ``arviz`` InferenceData object.
 
         :returns: ``arviz`` InferenceData object with selected values
@@ -293,20 +294,45 @@ class ModelIterator:
     :param model: BIRDMAn model for each individual feature
     :type model: birdman.model_base.SingleFeatureModel
 
+    :param num_chunks: Number of chunks to split table features. By default
+        does not do any chunking.
+    :type num_chunks: int
+
     :param kwargs: Keyword arguments to pass to each feature model
     """
     def __init__(
         self,
         table: biom.Table,
         model: SingleFeatureModel,
+        num_chunks: int = None,
         **kwargs
     ):
-        self.feature_names = table.ids(axis="observation")
+        self.feature_names = list(table.ids(axis="observation"))
+        self.size = table.shape[0]
         self.model_type = model
-        self.models = [
-            model(table, fid, **kwargs) for fid in self.feature_names
-        ]
+        self.num_chunks = num_chunks
+        models = [model(table, fid, **kwargs) for fid in self.feature_names]
+
+        if num_chunks is None:
+            self.chunks = list(zip(self.feature_names, models))
+        else:
+            chunk_size = ceil(self.size / num_chunks)
+            self.chunks = []
+            for i in range(0, self.size, chunk_size):
+                chunk_feature_names = self.feature_names[i: i+chunk_size]
+                chunk_models = models[i: i+chunk_size]
+
+                chunk = [
+                    (fid, _model) for fid, _model
+                    in zip(chunk_feature_names, chunk_models)
+                ]
+                self.chunks.append(chunk)
 
     def __iter__(self):
-        for fid, model in zip(self.feature_names, self.models):
-            yield fid, model
+        return (chunk for chunk in self.chunks)
+
+    def __getitem__(self, chunk_idx: int):
+        return self.chunks[chunk_idx]
+
+    def __len__(self):
+        return self.num_chunks
