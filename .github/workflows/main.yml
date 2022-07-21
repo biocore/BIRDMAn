@@ -3,9 +3,15 @@ name: BIRDMAn CI
 
 on:
   pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
     branches:
       - main
   push:
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
     branches:
       - main
 
