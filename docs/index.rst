@@ -39,6 +39,7 @@ If you are planning on contributing to BIRDMAn you must also install the followi
     diagnosing_model
     writing_stan_code
     working_with_arviz
+    parallelization
 
 .. toctree::
     :maxdepth: 2
