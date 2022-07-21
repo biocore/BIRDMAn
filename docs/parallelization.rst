@@ -110,6 +110,7 @@ We will now pass this file along with our table, metadata, and formula into BIRD
         beta_prior: float = 2.0,
         inv_disp_sd: float = 0.5,
         subj_prior: float = 2.0,
+        chains: int = 4,
         num_iter: int = 500,
         num_warmup: int = 1000,
     ):
@@ -117,6 +118,7 @@ We will now pass this file along with our table, metadata, and formula into BIRD
             table=table,
             feature_id=feature_id,
             model_path=MODEL_PATH,
+            chains=chains,
             num_iter=num_iter,
             num_warmup=num_warmup,
         )
