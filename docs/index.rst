@@ -46,6 +46,7 @@ If you are planning on contributing to BIRDMAn you must also install the followi
     :caption: How BIRDMAn Works
 
     bayesian_inference
+    negative_binomial
 
 .. toctree::
     :maxdepth: 2
