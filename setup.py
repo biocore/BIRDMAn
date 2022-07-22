@@ -1,7 +1,16 @@
 # Inspired by the EMPress setup.py file
+import ast
+import re
 from setuptools import find_packages, setup
 
-__version__ = "0.0.4"
+# version parsing from __init__ pulled from Flask's setup.py
+# https://github.com/mitsuhiko/flask/blob/master/setup.py
+_version_re = re.compile(r"__version__\s+=\s+(.*)")
+
+with open("birdman/__init__.py", "rb") as f:
+    hit = _version_re.search(f.read().decode("utf-8")).group(1)
+    version = str(ast.literal_eval(hit))
+
 
 classifiers = """
     Development Status :: 3 - Alpha
@@ -19,7 +28,7 @@ short_desc = (
     "inference"
 )
 
-with open('README.md') as f:
+with open("README.md") as f:
     long_description = f.read()
 
 setup(
@@ -30,14 +39,15 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/gibsramen/BIRDMAn",
-    version=__version__,
-    license='BSD-3-Clause',
+    version=version,
+    license="BSD-3-Clause",
     packages=find_packages(),
     include_package_data=True,
     package_data={"": ["*.stan"]},
     install_requires=[
         "numpy",
         "cmdstanpy>=1.0.1",
+        "scipy",
         "biom-format",
         "patsy",
         "xarray",
