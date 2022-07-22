@@ -21,7 +21,6 @@ Table Model
 You should inherit/instantiate this class if you are building a custom model for estimating parameters of an entire table at once.
 
 .. autoclass:: birdman.model_base.TableModel
-    :members:
 
 Single Feature Model
 --------------------
@@ -29,7 +28,6 @@ Single Feature Model
 This class is designed for those interested in parallelizing model fitting across multiple features at once. We do not explicitly perform parallelization but rather leave that to the user.
 
 .. autoclass:: birdman.model_base.SingleFeatureModel
-    :members:
 
 Model Iterator
 --------------

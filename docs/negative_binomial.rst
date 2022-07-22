@@ -44,4 +44,4 @@ Output
 
 When we fit this model using BIRDMAn, we get *distributions* of plausible parameter values given our data and priors. For a single microbe, we typically are interested in :math:`\beta_0`, :math:`\beta_1`, and :math:`\phi`. When we fit all of the microbes, we end up with :math:`D` distributions for each of these parameter where D is the total number of microbes in the table.
 
-You can imagine that if we, for example, modeled dispersion as a function of both sample and microbe, we would get :math:`N x D` distributions where :math:`N` is the number of samples in our table.
+You can imagine that if we, for example, modeled dispersion as a function of both sample and microbe, we would get :math:`N \times D` distributions where :math:`N` is the number of samples in our table.
