@@ -126,6 +126,44 @@ class BaseModel(ABC):
         mcmc_kwargs: dict = None,
         vi_kwargs: dict = None
     ):
+        """Fit BIRDMAn model.
+
+        :param method: Method by which to fit model, either 'mcmc' (default)
+            for Markov Chain Monte Carlo or 'vi' for Variational Inference
+        :type method: str
+
+        :param num_draws: Number of output draws to sample from the posterior,
+            default is 500
+        :type num_draws: int
+
+        :param mcmc_warmup: Number of warmup iterations for MCMC sampling,
+            default is the same as num_draws
+        :type mcmc_warmup: int
+
+        :param mcmc_chains: Number of Markov chains to use for sampling,
+            default is 4
+        :type mcmc_chains: int
+
+        :param vi_iter: Number of ADVI iterations to use for VI, default is
+            1000
+        :type vi_iter: int
+
+        :param vi_grad_samples: Number of MC draws for computing the gradient,
+            default is 40
+        :type vi_grad_samples: int
+
+        :param vi_require_converged: Whether or not to raise an error if Stan
+            reports that “The algorithm may not have converged”, default is
+            False
+        :type vi_require_converged: bool
+
+        :param seed: Random seed to use for sampling, default is 42
+        :type seed: int
+
+        :param mcmc_kwargs: kwargs to pass into CmdStanModel.sample
+
+        :param vi_kwargs: kwargs to pass into CmdStanModel.variational
+        """
         if method == "mcmc":
             mcmc_kwargs = mcmc_kwargs or dict()
             mcmc_warmup = mcmc_warmup or mcmc_warmup
@@ -158,6 +196,17 @@ class BaseModel(ABC):
     def to_inference(self):
         """Convert fitted model to az.InferenceData."""
 
+    def _check_fit_for_inf(self):
+        if self.fit is None:
+            raise ValueError("Model has not been fit!")
+
+        # if already Inference, just return
+        if isinstance(self.fit, az.InferenceData):
+            return self.fit
+
+        if not self.specified:
+            raise ValueError("Model has not been specified!")
+
 
 class TableModel(BaseModel):
     """Fit a model on the entire table at once."""
@@ -174,15 +223,7 @@ class TableModel(BaseModel):
         :returns: ``arviz`` InferenceData object with selected values
         :rtype: az.InferenceData
         """
-        if self.fit is None:
-            raise ValueError("Model has not been fit!")
-
-        # if already Inference, just return
-        if isinstance(self.fit, az.InferenceData):
-            return self.fit
-
-        if not self.specified:
-            raise ValueError("Model has not been specified!")
+        self._check_fit_for_inf()
 
         inference = full_fit_to_inference(
             fit=self.fit,
@@ -227,15 +268,7 @@ class SingleFeatureModel(BaseModel):
         :returns: ``arviz`` InferenceData object with selected values
         :rtype: az.InferenceData
         """
-        if self.fit is None:
-            raise ValueError("Model has not been fit!")
-
-        # if already Inference, just return
-        if isinstance(self.fit, az.InferenceData):
-            return self.fit
-
-        if not self.specified:
-            raise ValueError("Model has not been specified!")
+        self._check_fit_for_inf()
 
         inference = single_feature_fit_to_inference(
             fit=self.fit,
