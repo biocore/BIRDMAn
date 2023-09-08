@@ -137,7 +137,21 @@ class BaseModel(ABC):
             param_dict = dict()
         self.dat.update(param_dict)
 
-    def fit_model(
+    def _fit_model_vi(
+        self,
+        sampler_args: dict = None
+    ):
+        if sampler_args is None:
+            sampler_args = dict()
+
+        _fit = self.sm.variational(
+            data=self.dat,
+            seed=self.seed,
+            **sampler_args,
+            iter=self.num_iter
+        )
+
+    def _fit_model_mcmc(
         self,
         sampler_args: dict = None,
         convert_to_inference: bool = False
@@ -178,6 +192,20 @@ class BaseModel(ABC):
                     f": \n{type(e).__name__}: {e}",
                     category=UserWarning
                 )
+
+    def fit_model(
+        self,
+        method: str = "mcmc",
+        sampler_args: dict = None,
+        convert_to_inference: bool = False
+    ):
+        if method == "mcmc":
+            self._fit_model_mcmc(sampler_args,
+                                 convert_to_inference=convert_to_inference)
+        elif method == "vi":
+            self._fit_model_vi(sampler_args)
+        else:
+            raise ValueError("method must be either 'mcmc' or 'vi'")
 
     @abstractmethod
     def to_inference(self):
