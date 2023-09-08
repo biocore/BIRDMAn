@@ -151,6 +151,8 @@ class BaseModel(ABC):
             iter=self.num_iter
         )
 
+        self.fit = _fit
+
     def _fit_model_mcmc(
         self,
         sampler_args: dict = None,
