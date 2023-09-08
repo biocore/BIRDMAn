@@ -132,7 +132,7 @@ class BaseModel(ABC):
             **vi_kwargs
         )
 
-        self.fit = _fit
+        return _fit
 
     def _fit_model_mcmc(
         self,
@@ -140,7 +140,6 @@ class BaseModel(ABC):
         mcmc_warmup,
         mcmc_chains,
         seed,
-        convert_to_inference,
         **mcmc_kwargs
     ):
         """Fit Stan model.
@@ -160,22 +159,10 @@ class BaseModel(ABC):
             iter_warmup=mcmc_warmup,
             iter_sampling=num_draws,
             seed=seed,
-            **kwargs
+            **mcmc_kwargs
         )
 
-        self.fit = _fit
-
-        # If auto-conversion fails, fit will be of type CmdStanMCMC
-        if convert_to_inference:
-            try:
-                self.fit = self.to_inference()
-            except Exception as e:
-                warnings.warn(
-                    "Auto conversion to InferenceData has failed! fit has "
-                    "been saved as CmdStanMCMC instead. See error message"
-                    f": \n{type(e).__name__}: {e}",
-                    category=UserWarning
-                )
+        return _fit
 
     def fit_model(
         self,
@@ -187,7 +174,6 @@ class BaseModel(ABC):
         vi_grad_samples: int = 40,
         vi_require_converged: bool = False,
         seed: float = 42,
-        convert_to_inference: bool = False,
         mcmc_kwargs: dict = None,
         vi_kwargs: dict = None
     ):
@@ -195,19 +181,17 @@ class BaseModel(ABC):
             mcmc_kwargs = mcmc_kwargs or dict()
             mcmc_warmup = mcmc_warmup or mcmc_warmup
 
-            self._fit_model_mcmc(
-                chains=mcmc_chains,
-                parallel_chains=mcmc_chains,
-                iter_warmup=mcmc_warmup,
-                iter_sampling=num_draw,
-                convert_to_inference=convert_to_inference,
+            self.fit = self._fit_model_mcmc(
+                mcmc_chains=mcmc_chains,
+                mcmc_warmup=mcmc_warmup,
+                num_draws=num_draws,
                 seed=seed,
                 **mcmc_kwargs
             )
         elif method == "vi":
             vi_kwargs = vi_kwargs or dict()
 
-            self._fit_model_vi(
+            self.fit = self._fit_model_vi(
                 vi_iter=vi_iter,
                 num_draws=num_draws,
                 vi_grad_samples=vi_grad_samples,

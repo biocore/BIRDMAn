@@ -305,10 +305,6 @@ class NegativeBinomialLME(TableModel):
         formula: str,
         group_var: str,
         metadata: pd.DataFrame,
-        num_iter: int = 500,
-        num_warmup: int = None,
-        chains: int = 4,
-        seed: float = 42,
         beta_prior: float = 5.0,
         inv_disp_sd: float = 0.5,
         group_var_prior: float = 1.0
@@ -317,10 +313,6 @@ class NegativeBinomialLME(TableModel):
         super().__init__(
             table=table,
             model_path=filepath,
-            num_iter=num_iter,
-            num_warmup=num_warmup,
-            chains=chains,
-            seed=seed,
         )
         self.create_regression(formula=formula, metadata=metadata)
 
