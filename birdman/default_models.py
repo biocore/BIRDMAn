@@ -56,19 +56,6 @@ class NegativeBinomial(TableModel):
     :param metadata: Metadata for design matrix
     :type metadata: pd.DataFrame
 
-    :param num_iter: Number of posterior sample draws, defaults to 500
-    :type num_iter: int
-
-    :param num_warmup: Number of posterior draws used for warmup, defaults to
-        num_iter
-    :type num_warmup: int
-
-    :param chains: Number of chains to use in MCMC, defaults to 4
-    :type chains: int
-
-    :param seed: Random seed to use for sampling, defaults to 42
-    :type seed: float
-
     :param beta_prior: Standard deviation for normally distributed prior values
         of beta, defaults to 5.0
     :type beta_prior: float
@@ -162,19 +149,6 @@ class NegativeBinomialSingle(SingleFeatureModel):
 
     :param metadata: Metadata for design matrix
     :type metadata: pd.DataFrame
-
-    :param num_iter: Number of posterior sample draws, defaults to 500
-    :type num_iter: int
-
-    :param num_warmup: Number of posterior draws used for warmup, defaults to
-        num_iter
-    :type num_warmup: int
-
-    :param chains: Number of chains to use in MCMC, defaults to 4
-    :type chains: int
-
-    :param seed: Random seed to use for sampling, defaults to 42
-    :type seed: float
 
     :param beta_prior: Standard deviation for normally distributed prior values
         of beta, defaults to 5.0
@@ -273,19 +247,6 @@ class NegativeBinomialLME(TableModel):
 
     :param metadata: Metadata for design matrix
     :type metadata: pd.DataFrame
-
-    :param num_iter: Number of posterior sample draws, defaults to 500
-    :type num_iter: int
-
-    :param num_warmup: Number of posterior draws used for warmup, defaults to
-        num_iter
-    :type num_warmup: int
-
-    :param chains: Number of chains to use in MCMC, defaults to 4
-    :type chains: int
-
-    :param seed: Random seed to use for sampling, defaults to 42
-    :type seed: float
 
     :param beta_prior: Standard deviation for normally distributed prior values
         of beta, defaults to 5.0
