@@ -9,7 +9,7 @@ from cmdstanpy import CmdStanModel
 import pandas as pd
 from patsy import dmatrix
 
-from .model_util import full_fit_to_inference, single_feature_fit_to_inference
+from .inference import full_fit_to_inference, single_feature_fit_to_inference
 
 
 class BaseModel(ABC):
