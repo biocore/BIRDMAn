@@ -82,10 +82,6 @@ class NegativeBinomial(TableModel):
         table: biom.table.Table,
         formula: str,
         metadata: pd.DataFrame,
-        num_iter: int = 500,
-        num_warmup: int = None,
-        chains: int = 4,
-        seed: float = 42,
         beta_prior: float = 5.0,
         inv_disp_sd: float = 0.5,
     ):
@@ -94,10 +90,6 @@ class NegativeBinomial(TableModel):
         super().__init__(
             table=table,
             model_path=filepath,
-            num_iter=num_iter,
-            num_warmup=num_warmup,
-            chains=chains,
-            seed=seed,
         )
         self.create_regression(formula=formula, metadata=metadata)
 
@@ -198,10 +190,6 @@ class NegativeBinomialSingle(SingleFeatureModel):
         feature_id: str,
         formula: str,
         metadata: pd.DataFrame,
-        num_iter: int = 500,
-        num_warmup: int = None,
-        chains: int = 4,
-        seed: float = 42,
         beta_prior: float = 5.0,
         inv_disp_sd: float = 0.5,
     ):
@@ -211,10 +199,6 @@ class NegativeBinomialSingle(SingleFeatureModel):
             table=table,
             feature_id=feature_id,
             model_path=filepath,
-            num_iter=num_iter,
-            num_warmup=num_warmup,
-            chains=chains,
-            seed=seed,
         )
         self.create_regression(formula=formula, metadata=metadata)
 

@@ -20,36 +20,12 @@ class BaseModel(ABC):
 
     :param model_path: Filepath to Stan model
     :type model_path: str
-
-    :param num_iter: Number of posterior sample draws, defaults to 500
-    :type num_iter: int
-
-    :param num_warmup: Number of posterior draws used for warmup, defaults to
-        num_iter
-    :type num_warmup: int
-
-    :param chains: Number of chains to use in MCMC, defaults to 4
-    :type chains: int
-
-    :param seed: Random seed to use for sampling, defaults to 42
-    :type seed: float
     """
     def __init__(
         self,
         table: biom.table.Table,
         model_path: str,
-        num_iter: int = 500,
-        num_warmup: int = None,
-        chains: int = 4,
-        seed: float = 42,
     ):
-        self.num_iter = num_iter
-        if num_warmup is None:
-            self.num_warmup = num_iter
-        else:
-            self.num_warmup = num_warmup
-        self.chains = chains
-        self.seed = seed
         self.sample_names = table.ids(axis="sample")
         self.model_path = model_path
         self.sm = None
@@ -139,24 +115,33 @@ class BaseModel(ABC):
 
     def _fit_model_vi(
         self,
-        sampler_args: dict = None
+        num_draws,
+        vi_iter,
+        vi_grad_samples,
+        vi_require_converged,
+        seed,
+        **vi_kwargs
     ):
-        if sampler_args is None:
-            sampler_args = dict()
-
         _fit = self.sm.variational(
             data=self.dat,
-            seed=self.seed,
-            **sampler_args,
-            iter=self.num_iter
+            iter=vi_iter,
+            output_samples=num_draws,
+            grad_samples=vi_grad_samples,
+            require_converged=vi_require_converged,
+            seed=seed,
+            **vi_kwargs
         )
 
         self.fit = _fit
 
     def _fit_model_mcmc(
         self,
-        sampler_args: dict = None,
-        convert_to_inference: bool = False
+        num_draws,
+        mcmc_warmup,
+        mcmc_chains,
+        seed,
+        convert_to_inference,
+        **mcmc_kwargs
     ):
         """Fit Stan model.
 
@@ -168,17 +153,14 @@ class BaseModel(ABC):
             inference given model specifications, defaults to False
         :type convert_to_inference: bool
         """
-        if sampler_args is None:
-            sampler_args = dict()
-
         _fit = self.sm.sample(
-            chains=self.chains,
-            parallel_chains=self.chains,
+            chains=mcmc_chains,
+            parallel_chains=mcmc_chains,
             data=self.dat,
-            iter_warmup=self.num_warmup,
-            iter_sampling=self.num_iter,
-            seed=self.seed,
-            **sampler_args
+            iter_warmup=mcmc_warmup,
+            iter_sampling=num_draws,
+            seed=seed,
+            **kwargs
         )
 
         self.fit = _fit
@@ -198,14 +180,41 @@ class BaseModel(ABC):
     def fit_model(
         self,
         method: str = "mcmc",
-        sampler_args: dict = None,
-        convert_to_inference: bool = False
+        num_draws: int = 500,
+        mcmc_warmup: int = None,
+        mcmc_chains: int = 4,
+        vi_iter: int = 1000,
+        vi_grad_samples: int = 40,
+        vi_require_converged: bool = False,
+        seed: float = 42,
+        convert_to_inference: bool = False,
+        mcmc_kwargs: dict = None,
+        vi_kwargs: dict = None
     ):
         if method == "mcmc":
-            self._fit_model_mcmc(sampler_args,
-                                 convert_to_inference=convert_to_inference)
+            mcmc_kwargs = mcmc_kwargs or dict()
+            mcmc_warmup = mcmc_warmup or mcmc_warmup
+
+            self._fit_model_mcmc(
+                chains=mcmc_chains,
+                parallel_chains=mcmc_chains,
+                iter_warmup=mcmc_warmup,
+                iter_sampling=num_draw,
+                convert_to_inference=convert_to_inference,
+                seed=seed,
+                **mcmc_kwargs
+            )
         elif method == "vi":
-            self._fit_model_vi(sampler_args)
+            vi_kwargs = vi_kwargs or dict()
+
+            self._fit_model_vi(
+                vi_iter=vi_iter,
+                num_draws=num_draws,
+                vi_grad_samples=vi_grad_samples,
+                vi_require_converged=vi_require_converged,
+                seed=seed,
+                **vi_kwargs
+            )
         else:
             raise ValueError("method must be either 'mcmc' or 'vi'")
 
