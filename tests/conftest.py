@@ -45,11 +45,9 @@ def model():
         table=tbl,
         formula="host_common_name",
         metadata=md,
-        num_iter=100,
-        chains=4,
     )
     nb.compile_model()
-    nb.fit_model()
+    nb.fit_model(mcmc_chains=4, num_draws=100)
     return nb
 
 
@@ -75,12 +73,10 @@ def single_feat_model():
         formula="host_common_name",
         metadata=md,
         feature_id=id0,
-        num_iter=100,
-        chains=4,
     )
 
     nb.compile_model()
-    nb.fit_model()
+    nb.fit_model(mcmc_chains=4, num_draws=100)
 
     return nb
 

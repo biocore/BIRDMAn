@@ -2,7 +2,6 @@ import os
 from pkg_resources import resource_filename
 
 import numpy as np
-import pytest
 
 from birdman import (NegativeBinomial, NegativeBinomialLME,
                      NegativeBinomialSingle, ModelIterator)
@@ -16,8 +15,6 @@ class TestModelInheritance:
             table=table_biom,
             formula="host_common_name",
             metadata=metadata,
-            chains=4,
-            seed=42,
             beta_prior=2.0,
             inv_disp_sd=0.5,
         )
@@ -35,8 +32,8 @@ class TestModelFit:
         num_cov = 2
         num_chains = 4
         num_table_feats = 28
-        num_iter = 100
-        num_draws = num_chains*num_iter
+        num_draws = 100
+        num_draws = num_chains*num_draws
         assert beta.shape == (num_draws, num_cov, num_table_feats - 1)
         assert inv_disp.shape == (num_draws, num_table_feats)
 
@@ -50,10 +47,9 @@ class TestModelFit:
             formula="host_common_name",
             group_var="group",
             metadata=md,
-            num_iter=100,
         )
         nb_lme.compile_model()
-        nb_lme.fit_model()
+        nb_lme.fit_model(num_draws=100)
 
         inf = nb_lme.to_inference()
         post = inf.posterior
@@ -70,30 +66,9 @@ class TestModelFit:
                 feature_id=fid,
                 formula="host_common_name",
                 metadata=md,
-                num_iter=100,
             )
             nb.compile_model()
-            nb.fit_model(convert_to_inference=True)
-
-    def test_fail_auto_conversion(self, table_biom, metadata):
-        nb = NegativeBinomial(
-            table=table_biom,
-            metadata=metadata,
-            formula="host_common_name",
-            num_iter=100,
-        )
-        nb.compile_model()
-        nb.specified = False
-        with pytest.warns(UserWarning) as r:
-            nb.fit_model(convert_to_inference=True)
-
-        e = "Model has not been specified!"
-        expected_warning = (
-            "Auto conversion to InferenceData has failed! fit has "
-            "been saved as CmdStanMCMC instead. See error message"
-            f": \nValueError: {e}"
-        )
-        assert r[0].message.args[0] == expected_warning
+            nb.fit_model(num_draws=100)
 
 
 class TestToInference:
@@ -129,9 +104,6 @@ class TestModelIterator:
             model=NegativeBinomialSingle,
             formula="host_common_name",
             metadata=metadata,
-            num_iter=100,
-            chains=4,
-            seed=42
         )
 
         iterated_feature_ids = []
@@ -155,9 +127,6 @@ class TestModelIterator:
             formula="host_common_name",
             num_chunks=3,
             metadata=metadata,
-            num_iter=100,
-            chains=4,
-            seed=42
         )
 
         tbl_fids = list(table_biom.ids("observation"))
@@ -186,12 +155,9 @@ class TestModelIterator:
             model=NegativeBinomialSingle,
             formula="host_common_name",
             metadata=metadata,
-            num_iter=100,
-            chains=4,
-            seed=42
         )
 
         for fit, model in model_iterator:
             model.compile_model()
-            model.fit_model()
+            model.fit_model(num_draws=100, mcmc_chains=4, seed=42)
             _ = model.to_inference()

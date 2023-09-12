@@ -56,19 +56,6 @@ class NegativeBinomial(TableModel):
     :param metadata: Metadata for design matrix
     :type metadata: pd.DataFrame
 
-    :param num_iter: Number of posterior sample draws, defaults to 500
-    :type num_iter: int
-
-    :param num_warmup: Number of posterior draws used for warmup, defaults to
-        num_iter
-    :type num_warmup: int
-
-    :param chains: Number of chains to use in MCMC, defaults to 4
-    :type chains: int
-
-    :param seed: Random seed to use for sampling, defaults to 42
-    :type seed: float
-
     :param beta_prior: Standard deviation for normally distributed prior values
         of beta, defaults to 5.0
     :type beta_prior: float
@@ -82,10 +69,6 @@ class NegativeBinomial(TableModel):
         table: biom.table.Table,
         formula: str,
         metadata: pd.DataFrame,
-        num_iter: int = 500,
-        num_warmup: int = None,
-        chains: int = 4,
-        seed: float = 42,
         beta_prior: float = 5.0,
         inv_disp_sd: float = 0.5,
     ):
@@ -94,10 +77,6 @@ class NegativeBinomial(TableModel):
         super().__init__(
             table=table,
             model_path=filepath,
-            num_iter=num_iter,
-            num_warmup=num_warmup,
-            chains=chains,
-            seed=seed,
         )
         self.create_regression(formula=formula, metadata=metadata)
 
@@ -171,19 +150,6 @@ class NegativeBinomialSingle(SingleFeatureModel):
     :param metadata: Metadata for design matrix
     :type metadata: pd.DataFrame
 
-    :param num_iter: Number of posterior sample draws, defaults to 500
-    :type num_iter: int
-
-    :param num_warmup: Number of posterior draws used for warmup, defaults to
-        num_iter
-    :type num_warmup: int
-
-    :param chains: Number of chains to use in MCMC, defaults to 4
-    :type chains: int
-
-    :param seed: Random seed to use for sampling, defaults to 42
-    :type seed: float
-
     :param beta_prior: Standard deviation for normally distributed prior values
         of beta, defaults to 5.0
     :type beta_prior: float
@@ -198,10 +164,6 @@ class NegativeBinomialSingle(SingleFeatureModel):
         feature_id: str,
         formula: str,
         metadata: pd.DataFrame,
-        num_iter: int = 500,
-        num_warmup: int = None,
-        chains: int = 4,
-        seed: float = 42,
         beta_prior: float = 5.0,
         inv_disp_sd: float = 0.5,
     ):
@@ -211,10 +173,6 @@ class NegativeBinomialSingle(SingleFeatureModel):
             table=table,
             feature_id=feature_id,
             model_path=filepath,
-            num_iter=num_iter,
-            num_warmup=num_warmup,
-            chains=chains,
-            seed=seed,
         )
         self.create_regression(formula=formula, metadata=metadata)
 
@@ -290,19 +248,6 @@ class NegativeBinomialLME(TableModel):
     :param metadata: Metadata for design matrix
     :type metadata: pd.DataFrame
 
-    :param num_iter: Number of posterior sample draws, defaults to 500
-    :type num_iter: int
-
-    :param num_warmup: Number of posterior draws used for warmup, defaults to
-        num_iter
-    :type num_warmup: int
-
-    :param chains: Number of chains to use in MCMC, defaults to 4
-    :type chains: int
-
-    :param seed: Random seed to use for sampling, defaults to 42
-    :type seed: float
-
     :param beta_prior: Standard deviation for normally distributed prior values
         of beta, defaults to 5.0
     :type beta_prior: float
@@ -321,10 +266,6 @@ class NegativeBinomialLME(TableModel):
         formula: str,
         group_var: str,
         metadata: pd.DataFrame,
-        num_iter: int = 500,
-        num_warmup: int = None,
-        chains: int = 4,
-        seed: float = 42,
         beta_prior: float = 5.0,
         inv_disp_sd: float = 0.5,
         group_var_prior: float = 1.0
@@ -333,10 +274,6 @@ class NegativeBinomialLME(TableModel):
         super().__init__(
             table=table,
             model_path=filepath,
-            num_iter=num_iter,
-            num_warmup=num_warmup,
-            chains=chains,
-            seed=seed,
         )
         self.create_regression(formula=formula, metadata=metadata)
 

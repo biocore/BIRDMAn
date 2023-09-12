@@ -1,6 +1,6 @@
 import numpy as np
 
-from birdman import model_util as mu
+from birdman import inference as mu
 
 
 class TestToInference:

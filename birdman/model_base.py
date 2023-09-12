@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from math import ceil
 from typing import Sequence
-import warnings
 
 import arviz as az
 import biom
@@ -9,7 +8,7 @@ from cmdstanpy import CmdStanModel
 import pandas as pd
 from patsy import dmatrix
 
-from .model_util import full_fit_to_inference, single_feature_fit_to_inference
+from .inference import full_fit_to_inference, single_feature_fit_to_inference
 
 
 class BaseModel(ABC):
@@ -20,36 +19,12 @@ class BaseModel(ABC):
 
     :param model_path: Filepath to Stan model
     :type model_path: str
-
-    :param num_iter: Number of posterior sample draws, defaults to 500
-    :type num_iter: int
-
-    :param num_warmup: Number of posterior draws used for warmup, defaults to
-        num_iter
-    :type num_warmup: int
-
-    :param chains: Number of chains to use in MCMC, defaults to 4
-    :type chains: int
-
-    :param seed: Random seed to use for sampling, defaults to 42
-    :type seed: float
     """
     def __init__(
         self,
         table: biom.table.Table,
         model_path: str,
-        num_iter: int = 500,
-        num_warmup: int = None,
-        chains: int = 4,
-        seed: float = 42,
     ):
-        self.num_iter = num_iter
-        if num_warmup is None:
-            self.num_warmup = num_iter
-        else:
-            self.num_warmup = num_warmup
-        self.chains = chains
-        self.seed = seed
         self.sample_names = table.ids(axis="sample")
         self.model_path = model_path
         self.sm = None
@@ -139,49 +114,97 @@ class BaseModel(ABC):
 
     def fit_model(
         self,
-        sampler_args: dict = None,
-        convert_to_inference: bool = False
+        method: str = "mcmc",
+        num_draws: int = 500,
+        mcmc_warmup: int = None,
+        mcmc_chains: int = 4,
+        vi_iter: int = 1000,
+        vi_grad_samples: int = 40,
+        vi_require_converged: bool = False,
+        seed: float = 42,
+        mcmc_kwargs: dict = None,
+        vi_kwargs: dict = None
     ):
-        """Fit Stan model.
+        """Fit BIRDMAn model.
 
-        :param sampler_args: Additional parameters to pass to CmdStanPy
-            sampler (optional)
-        :type sampler_args: dict
+        :param method: Method by which to fit model, either 'mcmc' (default)
+            for Markov Chain Monte Carlo or 'vi' for Variational Inference
+        :type method: str
 
-        :param convert_to_inference: Whether to automatically convert to
-            inference given model specifications, defaults to False
-        :type convert_to_inference: bool
+        :param num_draws: Number of output draws to sample from the posterior,
+            default is 500
+        :type num_draws: int
+
+        :param mcmc_warmup: Number of warmup iterations for MCMC sampling,
+            default is the same as num_draws
+        :type mcmc_warmup: int
+
+        :param mcmc_chains: Number of Markov chains to use for sampling,
+            default is 4
+        :type mcmc_chains: int
+
+        :param vi_iter: Number of ADVI iterations to use for VI, default is
+            1000
+        :type vi_iter: int
+
+        :param vi_grad_samples: Number of MC draws for computing the gradient,
+            default is 40
+        :type vi_grad_samples: int
+
+        :param vi_require_converged: Whether or not to raise an error if Stan
+            reports that “The algorithm may not have converged”, default is
+            False
+        :type vi_require_converged: bool
+
+        :param seed: Random seed to use for sampling, default is 42
+        :type seed: int
+
+        :param mcmc_kwargs: kwargs to pass into CmdStanModel.sample
+
+        :param vi_kwargs: kwargs to pass into CmdStanModel.variational
         """
-        if sampler_args is None:
-            sampler_args = dict()
+        if method == "mcmc":
+            mcmc_kwargs = mcmc_kwargs or dict()
+            mcmc_warmup = mcmc_warmup or mcmc_warmup
 
-        _fit = self.sm.sample(
-            chains=self.chains,
-            parallel_chains=self.chains,
-            data=self.dat,
-            iter_warmup=self.num_warmup,
-            iter_sampling=self.num_iter,
-            seed=self.seed,
-            **sampler_args
-        )
+            self.fit = self.sm.sample(
+                chains=mcmc_chains,
+                parallel_chains=mcmc_chains,
+                data=self.dat,
+                iter_warmup=mcmc_warmup,
+                iter_sampling=num_draws,
+                seed=seed,
+                **mcmc_kwargs
+            )
+        elif method == "vi":
+            vi_kwargs = vi_kwargs or dict()
 
-        self.fit = _fit
-
-        # If auto-conversion fails, fit will be of type CmdStanMCMC
-        if convert_to_inference:
-            try:
-                self.fit = self.to_inference()
-            except Exception as e:
-                warnings.warn(
-                    "Auto conversion to InferenceData has failed! fit has "
-                    "been saved as CmdStanMCMC instead. See error message"
-                    f": \n{type(e).__name__}: {e}",
-                    category=UserWarning
-                )
+            self.fit = self.sm.variational(
+                data=self.dat,
+                iter=vi_iter,
+                output_samples=num_draws,
+                grad_samples=vi_grad_samples,
+                require_converged=vi_require_converged,
+                seed=seed,
+                **vi_kwargs
+            )
+        else:
+            raise ValueError("method must be either 'mcmc' or 'vi'")
 
     @abstractmethod
     def to_inference(self):
         """Convert fitted model to az.InferenceData."""
+
+    def _check_fit_for_inf(self):
+        if self.fit is None:
+            raise ValueError("Model has not been fit!")
+
+        # if already Inference, just return
+        if isinstance(self.fit, az.InferenceData):
+            return self.fit
+
+        if not self.specified:
+            raise ValueError("Model has not been specified!")
 
 
 class TableModel(BaseModel):
@@ -199,15 +222,7 @@ class TableModel(BaseModel):
         :returns: ``arviz`` InferenceData object with selected values
         :rtype: az.InferenceData
         """
-        if self.fit is None:
-            raise ValueError("Model has not been fit!")
-
-        # if already Inference, just return
-        if isinstance(self.fit, az.InferenceData):
-            return self.fit
-
-        if not self.specified:
-            raise ValueError("Model has not been specified!")
+        self._check_fit_for_inf()
 
         inference = full_fit_to_inference(
             fit=self.fit,
@@ -252,15 +267,7 @@ class SingleFeatureModel(BaseModel):
         :returns: ``arviz`` InferenceData object with selected values
         :rtype: az.InferenceData
         """
-        if self.fit is None:
-            raise ValueError("Model has not been fit!")
-
-        # if already Inference, just return
-        if isinstance(self.fit, az.InferenceData):
-            return self.fit
-
-        if not self.specified:
-            raise ValueError("Model has not been specified!")
+        self._check_fit_for_inf()
 
         inference = single_feature_fit_to_inference(
             fit=self.fit,
