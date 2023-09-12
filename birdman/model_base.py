@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
+from functools import partial
 from math import ceil
 from typing import Sequence
 
 import arviz as az
 import biom
-from cmdstanpy import CmdStanModel
+from cmdstanpy import CmdStanModel, CmdStanMCMC, CmdStanVB
 import pandas as pd
 from patsy import dmatrix
 
@@ -167,6 +168,9 @@ class BaseModel(ABC):
             mcmc_kwargs = mcmc_kwargs or dict()
             mcmc_warmup = mcmc_warmup or mcmc_warmup
 
+            self.num_chains = mcmc_chains
+            self.num_draws = num_draws
+
             self.fit = self.sm.sample(
                 chains=mcmc_chains,
                 parallel_chains=mcmc_chains,
@@ -178,6 +182,9 @@ class BaseModel(ABC):
             )
         elif method == "vi":
             vi_kwargs = vi_kwargs or dict()
+
+            self.num_chains = 1
+            self.num_draws = num_draws
 
             self.fit = self.sm.variational(
                 data=self.dat,
@@ -226,6 +233,8 @@ class TableModel(BaseModel):
 
         inference = full_fit_to_inference(
             fit=self.fit,
+            chains=self.num_chains,
+            draws=self.num_draws,
             params=self.params,
             coords=self.coords,
             dims=self.dims,
@@ -246,6 +255,7 @@ class TableModel(BaseModel):
                 }
             )
             inference = az.concat(inference, obs)
+
         return inference
 
 

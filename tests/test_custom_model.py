@@ -43,7 +43,7 @@ def test_custom_model(table_biom, metadata):
     custom_model.fit_model(num_draws=100, mcmc_chains=4, seed=42)
     inference = custom_model.to_inference()
 
-    assert set(inference.groups()) == {"posterior", "sample_stats"}
+    assert set(inference.groups()) == {"posterior"}
     ds = inference.posterior
 
     assert ds.coords._names == {"chain", "covariate", "draw", "feature_alr"}

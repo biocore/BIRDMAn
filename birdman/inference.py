@@ -1,66 +1,63 @@
 from typing import List, Sequence
 
 import arviz as az
-from cmdstanpy import CmdStanMCMC
+from cmdstanpy import CmdStanMCMC, CmdStanVB
+import numpy as np
 import xarray as xr
 
 from .util import _drop_data
 
 
-def full_fit_to_inference(
-    fit: CmdStanMCMC,
-    params: Sequence[str],
-    coords: dict,
-    dims: dict,
-    alr_params: Sequence[str] = None,
-    posterior_predictive: str = None,
-    log_likelihood: str = None,
-) -> az.InferenceData:
-    """Convert fitted Stan model into inference object.
-
-    :param fit: Fitted model
-    :type params: CmdStanMCMC
-
-    :param params: Posterior fitted parameters to include
-    :type params: Sequence[str]
-
-    :param coords: Mapping of entries in dims to labels
-    :type coords: dict
-
-    :param dims: Dimensions of parameters in the model
-    :type dims: dict
-
-    :param alr_params: Parameters to convert from ALR to CLR
-    :type alr_params: Sequence[str], optional
-
-    :param posterior_predictive: Name of posterior predictive values from
-        Stan model to include in ``arviz`` InferenceData object
-    :type posterior_predictive: str, optional
-
-    :param log_likelihood: Name of log likelihood values from Stan model
-        to include in ``arviz`` InferenceData object
-    :type log_likelihood: str, optional
-
-    :returns: ``arviz`` InferenceData object with selected values
-    :rtype: az.InferenceData
-    """
-    if log_likelihood is not None and log_likelihood not in dims:
-        raise KeyError("Must include dimensions for log-likelihood!")
-    if posterior_predictive is not None and posterior_predictive not in dims:
-        raise KeyError("Must include dimensions for posterior predictive!")
-
-    inference = az.from_cmdstanpy(
-        fit,
-        coords=coords,
-        log_likelihood=log_likelihood,
-        posterior_predictive=posterior_predictive,
-        dims=dims
-    )
-
-    vars_to_drop = set(inference.posterior.data_vars).difference(params)
-    inference.posterior = _drop_data(inference.posterior, vars_to_drop)
-
-    return inference
+# def full_fit_to_inference(
+#     fit: CmdStanMCMC,
+#     params: Sequence[str],
+#     coords: dict,
+#     dims: dict,
+#     posterior_predictive: str = None,
+#     log_likelihood: str = None,
+# ) -> az.InferenceData:
+#     """Convert fitted Stan model into inference object.
+# 
+#     :param fit: Fitted model
+#     :type params: CmdStanMCMC
+# 
+#     :param params: Posterior fitted parameters to include
+#     :type params: Sequence[str]
+# 
+#     :param coords: Mapping of entries in dims to labels
+#     :type coords: dict
+# 
+#     :param dims: Dimensions of parameters in the model
+#     :type dims: dict
+# 
+#     :param posterior_predictive: Name of posterior predictive values from
+#         Stan model to include in ``arviz`` InferenceData object
+#     :type posterior_predictive: str, optional
+# 
+#     :param log_likelihood: Name of log likelihood values from Stan model
+#         to include in ``arviz`` InferenceData object
+#     :type log_likelihood: str, optional
+# 
+#     :returns: ``arviz`` InferenceData object with selected values
+#     :rtype: az.InferenceData
+#     """
+#     if log_likelihood is not None and log_likelihood not in dims:
+#         raise KeyError("Must include dimensions for log-likelihood!")
+#     if posterior_predictive is not None and posterior_predictive not in dims:
+#         raise KeyError("Must include dimensions for posterior predictive!")
+# 
+#     inference = az.from_cmdstanpy(
+#         fit,
+#         coords=coords,
+#         log_likelihood=log_likelihood,
+#         posterior_predictive=posterior_predictive,
+#         dims=dims
+#     )
+# 
+#     vars_to_drop = set(inference.posterior.data_vars).difference(params)
+#     inference.posterior = _drop_data(inference.posterior, vars_to_drop)
+# 
+#     return inference
 
 
 def single_feature_fit_to_inference(
@@ -165,3 +162,83 @@ def concatenate_inferences(
         all_group_inferences.append(group_inf)
 
     return az.concat(*all_group_inferences)
+
+
+def stan_var_to_da(
+    data: np.ndarray,
+    coords: dict,
+    dims: dict,
+    chains: int,
+    draws: int
+):
+    """Convert Stan variable draws to xr.DataArray.
+
+    """
+    data = np.stack(np.split(data, chains))
+
+    coords["draw"] = np.arange(draws)
+    coords["chain"] = np.arange(chains)
+    dims = ["chain", "draw"] + dims
+
+    da = xr.DataArray(
+        data,
+        coords=coords,
+        dims=dims,
+    )
+    return da
+
+
+def full_fit_to_inference(
+    fit: CmdStanVB,
+    chains: int,
+    draws: int,
+    params: Sequence[str],
+    coords: dict,
+    dims: dict,
+    posterior_predictive: str = None,
+    log_likelihood: str = None,
+):
+    if log_likelihood is not None and log_likelihood not in dims:
+        raise KeyError("Must include dimensions for log-likelihood!")
+    if posterior_predictive is not None and posterior_predictive not in dims:
+        raise KeyError("Must include dimensions for posterior predictive!")
+
+    das = dict()
+
+    for param in params:
+        data = fit.stan_variable(param)
+
+        _dims = dims[param]
+        _coords = {k: coords[k] for k in _dims}
+
+        das[param] = stan_var_to_da(data, _coords, _dims, chains, draws)
+
+    if log_likelihood:
+        data = fit.stan_variable(log_likelihood)
+
+        _dims = dims[log_likelihood]
+        _coords = {k: coords[k] for k in _dims}
+
+        ll_da = stan_var_to_da(data, _coords, _dims, chains, draws)
+        ll_ds = xr.Dataset({log_likelihood: ll_da})
+    else:
+        ll_ds = None
+
+    if posterior_predictive:
+        data = fit.stan_variable(posterior_predictive)
+
+        _dims = dims[posterior_predictive]
+        _coords = {k: coords[k] for k in _dims}
+
+        pp_da = stan_var_to_da(data, _coords, _dims, chains, draws)
+        pp_ds = xr.Dataset({posterior_predictive: pp_da})
+    else:
+        pp_ds = None
+
+    inf = az.InferenceData(
+        posterior=xr.Dataset(das),
+        log_likelihood=ll_ds,
+        posterior_predictive=pp_ds
+    )
+
+    return inf

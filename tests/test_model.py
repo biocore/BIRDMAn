@@ -74,7 +74,7 @@ class TestModelFit:
 class TestToInference:
     def test_serial_to_inference(self, example_model):
         inference_data = example_model.to_inference()
-        target_groups = {"posterior", "sample_stats", "log_likelihood",
+        target_groups = {"posterior", "log_likelihood",
                          "posterior_predictive", "observed_data"}
         assert set(inference_data.groups()) == target_groups
 
