@@ -1,7 +1,6 @@
 import re
 from typing import Sequence
 
-import arviz as az
 import xarray as xr
 
 

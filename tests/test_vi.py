@@ -1,7 +1,5 @@
-from pkg_resources import resource_filename
+from birdman import NegativeBinomial, NegativeBinomialSingle
 
-from birdman import (NegativeBinomial, NegativeBinomialLME,
-                     NegativeBinomialSingle, ModelIterator)
 
 def test_nb_fit_vi(table_biom, metadata):
     nb = NegativeBinomial(

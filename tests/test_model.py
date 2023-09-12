@@ -2,7 +2,6 @@ import os
 from pkg_resources import resource_filename
 
 import numpy as np
-import pytest
 
 from birdman import (NegativeBinomial, NegativeBinomialLME,
                      NegativeBinomialSingle, ModelIterator)

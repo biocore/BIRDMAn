@@ -1,4 +1,4 @@
-from typing import List, Sequence, Union
+from typing import List, Sequence
 
 import arviz as az
 from cmdstanpy import CmdStanMCMC

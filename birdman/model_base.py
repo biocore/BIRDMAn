@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from math import ceil
 from typing import Sequence
-import warnings
 
 import arviz as az
 import biom
