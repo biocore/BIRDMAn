@@ -7,8 +7,10 @@ from birdman.transform import posterior_alr_to_clr
 
 
 def test_custom_model(table_biom, metadata):
-    # Negative binomial model with separate prior values for intercept &
-    # host_common_name effect and constant overdispersion parameter.
+    # Negative binomial model with constant overdispersion parameter.
+    D = table_biom.shape[0]
+    A = np.log(1 / D)
+
     custom_model = TableModel(
         table=table_biom,
         model_path=resource_filename("tests", "custom_model.stan"),
@@ -19,10 +21,10 @@ def test_custom_model(table_biom, metadata):
     )
     custom_model.add_parameters(
         {
-            "B_p_1": 2.0,
-            "B_p_2": 5.0,
+            "B_p": 2.0,
             "phi_s": 0.2,
             "depth": np.log(table_biom.sum(axis="sample")),
+            "A": A
         }
     )
     custom_model.specify_model(
