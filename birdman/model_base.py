@@ -1,15 +1,14 @@
 from abc import ABC, abstractmethod
-from functools import partial
 from math import ceil
 from typing import Sequence
 
 import arviz as az
 import biom
-from cmdstanpy import CmdStanModel, CmdStanMCMC, CmdStanVB
+from cmdstanpy import CmdStanModel
 import pandas as pd
 from patsy import dmatrix
 
-from .inference import full_fit_to_inference, single_feature_fit_to_inference
+from .inference import fit_to_inference
 
 
 class BaseModel(ABC):
@@ -231,7 +230,7 @@ class TableModel(BaseModel):
         """
         self._check_fit_for_inf()
 
-        inference = full_fit_to_inference(
+        inference = fit_to_inference(
             fit=self.fit,
             chains=self.num_chains,
             draws=self.num_draws,
@@ -279,7 +278,7 @@ class SingleFeatureModel(BaseModel):
         """
         self._check_fit_for_inf()
 
-        inference = single_feature_fit_to_inference(
+        inference = fit_to_inference(
             fit=self.fit,
             chains=self.num_chains,
             draws=self.num_draws,

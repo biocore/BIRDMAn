@@ -5,10 +5,8 @@ from cmdstanpy import CmdStanMCMC, CmdStanVB
 import numpy as np
 import xarray as xr
 
-from .util import _drop_data
 
-
-def single_feature_fit_to_inference(
+def fit_to_inference(
     fit: Union[CmdStanMCMC, CmdStanVB],
     chains: int,
     draws: int,
@@ -17,50 +15,51 @@ def single_feature_fit_to_inference(
     dims: dict,
     posterior_predictive: str = None,
     log_likelihood: str = None,
-) -> az.InferenceData:
-    """Convert single feature fit to InferenceData.
+):
+    if log_likelihood is not None and log_likelihood not in dims:
+        raise KeyError("Must include dimensions for log-likelihood!")
+    if posterior_predictive is not None and posterior_predictive not in dims:
+        raise KeyError("Must include dimensions for posterior predictive!")
 
-    :param fit: Single feature fit with CmdStanPy
-    :type fit: cmdstanpy.CmdStanMCMC
+    das = dict()
 
-    :param params: Posterior fitted parameters to include
-    :type params: Sequence[str]
+    for param in params:
+        data = fit.stan_variable(param)
 
-    :param coords: Coordinates to use for annotating Inference dims
-    :type coords: dict
+        _dims = dims[param]
+        _coords = {k: coords[k] for k in _dims}
 
-    :param dims: Dimensions of parameters in fitted model
-    :type dims: dict
+        das[param] = stan_var_to_da(data, _coords, _dims, chains, draws)
 
-    :param posterior_predictive: Name of variable holding PP values
-    :type posterior_predictive: str
+    if log_likelihood:
+        data = fit.stan_variable(log_likelihood)
 
-    :param log_likelihood: Name of variable holding LL values
-    :type log_likelihood: str
+        _dims = dims[log_likelihood]
+        _coords = {k: coords[k] for k in _dims}
 
-    :returns: InferenceData object of single feature
-    :rtype: az.InferenceData
-    """
-    _coords = coords.copy()
-    if "feature" in coords:
-        _coords.pop("feature")
+        ll_da = stan_var_to_da(data, _coords, _dims, chains, draws)
+        ll_ds = xr.Dataset({log_likelihood: ll_da})
+    else:
+        ll_ds = None
 
-    _dims = dims.copy()
-    for k, v in _dims.items():
-        if "feature" in v:
-            v.remove("feature")
+    if posterior_predictive:
+        data = fit.stan_variable(posterior_predictive)
 
-    feat_inf = full_fit_to_inference(
-        fit,
-        chains,
-        draws,
-        params,
-        _coords,
-        _dims,
-        log_likelihood=log_likelihood,
-        posterior_predictive=posterior_predictive
+        _dims = dims[posterior_predictive]
+        _coords = {k: coords[k] for k in _dims}
+
+        pp_da = stan_var_to_da(data, _coords, _dims, chains, draws)
+        pp_ds = xr.Dataset({posterior_predictive: pp_da})
+    else:
+        pp_ds = None
+
+    inf = az.InferenceData(
+        posterior=xr.Dataset(das),
+        log_likelihood=ll_ds,
+        posterior_predictive=pp_ds
     )
-    return feat_inf
+
+    return inf
 
 
 def concatenate_inferences(
@@ -137,59 +136,3 @@ def stan_var_to_da(
         dims=dims,
     )
     return da
-
-
-def full_fit_to_inference(
-    fit: Union[CmdStanMCMC, CmdStanVB],
-    chains: int,
-    draws: int,
-    params: Sequence[str],
-    coords: dict,
-    dims: dict,
-    posterior_predictive: str = None,
-    log_likelihood: str = None,
-):
-    if log_likelihood is not None and log_likelihood not in dims:
-        raise KeyError("Must include dimensions for log-likelihood!")
-    if posterior_predictive is not None and posterior_predictive not in dims:
-        raise KeyError("Must include dimensions for posterior predictive!")
-
-    das = dict()
-
-    for param in params:
-        data = fit.stan_variable(param)
-
-        _dims = dims[param]
-        _coords = {k: coords[k] for k in _dims}
-
-        das[param] = stan_var_to_da(data, _coords, _dims, chains, draws)
-
-    if log_likelihood:
-        data = fit.stan_variable(log_likelihood)
-
-        _dims = dims[log_likelihood]
-        _coords = {k: coords[k] for k in _dims}
-
-        ll_da = stan_var_to_da(data, _coords, _dims, chains, draws)
-        ll_ds = xr.Dataset({log_likelihood: ll_da})
-    else:
-        ll_ds = None
-
-    if posterior_predictive:
-        data = fit.stan_variable(posterior_predictive)
-
-        _dims = dims[posterior_predictive]
-        _coords = {k: coords[k] for k in _dims}
-
-        pp_da = stan_var_to_da(data, _coords, _dims, chains, draws)
-        pp_ds = xr.Dataset({posterior_predictive: pp_da})
-    else:
-        pp_ds = None
-
-    inf = az.InferenceData(
-        posterior=xr.Dataset(das),
-        log_likelihood=ll_ds,
-        posterior_predictive=pp_ds
-    )
-
-    return inf

@@ -26,7 +26,7 @@ class TestToInference:
         assert (ds.coords["chain"] == [0, 1, 2, 3]).all()
 
     def test_serial_to_inference(self, example_model):
-        inf = mu.full_fit_to_inference(
+        inf = mu.fit_to_inference(
             fit=example_model.fit,
             chains=4,
             draws=100,
@@ -50,7 +50,7 @@ class TestToInference:
 # Posterior predictive & log likelihood
 class TestPPLL:
     def test_serial_ppll(self, example_model):
-        inf = mu.full_fit_to_inference(
+        inf = mu.fit_to_inference(
             fit=example_model.fit,
             chains=4,
             draws=100,
