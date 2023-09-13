@@ -281,6 +281,8 @@ class SingleFeatureModel(BaseModel):
 
         inference = single_feature_fit_to_inference(
             fit=self.fit,
+            chains=self.num_chains,
+            draws=self.num_draws,
             params=self.params,
             coords=self.coords,
             dims=self.dims,

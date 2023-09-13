@@ -1,4 +1,4 @@
-from typing import List, Sequence
+from typing import List, Sequence, Union
 
 import arviz as az
 from cmdstanpy import CmdStanMCMC, CmdStanVB
@@ -8,60 +8,10 @@ import xarray as xr
 from .util import _drop_data
 
 
-# def full_fit_to_inference(
-#     fit: CmdStanMCMC,
-#     params: Sequence[str],
-#     coords: dict,
-#     dims: dict,
-#     posterior_predictive: str = None,
-#     log_likelihood: str = None,
-# ) -> az.InferenceData:
-#     """Convert fitted Stan model into inference object.
-# 
-#     :param fit: Fitted model
-#     :type params: CmdStanMCMC
-# 
-#     :param params: Posterior fitted parameters to include
-#     :type params: Sequence[str]
-# 
-#     :param coords: Mapping of entries in dims to labels
-#     :type coords: dict
-# 
-#     :param dims: Dimensions of parameters in the model
-#     :type dims: dict
-# 
-#     :param posterior_predictive: Name of posterior predictive values from
-#         Stan model to include in ``arviz`` InferenceData object
-#     :type posterior_predictive: str, optional
-# 
-#     :param log_likelihood: Name of log likelihood values from Stan model
-#         to include in ``arviz`` InferenceData object
-#     :type log_likelihood: str, optional
-# 
-#     :returns: ``arviz`` InferenceData object with selected values
-#     :rtype: az.InferenceData
-#     """
-#     if log_likelihood is not None and log_likelihood not in dims:
-#         raise KeyError("Must include dimensions for log-likelihood!")
-#     if posterior_predictive is not None and posterior_predictive not in dims:
-#         raise KeyError("Must include dimensions for posterior predictive!")
-# 
-#     inference = az.from_cmdstanpy(
-#         fit,
-#         coords=coords,
-#         log_likelihood=log_likelihood,
-#         posterior_predictive=posterior_predictive,
-#         dims=dims
-#     )
-# 
-#     vars_to_drop = set(inference.posterior.data_vars).difference(params)
-#     inference.posterior = _drop_data(inference.posterior, vars_to_drop)
-# 
-#     return inference
-
-
 def single_feature_fit_to_inference(
-    fit: CmdStanMCMC,
+    fit: Union[CmdStanMCMC, CmdStanVB],
+    chains: int,
+    draws: int,
     params: Sequence[str],
     coords: dict,
     dims: dict,
@@ -100,15 +50,16 @@ def single_feature_fit_to_inference(
         if "feature" in v:
             v.remove("feature")
 
-    feat_inf = az.from_cmdstanpy(
-        posterior=fit,
-        posterior_predictive=posterior_predictive,
+    feat_inf = full_fit_to_inference(
+        fit,
+        chains,
+        draws,
+        params,
+        _coords,
+        _dims,
         log_likelihood=log_likelihood,
-        coords=_coords,
-        dims=_dims
+        posterior_predictive=posterior_predictive
     )
-    vars_to_drop = set(feat_inf.posterior.data_vars).difference(params)
-    feat_inf.posterior = _drop_data(feat_inf.posterior, vars_to_drop)
     return feat_inf
 
 
@@ -189,7 +140,7 @@ def stan_var_to_da(
 
 
 def full_fit_to_inference(
-    fit: CmdStanVB,
+    fit: Union[CmdStanMCMC, CmdStanVB],
     chains: int,
     draws: int,
     params: Sequence[str],
