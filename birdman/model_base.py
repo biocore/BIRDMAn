@@ -28,7 +28,6 @@ class BaseModel(ABC):
         self.sample_names = table.ids(axis="sample")
         self.model_path = model_path
         self.sm = None
-        self.fit = None
 
         self.dat = {
             "D": table.shape[0],  # number of features
@@ -202,12 +201,11 @@ class BaseModel(ABC):
         """Convert fitted model to az.InferenceData."""
 
     def _check_fit_for_inf(self):
-        if self.fit is None:
+        """Check if model has been fit."""
+        try:
+            getattr(self, "fit")
+        except AttributeError:
             raise ValueError("Model has not been fit!")
-
-        # if already Inference, just return
-        if isinstance(self.fit, az.InferenceData):
-            return self.fit
 
         if not self.specified:
             raise ValueError("Model has not been specified!")
