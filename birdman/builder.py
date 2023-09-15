@@ -24,6 +24,38 @@ def create_single_feature_model(
     group_var_prior: float = 1.0,
     inv_disp_sd_prior: float = 0.5
 ) -> SingleFeatureModel:
+    """Build SingleFeatureModel.
+
+    :param table: Feature table (features x samples)
+    :type table: biom.table.Table
+
+    :param metadata: Metadata for design matrix
+    :type metadata: pd.DataFrame
+
+    :param stan_file: Path to save rendered Stan file
+    :type stan_file: pathlib.Path
+
+    :param fixed_effects: List of fixed effects to include in model
+    :type fixed_effects: list
+
+    :param random_effects: List of random effects to include in model
+    :type random_effects: list
+
+    :param beta_prior: Standard deviation for normally distributed prior values
+        of beta, defaults to 5.0
+    :type beta_prior: float
+
+    :param group_var_prior: Standard deviation for normally distributed prior
+        values of random effects, defaults to 1.0
+    :type group_var_prio: float
+
+    :param inv_disp_sd_prior: Standard deviation for lognormally distributed
+        prior values of 1/phi, defaults to 0.5
+    :type inv_disp_sd: float
+
+    :returns: SingleFeatureModel with specified fixed and random effects
+    :rtype: birdman.model_base.SingleFeatureModel
+    """
     if not set(table.ids()) == set(metadata.index):
         raise ValueError("Sample IDs must match!")
 
@@ -102,6 +134,38 @@ def create_table_model(
     group_var_prior: float = 1.0,
     inv_disp_sd_prior: float = 0.5
 ):
+    """Build TableModel.
+
+    :param table: Feature table (features x samples)
+    :type table: biom.table.Table
+
+    :param metadata: Metadata for design matrix
+    :type metadata: pd.DataFrame
+
+    :param stan_file: Path to save rendered Stan file
+    :type stan_file: pathlib.Path
+
+    :param fixed_effects: List of fixed effects to include in model
+    :type fixed_effects: list
+
+    :param random_effects: List of random effects to include in model
+    :type random_effects: list
+
+    :param beta_prior: Standard deviation for normally distributed prior values
+        of beta, defaults to 5.0
+    :type beta_prior: float
+
+    :param group_var_prior: Standard deviation for normally distributed prior
+        values of random effects, defaults to 1.0
+    :type group_var_prio: float
+
+    :param inv_disp_sd_prior: Standard deviation for lognormally distributed
+        prior values of 1/phi, defaults to 0.5
+    :type inv_disp_sd_prior: float
+
+    :returns: TableModel with specified fixed and random effects
+    :rtype: birdman.model_base.TableModel
+    """
     if not set(table.ids()) == set(metadata.index):
         raise ValueError("Sample IDs must match!")
 
@@ -168,7 +232,21 @@ def _render_stanfile(
     template_path: Path,
     metadata: pd.DataFrame,
     random_effects: list = None
-):
+) -> str:
+    """Render Stan file given fixed and random effects.
+
+    :param template_path: Path to Jinja2 template file
+    :type template_path: pathlib.Path
+
+    :param metadata: Metadata for design matrix
+    :type metadata: pd.DataFrame
+
+    :param random_effects: List of random effects to include in model
+    :type random_effects: list
+
+    :returns: Rendred Jinja2 template
+    :rtype: str
+    """
     re_dict = dict()
     for group in random_effects:
         n = len(metadata[group].unique())
