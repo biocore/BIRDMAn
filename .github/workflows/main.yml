@@ -21,7 +21,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9"]
+        python-version: ["3.8", "3.9", "3.10"]
 
     steps:
       - uses: actions/checkout@v2
@@ -44,7 +44,9 @@ jobs:
       # Temp req before CmdStanPy cuts a new release
       - name: Install develop branch of CmdStanPy
         shell: bash -l {0}
-        run: pip install git+https://github.com/stan-dev/cmdstanpy.git@develop
+        run: >
+          pip install git+https://github.com/stan-dev/cmdstanpy.git@develop;
+          install_cmdstan
 
       - name: Install BIRDMAn
         shell: bash -l {0}
