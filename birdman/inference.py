@@ -15,7 +15,38 @@ def fit_to_inference(
     dims: dict,
     posterior_predictive: str = None,
     log_likelihood: str = None,
-):
+) -> az.InferenceData:
+    """Convert fitted Stan object to ArviZ InferenceData.
+
+    :param fit: Fitted model, either from MCMC or VI
+    :type fit: CmdStanMCMC or CmdStanVB
+
+    :param chains: Number of chains used for sampling
+    :type chains: int
+
+    :param draws: Number of posterior draws
+    :type draws: int
+
+    :param params: Posterior fitted parameters to include
+    :type params: Sequence[str]
+
+    :param coords: Mapping of entries in dims to labels
+    :type coords: dict
+
+    :param dims: Dimensions of parameters in the model
+    :type dims: dict
+
+    :param posterior_predictive: Name of posterior predictive values from
+        Stan model to include in ``arviz`` InferenceData object
+    :type posterior_predictive: str, optional
+
+    :param log_likelihood: Name of log likelihood values from Stan model
+        to include in ``arviz`` InferenceData object
+    :type log_likelihood: str, optional
+
+    :returns: Fit in InferenceData format
+    :rtype: az.InferenceData
+    """
     if log_likelihood is not None and log_likelihood not in dims:
         raise KeyError("Must include dimensions for log-likelihood!")
     if posterior_predictive is not None and posterior_predictive not in dims:
@@ -120,9 +151,26 @@ def stan_var_to_da(
     dims: dict,
     chains: int,
     draws: int
-):
+) -> xr.DataArray:
     """Convert Stan variable draws to xr.DataArray.
 
+    :param data: Output of stan_variable method from VB or MCMC
+    :type data: np.ndarray
+
+    :param coords: Mapping of entries in dims to labels
+    :type coords: dict
+
+    :param dims: Dimensions of parameters in the model
+    :type dims: dict
+
+    :param chains: Number of chains included in data
+    :type chains: int
+
+    :param draws: Number of posterio draws
+    :type draws: int
+
+    :returns: xarray DataArray of posterior draws split by chain & draw
+    :rtype: xr.DataArray
     """
     data = np.stack(np.split(data, chains))
 
@@ -135,4 +183,5 @@ def stan_var_to_da(
         coords=coords,
         dims=dims,
     )
+
     return da
