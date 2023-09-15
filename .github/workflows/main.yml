@@ -39,16 +39,21 @@ jobs:
 
       - name: Install conda packages
         shell: bash -l {0}
-        run: mamba install -c conda-forge biom-format patsy pytest xarray scikit-bio flake8 arviz cmdstanpy
+        run: mamba install -c conda-forge biom-format patsy pytest xarray scikit-bio flake8 arviz
+
+      # Temp req before CmdStanPy cuts a new release
+      - name: Install develop branch of CmdStanPy
+        shell: bash -l {0}
+        run: pip install git+https://github.com/stan-dev/cmdstanpy.git@develop
 
       - name: Install BIRDMAn
         shell: bash -l {0}
         run: pip install -e .[dev]
 
-      - name: Check style
-        shell: bash -l {0}
-        run: flake8 birdman/*.py tests/*.py setup.py
-
       - name: Run tests
         shell: bash -l {0}
         run: pytest --disable-pytest-warnings
+
+      - name: Check style
+        shell: bash -l {0}
+        run: flake8 birdman/*.py tests/*.py setup.py
