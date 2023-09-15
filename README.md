@@ -1,6 +1,6 @@
 # BIRDMAn
 
-[![GitHub Actions CI](https://github.com/gibsramen/birdman/workflows/BIRDMAn%20CI/badge.svg)](https://github.com/gibsramen/BIRDMAn/actions)
+[![GitHub Actions CI](https://github.com/biocore/birdman/workflows/BIRDMAn%20CI/badge.svg)](https://github.com/biocore/BIRDMAn/actions)
 [![Documentation Status](https://readthedocs.org/projects/birdman/badge/?version=stable)](https://birdman.readthedocs.io/en/stable/?badge=stable)
 [![PyPI](https://img.shields.io/pypi/v/birdman.svg)](https://pypi.org/project/birdman)
 [![DOI](https://zenodo.org/badge/312046610.svg)](https://zenodo.org/badge/latestdoi/312046610)
