@@ -2,7 +2,7 @@ data {
   int<lower=1> N;             // number of samples
   int<lower=1> p;             // number of covariates
   real A;                     // mean intercept
-  vector[N] depth;            // log sequencing depths of microbes
+  vector[N] depth;        // log sequencing depths of microbes
   matrix[N, p] x;             // covariate matrix
   array[N] int y;             // observed microbe abundances
 
@@ -24,7 +24,7 @@ parameters {
 
   // Random Effects
   {%- for re_name, num_factors in re_dict.items() %}
-  vector[{{ num_factors }}] {{ re_name }};
+  vector[{{ num_factors }}] {{ re_name }}_eff;
   {%- endfor %}
   // End Random Effects
 }
@@ -36,7 +36,7 @@ transformed parameters {
   // Random Effects
   for (n in 1:N) {
     {%- for re_name, num_factors in re_dict.items() %}
-    lam[n] += {{ re_name }}[{{ re_name }}_map[n]];
+    lam[n] += {{ re_name }}_eff[{{ re_name }}_map[n]];
     {%- endfor %}
   }
   // End Random Effects
@@ -49,7 +49,7 @@ model {
 
   // Random Effects
   {%- for re_name, num_factors in re_dict.items() %}
-  {{ re_name }} ~ normal(0, re_p);
+  {{ re_name }}_eff ~ normal(0, re_p);
   {%- endfor %}
   // End Random Effects
 
