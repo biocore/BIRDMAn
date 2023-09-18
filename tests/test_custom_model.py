@@ -40,7 +40,7 @@ def test_custom_model(table_biom, metadata):
         },
     )
     custom_model.compile_model()
-    custom_model.fit_model(num_draws=100, mcmc_chains=4, seed=42)
+    custom_model.fit_model(method="mcmc", num_draws=100, mcmc_chains=4, seed=42)
     inference = custom_model.to_inference()
 
     assert set(inference.groups()) == {"posterior"}

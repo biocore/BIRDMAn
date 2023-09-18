@@ -114,7 +114,7 @@ class BaseModel(ABC):
 
     def fit_model(
         self,
-        method: str = "mcmc",
+        method: str = "vi",
         num_draws: int = 500,
         mcmc_warmup: int = None,
         mcmc_chains: int = 4,

@@ -49,7 +49,7 @@ class TestModelFit:
             metadata=md,
         )
         nb_lme.compile_model()
-        nb_lme.fit_model(num_draws=100)
+        nb_lme.fit_model(method="mcmc", num_draws=100)
 
         inf = nb_lme.to_inference()
         post = inf.posterior
@@ -68,7 +68,7 @@ class TestModelFit:
                 metadata=md,
             )
             nb.compile_model()
-            nb.fit_model(num_draws=100)
+            nb.fit_model(method="mcmc", num_draws=100)
 
 
 class TestToInference:
@@ -159,5 +159,5 @@ class TestModelIterator:
 
         for fit, model in model_iterator:
             model.compile_model()
-            model.fit_model(num_draws=100, mcmc_chains=4, seed=42)
+            model.fit_model(method="mcmc", num_draws=100, mcmc_chains=4, seed=42)
             _ = model.to_inference()
