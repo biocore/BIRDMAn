@@ -193,7 +193,8 @@ class NegativeBinomialSingle(SingleFeatureModel):
             dims={
                 "beta_var": ["covariate"],
                 "log_lhood": ["tbl_sample"],
-                "y_predict": ["tbl_sample"]
+                "y_predict": ["tbl_sample"],
+                "inv_disp": []
             },
             coords={
                 "covariate": self.colnames,

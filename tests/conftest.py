@@ -47,7 +47,7 @@ def model():
         metadata=md,
     )
     nb.compile_model()
-    nb.fit_model(mcmc_chains=4, num_draws=100)
+    nb.fit_model(method="mcmc", mcmc_chains=4, num_draws=100)
     return nb
 
 
@@ -76,7 +76,7 @@ def single_feat_model():
     )
 
     nb.compile_model()
-    nb.fit_model(mcmc_chains=4, num_draws=100)
+    nb.fit_model(method="mcmc", mcmc_chains=4, num_draws=100)
 
     return nb
 

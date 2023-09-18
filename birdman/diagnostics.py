@@ -102,6 +102,7 @@ def r2_score(inference_object: az.InferenceData) -> pd.Series:
     :returns: Bayesian :math:`R^2` & standard deviation
     :rtype: pd.Series
     """
+
     if "observed_data" not in inference_object.groups():
         raise ValueError("Inference data is missing observed data!")
 

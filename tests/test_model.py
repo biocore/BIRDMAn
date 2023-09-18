@@ -50,7 +50,7 @@ class TestModelFit:
             metadata=md,
         )
         nb_lme.compile_model()
-        nb_lme.fit_model(num_draws=100)
+        nb_lme.fit_model(method="mcmc", num_draws=100)
 
         inf = nb_lme.to_inference()
         post = inf.posterior
@@ -69,7 +69,7 @@ class TestModelFit:
                 metadata=md,
             )
             nb.compile_model()
-            nb.fit_model(num_draws=100)
+            nb.fit_model(method="mcmc", num_draws=100)
 
     def test_lme_single_feat(self, table_biom, metadata):
         md = metadata.copy()
@@ -88,7 +88,7 @@ class TestModelFit:
 class TestToInference:
     def test_serial_to_inference(self, example_model):
         inference_data = example_model.to_inference()
-        target_groups = {"posterior", "sample_stats", "log_likelihood",
+        target_groups = {"posterior", "log_likelihood",
                          "posterior_predictive", "observed_data"}
         assert set(inference_data.groups()) == target_groups
 
@@ -173,5 +173,6 @@ class TestModelIterator:
 
         for fit, model in model_iterator:
             model.compile_model()
-            model.fit_model(num_draws=100, mcmc_chains=4, seed=42)
+            model.fit_model(method="mcmc", num_draws=100, mcmc_chains=4,
+                            seed=42)
             _ = model.to_inference()
