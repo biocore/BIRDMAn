@@ -159,5 +159,6 @@ class TestModelIterator:
 
         for fit, model in model_iterator:
             model.compile_model()
-            model.fit_model(method="mcmc", num_draws=100, mcmc_chains=4, seed=42)
+            model.fit_model(method="mcmc", num_draws=100, mcmc_chains=4,
+                            seed=42)
             _ = model.to_inference()
