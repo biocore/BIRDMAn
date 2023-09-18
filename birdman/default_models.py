@@ -410,7 +410,8 @@ class NegativeBinomialLMESingle(SingleFeatureModel):
             "inv_disp_sd": inv_disp_sd,
             "A": A,
             "subj_ids": samp_subj_map,
-            "u_p": group_var_prior
+            "u_p": group_var_prior,
+            "S": len(self.groups)
         }
         self.add_parameters(param_dict)
 

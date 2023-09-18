@@ -73,6 +73,9 @@ class TestModelFit:
 
     def test_lme_single_feat(self, table_biom, metadata):
         md = metadata.copy()
+        np.random.seed(42)
+        md["group"] = np.random.randint(low=0, high=3, size=md.shape[0])
+        md["group"] = "G" + md["group"].astype(str)
         for fid in table_biom.ids(axis="observation"):
             nb = NegativeBinomialLMESingle(
                 table=table_biom,
