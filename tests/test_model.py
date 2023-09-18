@@ -4,7 +4,8 @@ from pkg_resources import resource_filename
 import numpy as np
 
 from birdman import (NegativeBinomial, NegativeBinomialLME,
-                     NegativeBinomialSingle, ModelIterator)
+                     NegativeBinomialSingle, NegativeBinomialLMESingle,
+                     ModelIterator)
 
 TEMPLATES = resource_filename("birdman", "templates")
 
@@ -65,6 +66,19 @@ class TestModelFit:
                 table=table_biom,
                 feature_id=fid,
                 formula="host_common_name",
+                metadata=md,
+            )
+            nb.compile_model()
+            nb.fit_model(num_draws=100)
+
+    def test_lme_single_feat(self, table_biom, metadata):
+        md = metadata.copy()
+        for fid in table_biom.ids(axis="observation"):
+            nb = NegativeBinomialLMESingle(
+                table=table_biom,
+                feature_id=fid,
+                formula="host_common_name",
+                group_var="group",
                 metadata=md,
             )
             nb.compile_model()
