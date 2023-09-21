@@ -26,8 +26,10 @@ class TestToInference:
         assert (ds.coords["chain"] == [0, 1, 2, 3]).all()
 
     def test_serial_to_inference(self, example_model):
-        inf = mu.full_fit_to_inference(
+        inf = mu.fit_to_inference(
             fit=example_model.fit,
+            chains=4,
+            draws=100,
             coords={
                 "feature": example_model.feature_names,
                 "feature_alr": example_model.feature_names[1:],
@@ -41,7 +43,6 @@ class TestToInference:
                 "y_predict": ["tbl_sample", "feature"]
             },
             params=["beta_var", "inv_disp"],
-            alr_params=["beta_var"]
         )
         self.dataset_comparison(example_model, inf.posterior)
 
@@ -49,8 +50,10 @@ class TestToInference:
 # Posterior predictive & log likelihood
 class TestPPLL:
     def test_serial_ppll(self, example_model):
-        inf = mu.full_fit_to_inference(
+        inf = mu.fit_to_inference(
             fit=example_model.fit,
+            chains=4,
+            draws=100,
             coords={
                 "feature": example_model.feature_names,
                 "feature_alr": example_model.feature_names[1:],
@@ -64,7 +67,6 @@ class TestPPLL:
                 "y_predict": ["sample", "feature"]
             },
             params=["beta_var", "inv_disp"],
-            alr_params=["beta_var"],
             posterior_predictive="y_predict",
             log_likelihood="log_lhood",
         )

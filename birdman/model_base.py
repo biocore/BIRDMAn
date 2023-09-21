@@ -8,7 +8,7 @@ from cmdstanpy import CmdStanModel
 import pandas as pd
 from patsy import dmatrix
 
-from .inference import full_fit_to_inference, single_feature_fit_to_inference
+from .inference import fit_to_inference
 
 
 class BaseModel(ABC):
@@ -114,7 +114,7 @@ class BaseModel(ABC):
 
     def fit_model(
         self,
-        method: str = "mcmc",
+        method: str = "vi",
         num_draws: int = 500,
         mcmc_warmup: int = None,
         mcmc_chains: int = 4,
@@ -167,6 +167,9 @@ class BaseModel(ABC):
             mcmc_kwargs = mcmc_kwargs or dict()
             mcmc_warmup = mcmc_warmup or mcmc_warmup
 
+            self.num_chains = mcmc_chains
+            self.num_draws = num_draws
+
             self.fit = self.sm.sample(
                 chains=mcmc_chains,
                 parallel_chains=mcmc_chains,
@@ -178,6 +181,9 @@ class BaseModel(ABC):
             )
         elif method == "vi":
             vi_kwargs = vi_kwargs or dict()
+
+            self.num_chains = 1
+            self.num_draws = num_draws
 
             self.fit = self.sm.variational(
                 data=self.dat,
@@ -224,8 +230,10 @@ class TableModel(BaseModel):
         """
         self._check_fit_for_inf()
 
-        inference = full_fit_to_inference(
+        inference = fit_to_inference(
             fit=self.fit,
+            chains=self.num_chains,
+            draws=self.num_draws,
             params=self.params,
             coords=self.coords,
             dims=self.dims,
@@ -246,6 +254,7 @@ class TableModel(BaseModel):
                 }
             )
             inference = az.concat(inference, obs)
+
         return inference
 
 
@@ -269,8 +278,10 @@ class SingleFeatureModel(BaseModel):
         """
         self._check_fit_for_inf()
 
-        inference = single_feature_fit_to_inference(
+        inference = fit_to_inference(
             fit=self.fit,
+            chains=self.num_chains,
+            draws=self.num_draws,
             params=self.params,
             coords=self.coords,
             dims=self.dims,
