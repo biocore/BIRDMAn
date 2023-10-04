@@ -51,4 +51,4 @@ jobs:
 
       - name: Run tests
         shell: bash -l {0}
-        run: make test
+        run: make pytest
