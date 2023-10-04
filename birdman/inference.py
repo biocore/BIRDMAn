@@ -1,3 +1,4 @@
+from functools import partial
 from typing import List, Sequence, Union
 
 import arviz as az
@@ -21,10 +22,17 @@ def fit_to_inference(
     if posterior_predictive is not None and posterior_predictive not in dims:
         raise KeyError("Must include dimensions for posterior predictive!")
 
+    # Required because as of writing, CmdStanVB.stan_variable defaults to
+    # returning the mean rather than the sample
+    if isinstance(fit, CmdStanVB):
+        stan_var_fn = partial(fit.stan_variable, mean=False)
+    else:
+        stan_var_fn = fit.stan_variable
+
     das = dict()
 
     for param in params:
-        data = fit.stan_variable(param)
+        data = stan_var_fn(param)
 
         _dims = dims[param]
         _coords = {k: coords[k] for k in _dims}
@@ -32,7 +40,7 @@ def fit_to_inference(
         das[param] = stan_var_to_da(data, _coords, _dims, chains, draws)
 
     if log_likelihood:
-        data = fit.stan_variable(log_likelihood)
+        data = stan_var_fn(log_likelihood)
 
         _dims = dims[log_likelihood]
         _coords = {k: coords[k] for k in _dims}
@@ -43,7 +51,7 @@ def fit_to_inference(
         ll_ds = None
 
     if posterior_predictive:
-        data = fit.stan_variable(posterior_predictive)
+        data = stan_var_fn(posterior_predictive)
 
         _dims = dims[posterior_predictive]
         _coords = {k: coords[k] for k in _dims}
@@ -112,6 +120,7 @@ def concatenate_inferences(
     return az.concat(*all_group_inferences)
 
 
+# TODO: Fix docstring
 def stan_var_to_da(
     data: np.ndarray,
     coords: dict,
@@ -119,9 +128,7 @@ def stan_var_to_da(
     chains: int,
     draws: int
 ):
-    """Convert Stan variable draws to xr.DataArray.
-
-    """
+    """Convert Stan variable draws to xr.DataArray."""
     data = np.stack(np.split(data, chains))
 
     coords["draw"] = np.arange(draws)
