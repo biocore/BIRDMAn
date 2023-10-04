@@ -6,7 +6,7 @@ stylecheck:
 	flake8 birdman/*.py tests/*.py setup.py
 
 pytest:
-	pytest tests -W ignore::FutureWarning
+	pytest tests
 
 documentation:
 	cd docs && make html
