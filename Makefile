@@ -6,7 +6,7 @@ stylecheck:
 	flake8 birdman/*.py tests/*.py setup.py
 
 pytest:
-	pytest tests
+	pytest --cov-report term-missing --cov=birdman --cov-branch tests
 
 documentation:
 	cd docs && make html

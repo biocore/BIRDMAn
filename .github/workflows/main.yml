@@ -39,7 +39,7 @@ jobs:
 
       - name: Install conda packages
         shell: bash -l {0}
-        run: mamba install -c conda-forge biom-format patsy pytest xarray scikit-bio flake8 arviz cmdstanpy
+        run: mamba install -c conda-forge biom-format patsy pytest xarray scikit-bio flake8 arviz cmdstanpy pytest-cov
 
       - name: Install BIRDMAn
         shell: bash -l {0}
@@ -47,8 +47,8 @@ jobs:
 
       - name: Check style
         shell: bash -l {0}
-        run: flake8 birdman/*.py tests/*.py setup.py
+        run: make stylecheck
 
       - name: Run tests
         shell: bash -l {0}
-        run: pytest --disable-pytest-warnings
+        run: make test

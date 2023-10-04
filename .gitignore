@@ -17,3 +17,4 @@ tests/custom_model
 /build
 docs/_build
 tags
+.coverage*
