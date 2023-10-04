@@ -39,14 +39,7 @@ jobs:
 
       - name: Install conda packages
         shell: bash -l {0}
-        run: mamba install -c conda-forge biom-format patsy pytest xarray scikit-bio flake8 arviz
-
-      # Temp req before CmdStanPy cuts a new release
-      - name: Install develop branch of CmdStanPy
-        shell: bash -l {0}
-        run: >
-          pip install git+https://github.com/stan-dev/cmdstanpy.git@develop;
-          install_cmdstan
+        run: mamba install -c conda-forge biom-format patsy pytest xarray scikit-bio flake8 arviz cmdstanpy
 
       - name: Install BIRDMAn
         shell: bash -l {0}
