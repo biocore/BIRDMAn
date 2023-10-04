@@ -105,7 +105,6 @@ def test_concat(table_biom, metadata, method):
         infs,
         coords={"feature": tbl.ids("observation")},
     )
-    print(inf_concat.posterior)
     exp_feat_ids = tbl.ids("observation")
     feat_ids = inf_concat.posterior.coords["feature"].to_numpy()
     assert (exp_feat_ids == feat_ids).all()
