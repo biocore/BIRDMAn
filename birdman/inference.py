@@ -84,21 +84,19 @@ def concatenate_inferences(
     """
     group_list = []
     group_list.append([x.posterior for x in inf_list])
-    group_list.append([x.sample_stats for x in inf_list])
     if "log_likelihood" in inf_list[0].groups():
         group_list.append([x.log_likelihood for x in inf_list])
     if "posterior_predictive" in inf_list[0].groups():
         group_list.append([x.posterior_predictive for x in inf_list])
 
     po_ds = xr.concat(group_list[0], concatenation_name)
-    ss_ds = xr.concat(group_list[1], concatenation_name)
-    group_dict = {"posterior": po_ds, "sample_stats": ss_ds}
+    group_dict = {"posterior": po_ds}
 
     if "log_likelihood" in inf_list[0].groups():
-        ll_ds = xr.concat(group_list[2], concatenation_name)
+        ll_ds = xr.concat(group_list[1], concatenation_name)
         group_dict["log_likelihood"] = ll_ds
     if "posterior_predictive" in inf_list[0].groups():
-        pp_ds = xr.concat(group_list[3], concatenation_name)
+        pp_ds = xr.concat(group_list[2], concatenation_name)
         group_dict["posterior_predictive"] = pp_ds
 
     all_group_inferences = []
