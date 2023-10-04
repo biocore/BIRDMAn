@@ -1,6 +1,9 @@
 import numpy as np
+import pytest
 
 from birdman import inference as mu
+from birdman.default_models import NegativeBinomialSingle
+from birdman import ModelIterator
 
 
 class TestToInference:
@@ -78,3 +81,30 @@ class TestPPLL:
             nb_data = example_model.fit.stan_variable(v)
             nb_data = np.array(np.split(nb_data, 4, axis=0))
             np.testing.assert_array_almost_equal(nb_data, inf_data)
+
+
+@pytest.mark.parametrize("method", ["mcmc", "vi"])
+def test_concat(table_biom, metadata, method):
+    tbl = table_biom
+    md = metadata
+
+    model_iterator = ModelIterator(
+        table=tbl,
+        model=NegativeBinomialSingle,
+        formula="host_common_name",
+        metadata=md,
+    )
+
+    infs = []
+    for fname, model in model_iterator:
+        model.compile_model()
+        model.fit_model(method, num_draws=100)
+        infs.append(model.to_inference())
+
+    inf_concat = mu.concatenate_inferences(
+        infs,
+        coords={"feature": tbl.ids("observation")},
+    )
+    exp_feat_ids = tbl.ids("observation")
+    feat_ids = inf_concat.posterior.coords["feature"].to_numpy()
+    assert (exp_feat_ids == feat_ids).all()
