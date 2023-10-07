@@ -48,7 +48,7 @@ model {
   // generating counts
   for (n in 1:N){
     for (i in 1:D){
-      target += neg_binomial_2_log_lpmf(y[n, i] | lam_clr[n, i], inv_disp[i]);
+      target += neg_binomial_2_log_lpmf(y[n, i] | lam_clr[n, i], inv(inv_disp[i]));
     }
   }
 }
@@ -59,8 +59,8 @@ generated quantities {
 
   for (n in 1:N){
     for (i in 1:D){
-      y_predict[n, i] = neg_binomial_2_log_rng(lam_clr[n, i], inv_disp[i]);
-      log_lhood[n, i] = neg_binomial_2_log_lpmf(y[n, i] | lam_clr[n, i], inv_disp[i]);
+      y_predict[n, i] = neg_binomial_2_log_rng(lam_clr[n, i], inv(inv_disp[i]));
+      log_lhood[n, i] = neg_binomial_2_log_lpmf(y[n, i] | lam_clr[n, i], inv(inv_disp[i]));
     }
   }
 }

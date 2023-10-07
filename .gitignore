@@ -10,6 +10,7 @@ birdman/templates/negative_binomial
 birdman/templates/multinomial
 birdman/templates/negative_binomial_single
 birdman/templates/negative_binomial_lme
+birdman/templates/negative_binomial_lme_single
 tests/custom_model
 
 *__pycache__/
