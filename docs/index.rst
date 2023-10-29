@@ -14,14 +14,14 @@ We provide several default models but also allow users to create their own stati
 Installation
 ------------
 
-.. note:: BIRDMAn requires Python >= 3.7
+.. note:: BIRDMAn requires Python >= 3.8
 
 There are several dependencies you must install to use BIRDMAn.
 The easiest way to install the required dependencies is through ``conda`` or ``mamba``.
 
 .. code:: bash
 
-    conda install -c conda-forge biom-format patsy xarray arviz cmdstanpy
+    mamba install -c conda-forge biom-format patsy xarray arviz cmdstanpy
     pip install birdman
 
 If you are planning on contributing to BIRDMAn you must also install the following packages:
@@ -53,6 +53,7 @@ If you are planning on contributing to BIRDMAn you must also install the followi
     :caption: API
 
     models
+    inference
     diagnostics
     summary
     transform
