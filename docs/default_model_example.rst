@@ -23,12 +23,15 @@ Next, we want to import the data into Python so we can run BIRDMAn.
 
     from birdman import NegativeBinomial
 
-    table = biom.load_table("BIOM/44773/otu_table.biom")
+    fpath = glob.glob("templates/*.txt")[0]
+    table = biom.load_table("BIOM/44773/reference-hit.biom")
     metadata = pd.read_csv(
-        "templates/107_20180101-113755.txt",
+        fpath,
         sep="\t",
         index_col=0
     )
+
+    metadata.head()
 
 This table has nearly 2000 features, many of which are likely lowly prevalent. We are going to filter to only features that are present in at least 5 samples.
 
@@ -44,11 +47,12 @@ For this example we're going to use a simple formula that only takes ``diet`` in
 
 .. code-block:: python
 
+   from birdman import NegativeBinomial
+
     nb = NegativeBinomial(
         table=table_filt,
         formula="diet",
         metadata=metadata,
-        num_iter=1000,
     )
 
 We then have to compile and fit our model. This is very straightforward in BIRDMAn.
@@ -68,6 +72,7 @@ Now we have our parameter estimates which we can use in downstream analyses. Man
 .. code-block:: python
 
     from birdman.transform import posterior_alr_to_clr
+
     inference = nb.to_inference()
     inference.posterior = posterior_alr_to_clr(
         inference.posterior,
@@ -85,7 +90,7 @@ Finally, we'll plot the feature differentials and their standard deviations. We 
     ax = viz.plot_parameter_estimates(
         inference,
         parameter="beta_var",
-        coord={"covariate": "diet[T.DIO]"},
+        coords={"covariate": "diet[T.DIO]"},
     )
 
 .. image:: imgs/example_differentials.png

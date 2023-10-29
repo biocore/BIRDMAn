@@ -25,13 +25,18 @@ We then import the data into Python so we can use BIRDMAn.
 
     import biom
     import pandas as pd
+    import glob
+
+    fpath = glob.glob("templates/*.txt")[0]
 
     table = biom.load_table("BIOM/94270/reference-hit.biom")
     metadata = pd.read_csv(
-        "templates/11913_20191016-112545.txt",
+        fpath,
         sep="\t",
         index_col=0
     )
+
+    metadata.head()
 
 Processing metadata
 -------------------
@@ -224,9 +229,6 @@ We will now pass this file along with our table, metadata, and formula into BIRD
     nb_lme = birdman.TableModel(
         table=filt_tbl,
         model_path="negative_binomial_re.stan",
-        num_iter=500,
-        chains=4,
-        seed=42
     )
     nb_lme.create_regression(
         metadata=metadata_model.loc[samps_to_keep],
@@ -272,6 +274,7 @@ Now we can add all the necessary parameters to BIRDMAn with the ``add_parameters
         "depth": np.log(filt_tbl.sum(axis="sample")),
         "B_p": 3.0,
         "inv_disp_sd": 3.0,
+        "A": np.log(1 / filt_tbl.shape[0]),
         "u_p": 1.0
     }
     nb_lme.add_parameters(param_dict)
@@ -294,8 +297,8 @@ We pass all these arguments into the ``specify_model`` method of the ``Model`` o
         dims={
             "beta_var": ["covariate", "feature_alr"],
             "inv_disp": ["feature"],
-            "subj_int": ["subject"],
-            "log_lik": ["tbl_sample", "feature"],
+            "subj_int": ["subject", "feature_alr"],
+            "log_lhood": ["tbl_sample", "feature"],
             "y_predict": ["tbl_sample", "feature"]
         },
         coords={
@@ -306,7 +309,7 @@ We pass all these arguments into the ``specify_model`` method of the ``Model`` o
             "tbl_sample": nb_lme.sample_names
         },
         posterior_predictive="y_predict",
-        log_likelihood="log_lik",
+        log_likelihood="log_lhood",
         include_observed_data=True
     )
 
@@ -319,7 +322,7 @@ Finally, we compile and fit the model.
 .. code-block:: python
 
     nb_lme.compile_model()
-    nb_lme.fit_model()
+    nb_lme.fit_model(method="vi", num_draws=500)
 
 Converting to ``InferenceData``
 -------------------------------
@@ -329,7 +332,13 @@ When the model has finished fitting, you can convert to an inference data assumi
 .. code-block:: python
 
     from birdman.transform import posterior_alr_to_clr
+
     inference = nb_lme.to_inference()
-    inference.posterior = posterior_alr_to_clr(inference.posterior)
+    inference.posterior = posterior_alr_to_clr(
+        inference.posterior,
+        alr_params=["subj_int", "beta_var"],
+        dim_replacement={"feature_alr": "feature"},
+        new_labels=filt_tbl.ids("observation")
+    )
 
 With this you can use the rest of the BIRDMAn suite as usual or directly interact with the ``arviz`` library!
