@@ -6,7 +6,7 @@ channels:
 dependencies:
   - pandas
   - numpy
-  - python=3.7
+  - python=3.8
   - python-language-server
   - xarray
   - patsy
@@ -16,4 +16,3 @@ dependencies:
   - docutils==0.16
   - pip:
     - sphinx-rtd-theme==0.5.1
-prefix: /Users/gibs/miniconda3/envs/birdman
