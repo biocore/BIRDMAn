@@ -9,6 +9,8 @@
 
 See the [documentation](https://birdman.readthedocs.io/en/stable/?badge=stable) for details on usage.
 
+For an example of running BIRDMAn - see this [Google Colab notebook](https://colab.research.google.com/drive/1zT4eIgiz0Jl5TVmttE3gwWnrhNlPeYDc?usp=sharing).
+
 ## Installation
 
 Currently BIRDMAn requires Python 3.8 or higher.
@@ -16,6 +18,6 @@ Currently BIRDMAn requires Python 3.8 or higher.
 We recommend using [mamba](https://github.com/mamba-org/mamba) for installation of dependencies.
 
 ```bash
-conda install -c conda-forge biom-format patsy xarray arviz cmdstanpy
+mamba install -c conda-forge biom-format patsy xarray arviz cmdstanpy
 pip install birdman
 ```
