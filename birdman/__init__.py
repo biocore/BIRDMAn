@@ -3,7 +3,7 @@ from .model_base import (BaseModel, TableModel, SingleFeatureModel,
 from .default_models import (NegativeBinomial, NegativeBinomialLME,
                              NegativeBinomialSingle, NegativeBinomialLMESingle)
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = ["BaseModel", "TableModel", "SingleFeatureModel", "ModelIterator",
            "NegativeBinomial", "NegativeBinomialSingle",
