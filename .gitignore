@@ -19,3 +19,4 @@ tests/custom_model
 docs/_build
 tags
 .coverage*
+dist/

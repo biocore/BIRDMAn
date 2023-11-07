@@ -20,11 +20,10 @@ Next, we want to import the data into Python so we can run BIRDMAn.
 
     import biom
     import pandas as pd
-
-    from birdman import NegativeBinomial
+    import glob
 
     fpath = glob.glob("templates/*.txt")[0]
-    table = biom.load_table("BIOM/44773/reference-hit.biom")
+    table = biom.load_table("BIOM/44773/otu_table.biom")
     metadata = pd.read_csv(
         fpath,
         sep="\t",
@@ -57,15 +56,10 @@ For this example we're going to use a simple formula that only takes ``diet`` in
 
 We then have to compile and fit our model. This is very straightforward in BIRDMAn.
 
-.. note::
-
-    Fitting this model took approximately 25 minutes on my laptop.
-
-
 .. code-block:: python
 
     nb.compile_model()
-    nb.fit_model()
+    nb.fit_model(method="vi", num_draws=500)
 
 Now we have our parameter estimates which we can use in downstream analyses. Many of BIRDMAn's included analysis & visualization functions take an ``arviz.InferenceData`` object. We provide a simple method to convert your BIRDMAn fit into this data structure. Note that the included ``NegativeBinomial`` model performs ALR regression, meaning that the one of the features (the first) is used as a reference. As a result, the resulting inference will have 1 fewer microbe than were in the original table. We can "add the other microbe back" by converting to CLR coordinates. We provide an easy function to do this in the ``transform`` module.
 
