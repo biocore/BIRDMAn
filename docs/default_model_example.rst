@@ -46,7 +46,7 @@ For this example we're going to use a simple formula that only takes ``diet`` in
 
 .. code-block:: python
 
-   from birdman import NegativeBinomial
+    from birdman import NegativeBinomial
 
     nb = NegativeBinomial(
         table=table_filt,
