@@ -34,6 +34,7 @@ If you are planning on contributing to BIRDMAn you must also install the followi
     :maxdepth: 2
     :caption: User Guide
 
+    installation
     default_model_example
     custom_model
     diagnosing_model

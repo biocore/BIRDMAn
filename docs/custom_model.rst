@@ -315,10 +315,6 @@ We pass all these arguments into the ``specify_model`` method of the ``Model`` o
 
 Finally, we compile and fit the model.
 
-.. note::
-
-    Fitting this model took approximately 6 minutes on my laptop.
-
 .. code-block:: python
 
     nb_lme.compile_model()

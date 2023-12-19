@@ -273,6 +273,6 @@ With our Python script, we can now write a simple script that tells our cluster 
         --num-warmup 1000 \
         --beta-prior 2.0 \
         --inv-disp-sd 0.5 \
-        --re-prior 2.0 \
+        --re-prior 2.0
 
 If you run this script your scheduler should start up 20 jobs, each one running a different chunk of features!
