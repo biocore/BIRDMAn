@@ -30,6 +30,11 @@ If you are planning on contributing to BIRDMAn you must also install the followi
 * `scikit-bio <http://scikit-bio.org/>`_
 * `sphinx <https://www.sphinx-doc.org/en/master/>`_
 
+Docker
+------
+
+We have also provided a `Docker image <https://hub.docker.com/r/gibsramen/birdman>`_ that you can use for running BIRDMAn.
+
 .. toctree::
     :maxdepth: 2
     :caption: User Guide
