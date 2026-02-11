@@ -7,7 +7,9 @@ from birdman import (NegativeBinomial, NegativeBinomialLME,
                      NegativeBinomialSingle, NegativeBinomialLMESingle,
                      ModelIterator)
 
-TEMPLATES = str(Path(__file__).resolve().parent.parent / "birdman" / "templates")
+TEMPLATES = str(
+    Path(__file__).resolve().parent.parent / "birdman" / "templates"
+)
 
 
 class TestModelInheritance:
