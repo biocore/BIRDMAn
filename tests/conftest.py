@@ -1,5 +1,5 @@
 import os
-from pkg_resources import resource_filename
+from pathlib import Path
 
 import biom
 import pandas as pd
@@ -7,7 +7,7 @@ import pytest
 
 from birdman import NegativeBinomial, NegativeBinomialSingle
 
-TEST_DATA = resource_filename("tests", "data")
+TEST_DATA = str(Path(__file__).parent / "data")
 TBL_FILE = os.path.join(TEST_DATA, "macaque_tbl.biom")
 MD_FILE = os.path.join(TEST_DATA, "macaque_metadata.tsv")
 
