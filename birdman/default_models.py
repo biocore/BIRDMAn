@@ -1,5 +1,5 @@
 from os.path import join as pjoin
-from pkg_resources import resource_filename
+from pathlib import Path
 
 import biom
 import numpy as np
@@ -7,7 +7,7 @@ import pandas as pd
 
 from .model_base import TableModel, SingleFeatureModel
 
-TEMPLATES = resource_filename("birdman", "templates")
+TEMPLATES = str(Path(__file__).parent / "templates")
 DEFAULT_MODEL_DICT = {
     "negative_binomial": {
         "standard": pjoin(TEMPLATES, "negative_binomial.stan"),

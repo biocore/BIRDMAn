@@ -28,11 +28,11 @@ def posterior_alr_to_clr(
     new_posterior = posterior.copy()
     for param in alr_params:
         param_da = posterior[param]
-        all_chain_alr_coords = param_da
         all_chain_clr_coords = []
 
-        for i, chain_alr_coords in all_chain_alr_coords.groupby("chain"):
-            chain_clr_coords = _beta_alr_to_clr(chain_alr_coords)
+        for chain_idx in range(param_da.sizes["chain"]):
+            chain_data = param_da.isel(chain=chain_idx).values
+            chain_clr_coords = _beta_alr_to_clr(chain_data)
             all_chain_clr_coords.append(chain_clr_coords)
 
         all_chain_clr_coords = np.array(all_chain_clr_coords)

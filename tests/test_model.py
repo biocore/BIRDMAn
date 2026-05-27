@@ -1,5 +1,5 @@
 import os
-from pkg_resources import resource_filename
+from pathlib import Path
 
 import numpy as np
 
@@ -7,7 +7,9 @@ from birdman import (NegativeBinomial, NegativeBinomialLME,
                      NegativeBinomialSingle, NegativeBinomialLMESingle,
                      ModelIterator)
 
-TEMPLATES = resource_filename("birdman", "templates")
+TEMPLATES = str(
+    Path(__file__).resolve().parent.parent / "birdman" / "templates"
+)
 
 
 class TestModelInheritance:

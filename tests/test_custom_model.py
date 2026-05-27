@@ -1,4 +1,4 @@
-from pkg_resources import resource_filename
+from pathlib import Path
 
 import numpy as np
 
@@ -13,7 +13,7 @@ def test_custom_model(table_biom, metadata):
 
     custom_model = TableModel(
         table=table_biom,
-        model_path=resource_filename("tests", "custom_model.stan"),
+        model_path=str(Path(__file__).parent / "custom_model.stan"),
     )
     custom_model.create_regression(
         formula="host_common_name",
