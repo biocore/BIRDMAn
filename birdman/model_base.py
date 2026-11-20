@@ -127,8 +127,8 @@ class BaseModel(ABC):
     ):
         """Fit BIRDMAn model.
 
-        :param method: Method by which to fit model, either 'mcmc' (default)
-            for Markov Chain Monte Carlo or 'vi' for Variational Inference
+        :param method: Method by which to fit model, either 'vi' (default)
+            for Variational Inference or 'mcmc' for Markov Chain Monte Carlo
         :type method: str
 
         :param num_draws: Number of output draws to sample from the posterior,
@@ -165,7 +165,7 @@ class BaseModel(ABC):
         """
         if method == "mcmc":
             mcmc_kwargs = mcmc_kwargs or dict()
-            mcmc_warmup = mcmc_warmup or mcmc_warmup
+            mcmc_warmup = mcmc_warmup or num_draws
 
             self.num_chains = mcmc_chains
             self.num_draws = num_draws
@@ -353,4 +353,4 @@ class ModelIterator:
         return self.chunks[chunk_idx]
 
     def __len__(self):
-        return self.num_chunks
+        return len(self.chunks)
