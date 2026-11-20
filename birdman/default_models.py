@@ -25,10 +25,7 @@ class NegativeBinomial(TableModel):
 
         y_{ij} &\\sim \\textrm{NB}(\\mu_{ij}, \\phi_j)
 
-        \\mu_{ij} &= n_i p_{ij}
-
-        \\textrm{alr}(p_i) &= x_i \\beta
-
+        \\log(\\mu_{ij}) &= \\log(\\textrm{Depth}_i) + x_i \\beta_j
 
     Priors:
 
@@ -214,9 +211,7 @@ class NegativeBinomialLME(TableModel):
 
         y_{ij} &\\sim \\textrm{NB}(\\mu_{ij}, \\phi_j)
 
-        \\mu_{ij} &= n_i p_{ij}
-
-        \\textrm{alr}(p_i) &= x_i \\beta + z_i u
+        \\log(\\mu_{ij}) &= \\log(\\textrm{Depth}_i) + x_i \\beta_j + z_i u_j
 
     Priors:
 
@@ -374,6 +369,10 @@ class NegativeBinomialLMESingle(SingleFeatureModel):
     :param inv_disp_sd: Standard deviation for lognormally distributed prior
         values of 1/phi, defaults to 0.5
     :type inv_disp_sd: float
+
+    :param group_var_prior: Standard deviation for normally distributed prior
+        values of group_var, defaults to 1.0
+    :type group_var_prior: float
     """
     def __init__(
         self,

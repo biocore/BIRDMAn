@@ -12,6 +12,8 @@ def posterior_alr_to_clr(
 ) -> xr.Dataset:
     """Convert posterior draws from ALR to CLR.
 
+    Not for the default negative binomial models, which are not ALR.
+
     :param posterior: Posterior draws for fitted parameters
     :type posterior: xr.Dataset
 
