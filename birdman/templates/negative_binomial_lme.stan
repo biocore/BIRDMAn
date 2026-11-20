@@ -36,9 +36,10 @@ transformed parameters {
 model {
   inv_disp ~ lognormal(0, inv_disp_sd);
 
+  beta_0 ~ normal(A, B_p);
   for (i in 1:D-1){
-    for (j in 1:p){
-      beta_var[j, i] ~ normal(0., B_p); // uninformed prior
+    for (j in 1:p-1){
+      beta_x[j, i] ~ normal(0., B_p);
     }
     for (j in 1:S){
       subj_int[j, i] ~ normal(0., u_p);
