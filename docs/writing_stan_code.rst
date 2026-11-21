@@ -32,7 +32,7 @@ Any other parameters must be added to the BIRDMAn model with the ``add_parameter
 Parameters
 ----------
 
-In this block you should specify the parameters you are primarily interested in fitting. This includes coefficient matrices, random intercepts, etc. Important to note that if you are fitting feature coefficients you may need to use ALR coordinates. For example, in the ``NegativeBinomial`` default model we specify ``matrix[p, D-1] beta;`` as ALR coordinates remove one feature as reference.
+In this block you should specify the parameters you are primarily interested in fitting. This includes coefficient matrices, random intercepts, etc.
 
 Transformed parameters
 ----------------------

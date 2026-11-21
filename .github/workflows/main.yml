@@ -17,29 +17,31 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           persist-credentials: false
           fetch-depth: 0
 
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: birdman
-          mamba-version: "*"
-          channels: conda-forge,defaults
+          miniforge-version: latest
+          channels: conda-forge
           channel-priority: true
           python-version: ${{ matrix.python-version }}
 
       - name: Install conda packages
         shell: bash -l {0}
-        run: mamba install -c conda-forge biom-format patsy pytest xarray scikit-bio flake8 arviz cmdstanpy pytest-cov
+        run: mamba install -c conda-forge biom-format patsy pytest xarray scikit-bio flake8 "arviz<1" cmdstanpy pytest-cov
 
       - name: Install BIRDMAn
         shell: bash -l {0}
@@ -52,3 +54,11 @@ jobs:
       - name: Run tests
         shell: bash -l {0}
         run: make pytest
+
+      - name: Install into a bare virtualenv and import
+        shell: bash -l {0}
+        run: |
+          python -m venv "${RUNNER_TEMP}/clean"
+          "${RUNNER_TEMP}/clean/bin/python" -m pip install --upgrade pip
+          "${RUNNER_TEMP}/clean/bin/python" -m pip install .
+          "${RUNNER_TEMP}/clean/bin/python" -c "import birdman; print(birdman.__version__)"

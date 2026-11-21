@@ -61,19 +61,13 @@ We then have to compile and fit our model. This is very straightforward in BIRDM
     nb.compile_model()
     nb.fit_model(method="vi", num_draws=500)
 
-Now we have our parameter estimates which we can use in downstream analyses. Many of BIRDMAn's included analysis & visualization functions take an ``arviz.InferenceData`` object. We provide a simple method to convert your BIRDMAn fit into this data structure. Note that the included ``NegativeBinomial`` model performs ALR regression, meaning that the one of the features (the first) is used as a reference. As a result, the resulting inference will have 1 fewer microbe than were in the original table. We can "add the other microbe back" by converting to CLR coordinates. We provide an easy function to do this in the ``transform`` module.
+Now we have our parameter estimates which we can use in downstream analyses. Many of BIRDMAn's included analysis & visualization functions take an ``arviz.InferenceData`` object. We provide a simple method to convert your BIRDMAn fit into this data structure.
 
 .. code-block:: python
 
-    from birdman.transform import posterior_alr_to_clr
-
     inference = nb.to_inference()
-    inference.posterior = posterior_alr_to_clr(
-        inference.posterior,
-        alr_params=["beta_var"],  # the default NB model has only beta in ALR coordinates
-        dim_replacement={"feature_alr": "feature"},  # the default NB model assigns 'feature_alr' as the dimension name
-        new_labels=nb.feature_names  # replace the old labels (all the feature names except the first) with all the feature names
-    )
+
+Note that ``beta_var`` omits the first feature; despite the ``feature_alr`` dimension name, these are not ALR coordinates and need no CLR conversion.
 
 Finally, we'll plot the feature differentials and their standard deviations. We specify that we are interested in the ``diet[T.DIO]`` differentials but you can easily plot whichever parameter you like through the combination of the ``parameter`` and ``coord`` arguments.
 

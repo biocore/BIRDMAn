@@ -19,7 +19,7 @@ For a runnable example, see this [Google Colab notebook](https://colab.research.
 
 ## Installation
 
-BIRDMAn requires Python 3.8 or higher.
+BIRDMAn requires Python 3.10 or higher.
 
 We recommend using [mamba](https://github.com/mamba-org/mamba) for installation of dependencies.
 

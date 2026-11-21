@@ -112,9 +112,7 @@ For this custom model we want to specify that ``time_point`` is a fixed effect a
 
     y_{ij} &\sim \textrm{NB}(\mu_{ij},\phi_j)
 
-    \mu_{ij} &= n_i p_{ij}
-
-    \textrm{alr}^{-1}(p_i) &= x_i \beta + z_i u
+    \log(\mu_{ij}) &= \log(\textrm{Depth}_i) + x_i \beta_j + z_i u_j
 
 Where :math:`z_i` represents the mapping of sample :math:`i` to subject and :math:`u` represents the subject coefficient vector.
 
@@ -327,14 +325,6 @@ When the model has finished fitting, you can convert to an inference data assumi
 
 .. code-block:: python
 
-    from birdman.transform import posterior_alr_to_clr
-
     inference = nb_lme.to_inference()
-    inference.posterior = posterior_alr_to_clr(
-        inference.posterior,
-        alr_params=["subj_int", "beta_var"],
-        dim_replacement={"feature_alr": "feature"},
-        new_labels=filt_tbl.ids("observation")
-    )
 
 With this you can use the rest of the BIRDMAn suite as usual or directly interact with the ``arviz`` library!

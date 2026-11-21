@@ -136,6 +136,7 @@ class TestModelIterator:
 
         np.testing.assert_equal(iterated_values, expected_values)
         assert (iterated_feature_ids == expected_feature_ids).all()
+        assert len(model_iterator) == table_biom.shape[0]
 
     def test_chunks(self, table_biom, metadata):
         chunk_size = 10
@@ -163,6 +164,7 @@ class TestModelIterator:
         chunk_2 = model_iterator[1]
 
         assert chunk_sizes == [10, 10, 8]
+        assert len(model_iterator) == 3
         assert chunk_fids == exp_chunk_fids
 
         for (fid, _), exp_fid in zip(chunk_2, exp_chunk_fids[1]):
@@ -180,4 +182,5 @@ class TestModelIterator:
             model.compile_model()
             model.fit_model(method="mcmc", num_draws=100, mcmc_chains=4,
                             seed=42)
+            assert model.fit.metadata.cmdstan_config["num_warmup"] == 100
             _ = model.to_inference()

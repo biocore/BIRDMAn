@@ -15,9 +15,10 @@ with open("birdman/__init__.py", "rb") as f:
 classifiers = """
     Development Status :: 3 - Alpha
     License :: OSI Approved :: BSD License
-    Programming Language :: Python :: 3.7
-    Programming Language :: Python :: 3.8
-    Programming Language :: Python :: 3.9
+    Programming Language :: Python :: 3.10
+    Programming Language :: Python :: 3.11
+    Programming Language :: Python :: 3.12
+    Programming Language :: Python :: 3.13
     Intended Audience :: Science/Research
     Operating System :: POSIX
     Operating System :: MacOS :: MacOS X
@@ -38,10 +39,11 @@ setup(
     description=short_desc,
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/gibsramen/BIRDMAn",
+    url="https://github.com/biocore/BIRDMAn",
     version=version,
     license="BSD-3-Clause",
     packages=find_packages(),
+    python_requires=">=3.10",
     include_package_data=True,
     package_data={"": ["*.stan"]},
     install_requires=[
@@ -52,7 +54,7 @@ setup(
         "patsy",
         "xarray",
         "pandas",
-        "arviz>=0.11.3",
+        "arviz>=0.11.3,<1",
         "matplotlib"
     ],
     extras_require={"dev": ["pytest", "scikit-bio", "sphinx"]},
